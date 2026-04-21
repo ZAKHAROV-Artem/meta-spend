@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "jsx": "react-jsx",
+    "noEmit": true,
+    "types": [
+      "chrome",
+      "vite/client"
+    ]
+  },
+  "include": [
+    ".plasmo/index.d.ts",
+    "background.ts",
+    "content.ts",
+    "popup.tsx",
+    "src/**/*.ts",
+    "src/**/*.tsx"
+  ]
+}

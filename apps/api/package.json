@@ -1,0 +1,50 @@
+{
+  "name": "@crypto-tracker/api",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "nest build",
+    "dev": "nest start --watch",
+    "start": "node dist/main",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
+    "db:reset": "pnpm --filter @crypto-tracker/db run db:reset",
+    "db:migrate": "pnpm --filter @crypto-tracker/db run db:migrate",
+    "db:seed": "pnpm --filter @crypto-tracker/db run db:seed",
+    "db:studio": "pnpm --filter @crypto-tracker/db run studio"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.0.5",
+    "@nestjs/core": "^11.0.5",
+    "@nestjs/platform-fastify": "^11.0.5",
+    "@nestjs/config": "^4.0.0",
+    "@nestjs/jwt": "^11.0.0",
+    "@nestjs/passport": "^11.0.5",
+    "passport": "^0.7.0",
+    "passport-local": "^1.0.0",
+    "passport-jwt": "^4.0.1",
+    "class-validator": "^0.14.1",
+    "class-transformer": "^0.5.1",
+    "bcryptjs": "^2.4.3",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1",
+    "fastify": "^5.2.1",
+    "@prisma/client": "^6.2.1",
+    "siwe": "^2.3.2",
+    "@crypto-tracker/db": "workspace:*",
+    "@crypto-tracker/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.2",
+    "@nestjs/schematics": "^11.0.0",
+    "@nestjs/testing": "^11.0.5",
+    "@types/passport-local": "^1.0.38",
+    "@types/passport-jwt": "^4.0.1",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^22.10.7",
+    "@types/passport": "^1.0.17",
+    "typescript": "^5.7.3",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0"
+  }
+}

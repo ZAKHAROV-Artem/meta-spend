@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm --filter @crypto-tracker/shared run build)",
+      "Bash(pnpm --filter @crypto-tracker/db run build)",
+      "Bash(pnpm --filter @crypto-tracker/api run typecheck)",
+      "Bash(pnpm --filter @crypto-tracker/web run typecheck)",
+      "Bash(pnpm --filter @crypto-tracker/db exec dotenv -e ../../apps/api/.env -- prisma migrate dev --name siwe-optional-password)",
+      "Bash(pnpm --filter web exec tsc --noEmit)",
+      "Bash(pnpm dlx *)",
+      "WebSearch",
+      "WebFetch(domain:docs.lineascan.build)",
+      "WebFetch(domain:support.metamask.io)",
+      "WebFetch(domain:lineascan.build)",
+      "WebFetch(domain:docs.etherscan.io)"
+    ]
+  }
+}

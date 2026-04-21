@@ -1,0 +1,214 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String?
+  displayName  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  wallets           Wallet[]
+  sessions          Session[]
+  categories        Category[]
+  rules             Rule[]
+  cardTransactions  CardTransaction[]
+  extensionTokens   ExtensionToken[]
+  portfolioAccount  PortfolioAccount?
+
+  @@map("users")
+}
+
+model Session {
+  id                String   @id @default(cuid())
+  userId            String
+  refreshTokenHash  String   @unique
+  expiresAt         DateTime
+  createdAt         DateTime @default(now())
+  userAgent         String?
+  ipAddress         String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model Wallet {
+  id              String      @id @default(cuid())
+  userId          String
+  address         String
+  chainId         Int
+  label           String?
+  isVerified      Boolean     @default(false)
+  createdAt       DateTime    @default(now())
+  lastSyncedAt    DateTime?
+  lastSyncedBlock BigInt?
+  syncStatus      SyncStatus  @default(IDLE)
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@unique([userId, address, chainId])
+  @@index([userId])
+  @@map("wallets")
+}
+
+model PortfolioAccount {
+  id                     String   @id @default(cuid())
+  userId                 String   @unique
+  address                String
+  lastRefreshRequestedAt DateTime?
+  lastSuccessfulSyncAt   DateTime?
+  lastSyncState          String?  @default("IDLE")
+  lastSyncError          String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([address])
+  @@map("portfolio_accounts")
+}
+
+model Transaction {
+  id           String   @id @default(cuid())
+  walletId     String
+  hash         String
+  chainId      Int
+  blockNumber  BigInt?
+  timestamp    DateTime
+  fromAddress  String
+  toAddress    String?
+  value        Decimal  @db.Decimal(36, 18)
+  valueUsd     Decimal? @db.Decimal(18, 2)
+  gasUsed      BigInt?
+  gasPriceGwei Decimal? @db.Decimal(18, 9)
+  gasCostUsd   Decimal? @db.Decimal(18, 2)
+  txType       TxType   @default(UNKNOWN)
+  categoryId   String?
+  notes        String?
+  rawData      Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  wallet   Wallet    @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@unique([hash, chainId])
+  @@index([walletId])
+  @@index([timestamp])
+  @@index([categoryId])
+  @@map("transactions")
+}
+
+enum TxType {
+  TRANSFER_IN
+  TRANSFER_OUT
+  TRANSFER_SELF
+  SWAP
+  BRIDGE
+  CONTRACT_INTERACTION
+  GAS_ONLY
+  UNKNOWN
+}
+
+enum SyncStatus {
+  IDLE
+  SYNCING
+  FAILED
+}
+
+enum CardTxStatus {
+  PENDING
+  SETTLED
+  DECLINED
+  REFUNDED
+}
+
+model CardTransaction {
+  id            String       @id @default(cuid())
+  userId        String
+  externalId    String
+  occurredAt    DateTime
+  merchantName  String
+  merchantRaw   String?
+  fiatAmount    Decimal      @db.Decimal(18, 2)
+  fiatCurrency  String
+  cryptoAmount  Decimal?     @db.Decimal(36, 18)
+  cryptoSymbol  String?
+  status        CardTxStatus @default(SETTLED)
+  categoryId    String?
+  notes         String?
+  parserVersion Int
+  rawHtml       String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, externalId])
+  @@index([userId, occurredAt])
+  @@index([categoryId])
+  @@map("card_transactions")
+}
+
+model ExtensionToken {
+  id         String    @id @default(cuid())
+  userId     String
+  tokenHash  String    @unique
+  label      String?
+  lastUsedAt DateTime?
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("extension_tokens")
+}
+
+model Category {
+  id       String  @id @default(cuid())
+  userId   String?
+  name     String
+  color    String
+  icon     String
+  isSystem Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  user              User?             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions      Transaction[]
+  cardTransactions  CardTransaction[]
+  rules             Rule[]
+
+  @@unique([userId, name])
+  @@map("categories")
+}
+
+model Rule {
+  id         String   @id @default(cuid())
+  userId     String
+  name       String
+  priority   Int      @default(0)
+  isActive   Boolean  @default(true)
+  condition  Json
+  categoryId String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("rules")
+}

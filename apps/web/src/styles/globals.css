@@ -1,0 +1,217 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: 'Inter Variable', 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-surface: var(--surface);
+  --color-floating: var(--floating);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-soft: var(--success-soft);
+
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-soft: var(--warning-soft);
+
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-info-soft: var(--info-soft);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-sidebar-background: var(--sidebar-background);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-muted-foreground: var(--sidebar-muted-foreground);
+
+  --radius: var(--radius);
+}
+
+:root {
+  --background: hsl(195 33% 96%);
+  --foreground: hsl(215 34% 16%);
+
+  --card: hsl(0 0% 100% / 0.82);
+  --card-foreground: hsl(215 34% 16%);
+
+  --popover: hsl(0 0% 100% / 0.94);
+  --popover-foreground: hsl(215 34% 16%);
+
+  --surface: hsl(192 26% 98% / 0.86);
+  --floating: hsl(0 0% 100% / 0.76);
+
+  --primary: hsl(183 59% 35%);
+  --primary-foreground: hsl(0 0% 100%);
+
+  --secondary: hsl(198 29% 92%);
+  --secondary-foreground: hsl(214 28% 24%);
+
+  --muted: hsl(200 24% 91%);
+  --muted-foreground: hsl(215 15% 40%);
+
+  --accent: hsl(186 35% 89%);
+  --accent-foreground: hsl(184 62% 24%);
+
+  --destructive: hsl(0 72% 52%);
+  --destructive-foreground: hsl(0 0% 100%);
+
+  --success: hsl(160 72% 30%);
+  --success-foreground: hsl(0 0% 100%);
+  --success-soft: hsl(158 49% 91%);
+
+  --warning: hsl(31 88% 43%);
+  --warning-foreground: hsl(0 0% 100%);
+  --warning-soft: hsl(37 95% 90%);
+
+  --info: hsl(200 78% 42%);
+  --info-foreground: hsl(0 0% 100%);
+  --info-soft: hsl(199 88% 91%);
+
+  --border: hsl(201 22% 83% / 0.9);
+  --input: hsl(200 24% 88% / 0.9);
+  --ring: hsl(183 59% 35% / 0.35);
+
+  --sidebar-background: hsl(0 0% 100% / 0.8);
+  --sidebar-foreground: hsl(215 34% 18%);
+  --sidebar-border: hsl(201 22% 83% / 0.8);
+  --sidebar-accent: hsl(187 40% 89%);
+  --sidebar-accent-foreground: hsl(183 59% 30%);
+  --sidebar-muted-foreground: hsl(216 15% 45%);
+
+  --radius: 1.2rem;
+
+  --background-glow-1: rgba(45, 212, 191, 0.22);
+  --background-glow-2: rgba(148, 163, 184, 0.18);
+  --background-grid: rgba(15, 23, 42, 0.04);
+}
+
+.dark {
+  --background: hsl(215 39% 9%);
+  --foreground: hsl(197 24% 92%);
+
+  --card: hsl(216 31% 13% / 0.82);
+  --card-foreground: hsl(197 24% 92%);
+
+  --popover: hsl(216 31% 12% / 0.94);
+  --popover-foreground: hsl(197 24% 92%);
+
+  --surface: hsl(214 28% 12% / 0.85);
+  --floating: hsl(214 30% 15% / 0.8);
+
+  --primary: hsl(182 65% 60%);
+  --primary-foreground: hsl(215 50% 10%);
+
+  --secondary: hsl(214 20% 18%);
+  --secondary-foreground: hsl(200 22% 90%);
+
+  --muted: hsl(214 19% 18%);
+  --muted-foreground: hsl(214 14% 67%);
+
+  --accent: hsl(186 28% 21%);
+  --accent-foreground: hsl(184 72% 83%);
+
+  --destructive: hsl(0 73% 61%);
+  --destructive-foreground: hsl(0 0% 100%);
+
+  --success: hsl(158 74% 58%);
+  --success-foreground: hsl(164 100% 8%);
+  --success-soft: hsl(161 38% 18%);
+
+  --warning: hsl(34 94% 63%);
+  --warning-foreground: hsl(32 100% 10%);
+  --warning-soft: hsl(31 48% 20%);
+
+  --info: hsl(199 91% 66%);
+  --info-foreground: hsl(206 100% 10%);
+  --info-soft: hsl(201 48% 19%);
+
+  --border: hsl(214 18% 24% / 0.95);
+  --input: hsl(214 18% 20% / 0.9);
+  --ring: hsl(182 65% 60% / 0.35);
+
+  --sidebar-background: hsl(214 30% 14% / 0.84);
+  --sidebar-foreground: hsl(198 22% 91%);
+  --sidebar-border: hsl(214 18% 24% / 0.9);
+  --sidebar-accent: hsl(186 26% 20%);
+  --sidebar-accent-foreground: hsl(182 74% 75%);
+  --sidebar-muted-foreground: hsl(214 13% 65%);
+
+  --background-glow-1: rgba(45, 212, 191, 0.16);
+  --background-glow-2: rgba(15, 23, 42, 0.34);
+  --background-grid: rgba(148, 163, 184, 0.06);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html {
+    background-color: var(--background);
+  }
+
+  body {
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at top left, var(--background-glow-1), transparent 34%),
+      radial-gradient(circle at top right, var(--background-glow-2), transparent 30%),
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--background) 92%, white 8%),
+        var(--background)
+      );
+    color: var(--foreground);
+    font-feature-settings:
+      'rlig' 1,
+      'calt' 1;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--background-grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--background-grid) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(circle at center, black, transparent 85%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  ::selection {
+    background-color: color-mix(in srgb, var(--primary) 28%, transparent);
+    color: var(--foreground);
+  }
+}

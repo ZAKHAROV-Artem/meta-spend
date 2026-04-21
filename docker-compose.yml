@@ -1,0 +1,56 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cft_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: crypto_tracker
+      POSTGRES_USER: cft_user
+      POSTGRES_PASSWORD: cft_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cft_user -d crypto_tracker"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: cft_api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - apps/api/.env
+    environment:
+      DATABASE_URL: postgresql://cft_user:cft_password@postgres:5432/crypto_tracker
+    ports:
+      - "3001:3001"
+    profiles:
+      - full
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: cft_web
+    restart: unless-stopped
+    depends_on:
+      - api
+    env_file:
+      - apps/web/.env.local
+    environment:
+      NEXT_PUBLIC_API_URL: http://api:3001
+    ports:
+      - "3000:3000"
+    profiles:
+      - full
+
+volumes:
+  postgres_data:
