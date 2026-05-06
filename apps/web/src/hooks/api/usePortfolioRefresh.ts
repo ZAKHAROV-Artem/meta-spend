@@ -13,7 +13,7 @@ export function usePortfolioRefresh() {
           toast.info('Portfolio sync is already running');
           return;
         }
-        toast.success('Portfolio refreshed');
+        toast.success('Profile timestamp updated');
       },
       onError: (error) => {
         toast.error(error.message ?? 'Portfolio refresh failed');

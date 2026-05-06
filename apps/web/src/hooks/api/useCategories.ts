@@ -9,6 +9,10 @@ export function useCreateCategory() {
   return useApiMutation<Category, CreateCategoryDto>('POST', '/categories', ['/categories']);
 }
 
+export function useCreateDefaultCategories() {
+  return useApiMutation<Category[], void>('POST', '/categories/defaults', ['/categories']);
+}
+
 export function useDeleteCategory() {
   return useApiMutation<void, string>('DELETE', (id) => `/categories/${id}`, ['/categories']);
 }

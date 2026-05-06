@@ -21,13 +21,15 @@ export interface PortfolioSyncStatus {
   message: string | null;
 }
 
+/** Card-only product: holdings sync removed; SIWE/account may still store a primary address */
 export interface PortfolioOverview {
   address: string | null;
+  /** Always empty — on-chain holdings are not tracked */
+  holdings: PortfolioHolding[];
   totalBalanceUsd: string;
   totalTransactions: number;
   totalInflowsUsd: string;
   totalOutflowsUsd: string;
-  holdings: PortfolioHolding[];
   syncStatus: PortfolioSyncStatus;
 }
 

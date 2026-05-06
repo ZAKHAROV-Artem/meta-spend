@@ -13,7 +13,6 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtOrExtensionAuthGuard } from '../common/guards/jwt-or-extension-auth.guard';
 import { ListCardTransactionsDto } from './dto/list-card-transactions.dto';
 import { UpdateCardTransactionDto } from './dto/update-card-transaction.dto';
-import { CardStatsQueryDto } from './dto/card-stats-query.dto';
 import { CardTransactionsService } from './card-transactions.service';
 
 @UseGuards(JwtOrExtensionAuthGuard)
@@ -29,11 +28,6 @@ export class CardTransactionsController {
   @Get()
   list(@CurrentUser() user: AuthUser, @Query() dto: ListCardTransactionsDto) {
     return this.cardTransactionsService.list(user.id, dto);
-  }
-
-  @Get('stats')
-  stats(@CurrentUser() user: AuthUser, @Query() dto: CardStatsQueryDto) {
-    return this.cardTransactionsService.stats(user.id, dto);
   }
 
   @Patch(':id')

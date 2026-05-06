@@ -1,0 +1,309 @@
+{
+  "ok": true,
+  "sourceUrl": "https://card.metamask.io/card/transaction",
+  "capturedAt": "2026-05-05T08:06:19.677Z",
+  "savedAt": "2026-05-05T08:06:19.700Z",
+  "transactionCount": 20,
+  "transactions": [
+    {
+      "title": "JMP S.A. BIEDRONKA 139",
+      "amount": "-30.16 PLN",
+      "type": "OutOfWalletPOS",
+      "status": "Complete",
+      "date": "04/05/2026 09:51 pm",
+      "time": "09:51 pm",
+      "transactionId": "e789fce5-96d2-4bf6-8841-7de4876d3eb2",
+      "cardPan": "************ 9292",
+      "funding": {
+        "source": "0x4e******4d6f",
+        "spent": "-8.425460 mUSD",
+        "gasFee": "0.003744 mUSD"
+      }
+    },
+    {
+      "title": "WF 104 KRA ALP VEND",
+      "amount": "-6.00 PLN",
+      "type": "OutOfWalletPOS",
+      "status": "Pending",
+      "date": "04/05/2026 07:17 pm",
+      "time": "07:17 pm",
+      "transactionId": "e77676eb-99ff-4a20-bdc7-92fc97470a4e",
+      "cardPan": "************ 9292",
+      "funding": {
+        "source": "0x4e******4d6f",
+        "spent": "-1.668446 mUSD",
+        "gasFee": "0.003756 mUSD"
+      }
+    },
+    {
+      "title": "KRAKOWSKIE POGOTOWIE",
+      "amount": "-8.00 PLN",
+      "type": "OutOfWalletPOS",
+      "status": "Complete",
+      "date": "04/05/2026 11:15 am",
+      "time": "11:15 am",
+      "transactionId": "bad1b649-30be-4b04-94e8-338ba29d0ec3",
+      "cardPan": "************ 9292",
+      "funding": {
+        "source": "0x4e******4d6f",
+        "spent": "-2.240778 mUSD",
+        "gasFee": "0.003755 mUSD"
+      }
+    },
+    {
+      "title": "KOLEJOWY KLUB WODNY 19",
+      "amount": "-50.00 PLN",
+      "type": "OutOfWalletPOS",
+      "status": "Complete",
+      "date": "03/05/2026 04:41 pm",
+      "time": "04:41 pm",
+      "transactionId": "ed234f12-fd6b-4737-8899-ad5f59b3eb50",
+      "cardPan": "************ 9292",
+      "funding": {
+        "source": "0x4e******4d6f",
+        "spent": "-13.946675 mUSD",
+        "gasFee": "0.003698 mUSD"
+      }
+    },
+    {
+      "title": "Kiwi.com",
+      "amount": "-728.36 PLN",
+      "type": "OutOfWalletOnline",
+      "status": "Complete",
+      "date": "03/05/2026 01:23 pm",
+      "time": "01:23 pm",
+      "transactionId": "885afee7-558b-4dff-8cbe-4d975bfdac35",
+      "cardPan": "************ 9292",
+      "funding": {
+        "source": "0x4e******4d6f",
+        "spent": "-203.128852 mUSD",
+        "gasFee": "0.003679 mUSD"
+      }
+    },
+    {
+      "title": "BP-ADAS 394 TAAS",
+      "amount": "-43.99 PLN",
+      "type": "OutOfWalletPOS",
+      "status": "Complete",
+      "date": "01/05/2026 11:27 pm",
+      "time": "11:27 pm",
+      "transactionId": "73abdaca-bdf7-41ed-b908-b209552a20e3",
+      "cardPan": "************ 9292",
+      "funding": {
+        "source": "0x4e******4d6f",
+        "spent": "-12.267310 mUSD",
+        "gasFee": "0.003640 mUSD"
+      }
+    },
+    {
+      "title": "PARKING ENERGYLANDIA",
+      "amount": "-30.00 PLN",
+      "type": "OutOfWalletPOS",
+      "status": "Complete",
+      "date": "01/05/2026 05:56 pm",
+      "time": "05:56 pm",
+      "transactionId": "d0902581-8898-491d-b87a-c66a75a583ab",
+      "cardPan": "************ 9292",
+      "funding": {
+        "source": "0x4e******4d6f",
+        "spent": "-8.388546 mUSD",
+        "gasFee": "0.003666 mUSD"
+      }
+    },
+    {
+      "title": "MG Goczal Sp. Z o.o.",
+      "amount": "-10.00 PLN",
+      "type": "OutOfWalletPOS",
+      "status": "Complete",
+      "date": "01/05/2026 05:40 pm",
+      "time": "05:40 pm",
+      "transactionId": "2b3bccd6-6c37-4b3a-a06c-f87d6f9eb497",
+      "cardPan": "************ 9292",
+      "funding": {
+        "source": "0x4e******4d6f",
+        "spent": "-2.795560 mUSD",
+        "gasFee": "0.003680 mUSD"
+      }
+    },
+    {
+      "title": "ENERGYLANDIA GOCZAL 31",
+      "amount": "-18.00 PLN",
+      "type": "OutOfWalletPOS",
+      "status": "Complete",
+      "date": "01/05/2026 05:22 pm",
+      "time": "05:22 pm",
+      "transactionId": "35058679-15f3-4c81-b42a-b183509cff5a",
+      "cardPan": "************ 9292",
+      "funding": {
+        "source": "0x4e******4d6f",
+        "spent": "-5.030207 mUSD",
+        "gasFee": "0.003671 mUSD"
+      }
+    },
+    {
+      "title": "HALL OF COLUMNS 2",
+      "amount": "-71.00 PLN",
+      "type": "OutOfWalletPOS",
+      "status": "Complete",
+      "date": "01/05/2026 02:56 pm",
+      "time": "02:56 pm",
+      "transactionId": "7a64fef6-cd11-4d98-afd6-fc73a34d3b99",
+      "cardPan": "************ 9292",
+      "funding": {
+        "source": "0x4e******4d6f",
+        "spent": "-19.834547 mUSD",
+        "gasFee": "0.003660 mUSD"
+      }
+    },
+    {
+      "title": "MG Goczal Sp. Z o.o.",
+      "amount": "-17.00 PLN",
+      "type": "OutOfWalletPOS",
+      "status": "Complete",
+      "date": "01/05/2026 11:08 am",
+      "time": "11:08 am",
+      "transactionId": "805b6231-08e3-4143-b4b2-3e244b23e11a",
+      "cardPan": "************ 9292",
+      "funding": {
+        "source": "0x4e******4d6f",
+        "spent": "-4.745263 mUSD",
+        "gasFee": "0.003632 mUSD"
+      }
+    },
+    {
+      "title": "WF 104 KR AL.POK ONL",
+      "amount": "-169.00 PLN",
+      "type": "OutOfWalletOnline",
+      "status": "Complete",
+      "date": "01/05/2026 07:44 am",
+      "time": "07:44 am",
+      "transactionId": "64c8fbb0-8efb-47ae-922b-8d883db2646a",
+      "cardPan": "************ 9292",
+      "funding": {
+        "source": "0x4e******4d6f",
+        "spent": "-47.073817 mUSD",
+        "gasFee": "0.003631 mUSD"
+      }
+    },
+    {
+      "title": "P24*ENERGYLANDIA GOCZA",
+      "amount": "-627.00 PLN",
+      "type": "OutOfWalletOnline",
+      "status": "Complete",
+      "date": "30/04/2026 01:55 pm",
+      "time": "01:55 pm",
+      "transactionId": "f8be946c-5a7d-4fe4-be8d-a1cbab5c3908",
+      "cardPan": "************ 9292",
+      "funding": {
+        "source": "0x4e******4d6f",
+        "spent": "-174.612394 mUSD",
+        "gasFee": "0.003589 mUSD"
+      }
+    },
+    {
+      "title": "DECATHLON KRAKOW ZAK 0",
+      "amount": "-129.99 PLN",
+      "type": "OutOfWalletPOS",
+      "status": "Complete",
+      "date": "30/04/2026 01:32 pm",
+      "time": "01:32 pm",
+      "transactionId": "5721558b-6052-4d87-889d-ec8e13eefd3d",
+      "cardPan": "************ 9292",
+      "funding": {
+        "source": "0x4e******4d6f",
+        "spent": "-36.219463 mUSD",
+        "gasFee": "0.003601 mUSD"
+      }
+    },
+    {
+      "title": "KAUFLAND 04",
+      "amount": "-17.36 PLN",
+      "type": "OutOfWalletPOS",
+      "status": "Complete",
+      "date": "29/04/2026 10:15 pm",
+      "time": "10:15 pm",
+      "transactionId": "c1fa60a6-4a71-40c1-a718-ec25533f464b",
+      "cardPan": "************ 9292",
+      "funding": {
+        "source": "0x4e******4d6f",
+        "spent": "-4.824810 mUSD",
+        "gasFee": "0.003547 mUSD"
+      }
+    },
+    {
+      "title": "SMART GYM ONLINE",
+      "amount": "-7.00 PLN",
+      "type": "OutOfWalletPOS",
+      "status": "Complete",
+      "date": "29/04/2026 09:17 pm",
+      "time": "09:17 pm",
+      "transactionId": "86f5179a-aa08-4f80-bd7d-acacbe287e9f",
+      "cardPan": "************ 9292",
+      "funding": {
+        "source": "0x4e******4d6f",
+        "spent": "-1.949710 mUSD",
+        "gasFee": "0.003551 mUSD"
+      }
+    },
+    {
+      "title": "SMART GYM ONLINE",
+      "amount": "-6.00 PLN",
+      "type": "OutOfWalletPOS",
+      "status": "Complete",
+      "date": "29/04/2026 09:17 pm",
+      "time": "09:17 pm",
+      "transactionId": "e85e3180-77bb-4623-84b2-cbc79db3a814",
+      "cardPan": "************ 9292",
+      "funding": {
+        "source": "0x4e******4d6f",
+        "spent": "-1.666745 mUSD",
+        "gasFee": "0.003550 mUSD"
+      }
+    },
+    {
+      "title": "MARKET OBI 003",
+      "amount": "-36.17 PLN",
+      "type": "OutOfWalletPOS",
+      "status": "Complete",
+      "date": "29/04/2026 08:41 pm",
+      "time": "08:41 pm",
+      "transactionId": "f4215d85-1170-40a8-af1c-24e534b72ea4",
+      "cardPan": "************ 9292",
+      "funding": {
+        "source": "0x4e******4d6f",
+        "spent": "-10.070782 mUSD",
+        "gasFee": "0.003545 mUSD"
+      }
+    },
+    {
+      "title": "BP-SEZAM 146 TAAS",
+      "amount": "-342.37 PLN",
+      "type": "OutOfWalletPOS",
+      "status": "Complete",
+      "date": "29/04/2026 07:11 pm",
+      "time": "07:11 pm",
+      "transactionId": "cde3617b-63ac-490a-913d-3c511c8eb2aa",
+      "cardPan": "************ 9292",
+      "funding": {
+        "source": "0x4e******4d6f",
+        "spent": "-95.314546 mUSD",
+        "gasFee": "0.003608 mUSD"
+      }
+    },
+    {
+      "title": "Sklep Lidl 1710",
+      "amount": "-14.02 PLN",
+      "type": "OutOfWalletPOS",
+      "status": "Complete",
+      "date": "29/04/2026 05:26 pm",
+      "time": "05:26 pm",
+      "transactionId": "800b74ed-c401-491a-a572-a72f3cde8cff",
+      "cardPan": "************ 9292",
+      "funding": {
+        "source": "0x4e******4d6f",
+        "spent": "-3.652461 mUSD",
+        "gasFee": "0.003639 mUSD"
+      }
+    }
+  ]
+}

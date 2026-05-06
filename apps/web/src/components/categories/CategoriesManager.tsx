@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useCategories, useCreateCategory, useDeleteCategory } from '@/hooks/api/useCategories';
+import { useCategories, useCreateCategory, useCreateDefaultCategories, useDeleteCategory } from '@/hooks/api/useCategories';
 import { CreateCategorySchema, type CreateCategoryDto } from '@crypto-tracker/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,13 +11,14 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Lock } from 'lucide-react';
+import { Plus, Trash2, Wand2 } from 'lucide-react';
 
 const PRESET_COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899', '#6b7280'];
 
 export function CategoriesManager() {
   const { data: categories = [], isLoading } = useCategories();
   const createCategory = useCreateCategory();
+  const createDefaultCategories = useCreateDefaultCategories();
   const deleteCategory = useDeleteCategory();
   const [open, setOpen] = useState(false);
 
@@ -41,14 +42,11 @@ export function CategoriesManager() {
     setOpen(false);
   };
 
-  const systemCategories = categories.filter((c) => c.isSystem);
-  const userCategories = categories.filter((c) => !c.isSystem);
-
   if (isLoading) {
     return (
       <div className="grid gap-4 sm:grid-cols-2">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-44 rounded-[1.8rem] animate-pulse bg-muted/35" />
+          <div key={i} className="h-44 rounded-lg animate-pulse bg-muted/35" />
         ))}
       </div>
     );
@@ -57,38 +55,26 @@ export function CategoriesManager() {
   return (
     <div className="space-y-6">
       <Card className="bg-card/72">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-lg font-semibold">System categories</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Built-in categories are always available and keep the reporting baseline consistent.
-          </p>
-        </CardHeader>
-        <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {systemCategories.map((cat) => (
-            <div
-              key={cat.id}
-              className="flex items-center gap-3 rounded-[1.5rem] border border-border/70 bg-background/55 px-4 py-4 backdrop-blur-xl"
-            >
-              <div className="h-9 w-9 rounded-full shrink-0 ring-4 ring-background/70" style={{ backgroundColor: cat.color }} />
-              <div className="flex-1 min-w-0">
-                <p className="truncate text-sm font-medium">{cat.name}</p>
-              </div>
-              <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      <Card className="bg-card/72">
         <CardHeader className="flex flex-col gap-4 pb-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <CardTitle className="text-lg font-semibold">My categories</CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">
-              Create your own labels for recurring spending patterns and custom reports.
+              Create labels for card spend (new transactions auto-categorize in the background when possible).
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            {userCategories.length > 0 && <Badge variant="secondary">{userCategories.length} custom</Badge>}
+          <div className="flex flex-wrap items-center gap-2">
+            {categories.length > 0 && <Badge variant="secondary">{categories.length} total</Badge>}
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="gap-1.5"
+              disabled={createDefaultCategories.isPending}
+              onClick={() => createDefaultCategories.mutate()}
+            >
+              <Wand2 className="h-4 w-4" />
+              {createDefaultCategories.isPending ? 'Adding...' : 'Add defaults'}
+            </Button>
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
                 <Button size="sm" className="gap-1.5">
@@ -143,20 +129,20 @@ export function CategoriesManager() {
           </div>
         </CardHeader>
         <CardContent>
-          {userCategories.length === 0 ? (
-            <Card className="border-dashed bg-background/45 shadow-none">
+          {categories.length === 0 ? (
+            <Card className="border-dashed bg-background/45">
               <CardContent className="py-12 text-center">
                 <p className="text-sm text-muted-foreground">
-                  No custom categories yet. Create one to organize your transactions.
+                  No categories yet. Add defaults or create your own to organize card spend.
                 </p>
               </CardContent>
             </Card>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {userCategories.map((cat) => (
+              {categories.map((cat) => (
                 <div
                   key={cat.id}
-                  className="flex items-center gap-3 rounded-[1.5rem] border border-border/70 bg-background/55 px-4 py-4 backdrop-blur-xl"
+                  className="flex items-center gap-3 rounded-lg border border-border/70 bg-background/55 px-4 py-4"
                 >
                   <div className="h-9 w-9 rounded-full shrink-0 ring-4 ring-background/70" style={{ backgroundColor: cat.color }} />
                   <div className="flex-1 min-w-0">

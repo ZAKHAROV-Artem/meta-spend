@@ -1,5 +1,5 @@
 import { useApiQuery } from './useApi';
-import type { CardTxStatus, PaginatedCardTransactions } from '@crypto-tracker/shared';
+import type { CardTxStatus, PaginatedTransactions } from '@crypto-tracker/shared';
 
 export interface CardTransactionFilters {
   categoryId?: string;
@@ -18,7 +18,8 @@ export function useCardTransactions(filters?: CardTransactionFilters, page = 1, 
   if (filters?.from) params.set('from', filters.from);
   if (filters?.to) params.set('to', filters.to);
   if (filters?.search) params.set('search', filters.search);
+  params.set('source', 'CARD');
   params.set('page', String(page));
   params.set('limit', String(limit));
-  return useApiQuery<PaginatedCardTransactions>(`/card-transactions?${params.toString()}`);
+  return useApiQuery<PaginatedTransactions>(`/transactions?${params.toString()}`);
 }

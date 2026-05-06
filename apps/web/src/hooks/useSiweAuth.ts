@@ -41,7 +41,7 @@ export function useSiweAuth() {
       if (result?.error) {
         setError('Sign-in failed. Please try again.');
       } else {
-        router.push('/dashboard');
+        router.push('/transactions');
         router.refresh();
       }
     } catch (err) {

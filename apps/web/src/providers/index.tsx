@@ -10,12 +10,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider>
       <SessionProvider>
-        <QueryProvider>
-          <WagmiProvider>
+        <WagmiProvider>
+          <QueryProvider>
             {children}
             <Toaster position="bottom-right" richColors />
-          </WagmiProvider>
-        </QueryProvider>
+          </QueryProvider>
+        </WagmiProvider>
       </SessionProvider>
     </ThemeProvider>
   );

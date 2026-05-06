@@ -12,8 +12,8 @@
     "default_title": "CryptoTrack Card"
   },
   "version": "0.1.0",
-  "name": "CryptoTrack — MetaMask Card sync",
-  "description": "Import MetaMask Card activity from MetaMask card pages into CryptoTrack.",
+  "name": "CryptoTrack - MetaMask Card sync",
+  "description": "Parse MetaMask Card transaction HTML for debugging.",
   "background": {
     "service_worker": "./static/background/index.ts"
   },
@@ -22,10 +22,21 @@
     "tabs",
     "scripting"
   ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://portfolio.metamask.io/*",
+        "https://card.metamask.io/*"
+      ],
+      "js": [
+        "../src/content.ts"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
   "host_permissions": [
     "https://portfolio.metamask.io/*",
     "https://card.metamask.io/*",
-    "http://localhost:3001/*",
-    "http://127.0.0.1:3001/*"
+    "http://localhost:4001/*"
   ]
 }

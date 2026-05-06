@@ -4,7 +4,6 @@ import configuration from './config/configuration';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
-import { WalletsModule } from './wallets/wallets.module';
 import { CategoriesModule } from './categories/categories.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { CardTransactionsModule } from './card-transactions/card-transactions.module';
@@ -17,7 +16,6 @@ import { AppController } from './app.controller';
     PrismaModule,
     AuthModule,
     UsersModule,
-    WalletsModule,
     CategoriesModule,
     TransactionsModule,
     CardTransactionsModule,

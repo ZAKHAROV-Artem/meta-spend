@@ -17,4 +17,8 @@ export default () => ({
     accessExpiresIn: process.env['JWT_ACCESS_EXPIRES_IN'] ?? '15m',
     refreshExpiresIn: process.env['JWT_REFRESH_EXPIRES_IN'] ?? '7d',
   },
+  openai: {
+    apiKey: process.env['OPENAI_API_KEY'] ?? '',
+    model: process.env['OPENAI_MODEL'] ?? 'gpt-4o-mini',
+  },
 });

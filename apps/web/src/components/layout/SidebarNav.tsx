@@ -4,28 +4,15 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import {
-  LayoutDashboard,
-  ArrowLeftRight,
-  BarChart2,
-  Tag,
-  Zap,
-  Settings,
-  CreditCard,
-} from 'lucide-react';
+import { BarChart3, CreditCard, Settings, Tag } from 'lucide-react';
 
 const NAV_ITEMS = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/holdings', label: 'Holdings', icon: ArrowLeftRight },
-  { href: '/card', label: 'Card', icon: CreditCard },
-  { href: '/analytics', label: 'Analytics', icon: BarChart2 },
+  { href: '/transactions', label: 'Transactions', icon: CreditCard },
+  { href: '/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/categories', label: 'Categories', icon: Tag },
-  { href: '/rules', label: 'Rules', icon: Zap },
 ];
 
-const BOTTOM_ITEMS = [
-  { href: '/settings', label: 'Settings', icon: Settings },
-];
+const BOTTOM_ITEMS = [{ href: '/settings', label: 'Settings', icon: Settings }];
 
 function NavItem({
   href,
@@ -51,14 +38,14 @@ function NavItem({
       className={cn(
         'group relative flex items-center gap-3 text-sm font-medium transition-all duration-150',
         mobile
-          ? 'rounded-[1.4rem] border border-transparent px-4 py-3'
-          : 'h-12 w-12 justify-center rounded-[1.2rem] border border-transparent',
+          ? 'rounded-lg border border-transparent px-4 py-3'
+          : 'h-11 w-11 justify-center rounded-lg border border-transparent',
         active
-          ? 'border-sidebar-border bg-sidebar-accent text-sidebar-accent-foreground shadow-[0_14px_34px_-20px_rgba(15,23,42,0.45)]'
-          : 'text-sidebar-muted-foreground hover:border-sidebar-border/70 hover:bg-sidebar-accent/72 hover:text-sidebar-foreground',
+          ? 'border-sidebar-border bg-sidebar-accent text-sidebar-accent-foreground'
+          : 'text-sidebar-muted-foreground hover:border-sidebar-border hover:bg-sidebar-accent/70 hover:text-sidebar-foreground',
       )}
     >
-      <Icon className={cn('shrink-0', active ? 'h-4 w-4 text-primary' : 'h-4 w-4')} />
+      <Icon className={cn('shrink-0', active ? 'text-primary h-4 w-4' : 'h-4 w-4')} />
       {(mobile || !collapsed) && <span className="truncate">{label}</span>}
     </Link>
   );
@@ -86,8 +73,8 @@ export function SidebarNav({
   const collapsed = !mobile;
 
   return (
-    <div className={cn('flex flex-1 flex-col justify-between', mobile ? 'py-4' : 'py-3')}>
-      <nav className={cn('space-y-2', mobile ? '' : 'px-1')}>
+    <div className={cn('flex flex-1 flex-col justify-between')}>
+      <nav className={cn('flex flex-col items-center justify-center space-y-2')}>
         {NAV_ITEMS.map((item) => (
           <NavItem
             key={item.href}
@@ -99,7 +86,9 @@ export function SidebarNav({
           />
         ))}
       </nav>
-      <nav className={cn('space-y-2', mobile ? '' : 'px-1')}>
+      <nav
+        className={cn('flex flex-col items-center justify-center space-y-2', mobile ? '' : 'px-0')}
+      >
         {BOTTOM_ITEMS.map((item) => (
           <NavItem
             key={item.href}

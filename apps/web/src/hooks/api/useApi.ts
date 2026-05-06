@@ -1,6 +1,6 @@
 'use client';
 
-import { signOut, useSession } from 'next-auth/react';
+import { getSession, signOut, useSession } from 'next-auth/react';
 import { useQuery, useMutation, useQueryClient, UseQueryOptions } from '@tanstack/react-query';
 
 const API_URL = `${process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3001'}/api/v1`;
@@ -8,6 +8,10 @@ let hasTriggeredUnauthorizedSignOut = false;
 
 export function useAccessToken() {
   const { data: session } = useSession();
+  return (session as Record<string, unknown> | null)?.['accessToken'] as string | undefined;
+}
+
+function extractAccessToken(session: unknown): string | undefined {
   return (session as Record<string, unknown> | null)?.['accessToken'] as string | undefined;
 }
 
@@ -27,6 +31,17 @@ async function handleUnauthorized() {
 
   hasTriggeredUnauthorizedSignOut = true;
   await signOut({ callbackUrl: '/login' });
+}
+
+async function getSettledAccessToken(currentToken: string | undefined): Promise<string> {
+  if (currentToken) return currentToken;
+
+  const session = await getSession();
+  const refreshedToken = extractAccessToken(session);
+  if (refreshedToken) return refreshedToken;
+
+  await handleUnauthorized();
+  throw new Error('Your session expired. Please sign in again.');
 }
 
 export function useApiQuery<T>(
@@ -69,15 +84,19 @@ export function useApiMutation<TData, TVariables>(
 
   return useMutation<TData, Error, TVariables>({
     mutationFn: async (variables) => {
-      if (!token) {
-        throw new Error('You are not signed in. Please refresh the page and sign in again.');
-      }
+      const accessToken = await getSettledAccessToken(token);
 
       const url = typeof path === 'function' ? path(variables) : path;
+      const hasJsonBody = method !== 'DELETE' && variables !== undefined;
+      const headers: HeadersInit = { Authorization: `Bearer ${accessToken}` };
+      if (hasJsonBody) {
+        headers['Content-Type'] = 'application/json';
+      }
+
       const res = await fetch(`${API_URL}${url}`, {
         method,
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: method !== 'DELETE' ? JSON.stringify(variables) : undefined,
+        headers,
+        body: hasJsonBody ? JSON.stringify(variables) : undefined,
       });
       if (!res.ok && res.status !== 204) {
         const message = await getErrorMessage(res);

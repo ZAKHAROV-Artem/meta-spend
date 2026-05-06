@@ -15,25 +15,25 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  wallets           Wallet[]
-  sessions          Session[]
-  categories        Category[]
-  rules             Rule[]
-  cardTransactions  CardTransaction[]
-  extensionTokens   ExtensionToken[]
-  portfolioAccount  PortfolioAccount?
+  sessions                Session[]
+  categories              Category[]
+  transactions            Transaction[]
+  extensionTokens         ExtensionToken[]
+  portfolioAccount        PortfolioAccount?
+  cardMerchantMemory      CardMerchantMemory[]
+  cardCategorizationRuns  CardCategorizationRun[]
 
   @@map("users")
 }
 
 model Session {
-  id                String   @id @default(cuid())
-  userId            String
-  refreshTokenHash  String   @unique
-  expiresAt         DateTime
-  createdAt         DateTime @default(now())
-  userAgent         String?
-  ipAddress         String?
+  id               String   @id @default(cuid())
+  userId           String
+  refreshTokenHash String   @unique
+  expiresAt        DateTime
+  createdAt        DateTime @default(now())
+  userAgent        String?
+  ipAddress        String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -41,36 +41,17 @@ model Session {
   @@map("sessions")
 }
 
-model Wallet {
-  id              String      @id @default(cuid())
-  userId          String
-  address         String
-  chainId         Int
-  label           String?
-  isVerified      Boolean     @default(false)
-  createdAt       DateTime    @default(now())
-  lastSyncedAt    DateTime?
-  lastSyncedBlock BigInt?
-  syncStatus      SyncStatus  @default(IDLE)
-
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  transactions Transaction[]
-
-  @@unique([userId, address, chainId])
-  @@index([userId])
-  @@map("wallets")
-}
-
+/// Optional primary address used for SIWE login / display (no holdings sync).
 model PortfolioAccount {
-  id                     String   @id @default(cuid())
-  userId                 String   @unique
+  id                     String    @id @default(cuid())
+  userId                 String    @unique
   address                String
   lastRefreshRequestedAt DateTime?
   lastSuccessfulSyncAt   DateTime?
-  lastSyncState          String?  @default("IDLE")
+  lastSyncState          String?   @default("IDLE")
   lastSyncError          String?
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -79,51 +60,39 @@ model PortfolioAccount {
 }
 
 model Transaction {
-  id           String   @id @default(cuid())
-  walletId     String
-  hash         String
-  chainId      Int
-  blockNumber  BigInt?
-  timestamp    DateTime
-  fromAddress  String
-  toAddress    String?
-  value        Decimal  @db.Decimal(36, 18)
-  valueUsd     Decimal? @db.Decimal(18, 2)
-  gasUsed      BigInt?
-  gasPriceGwei Decimal? @db.Decimal(18, 9)
-  gasCostUsd   Decimal? @db.Decimal(18, 2)
-  txType       TxType   @default(UNKNOWN)
-  categoryId   String?
-  notes        String?
-  rawData      Json?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id            String             @id @default(cuid())
+  userId        String
+  source        TransactionSource  @default(CARD)
+  externalId    String
+  timestamp     DateTime
+  merchantName  String?
+  merchantRaw   String?
+  fiatAmount    Decimal?           @db.Decimal(18, 2)
+  fiatCurrency  String?
+  cryptoAmount  Decimal?           @db.Decimal(36, 18)
+  cryptoSymbol  String?
+  status        CardTxStatus?
+  parserVersion Int?
+  rawHtml       String?
+  categoryId    String?
+  notes         String?
+  rawData       Json?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
 
-  wallet   Wallet    @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
-  @@unique([hash, chainId])
-  @@index([walletId])
+  @@unique([userId, source, externalId])
+  @@index([userId])
+  @@index([userId, source, timestamp])
   @@index([timestamp])
   @@index([categoryId])
   @@map("transactions")
 }
 
-enum TxType {
-  TRANSFER_IN
-  TRANSFER_OUT
-  TRANSFER_SELF
-  SWAP
-  BRIDGE
-  CONTRACT_INTERACTION
-  GAS_ONLY
-  UNKNOWN
-}
-
-enum SyncStatus {
-  IDLE
-  SYNCING
-  FAILED
+enum TransactionSource {
+  CARD
 }
 
 enum CardTxStatus {
@@ -131,34 +100,6 @@ enum CardTxStatus {
   SETTLED
   DECLINED
   REFUNDED
-}
-
-model CardTransaction {
-  id            String       @id @default(cuid())
-  userId        String
-  externalId    String
-  occurredAt    DateTime
-  merchantName  String
-  merchantRaw   String?
-  fiatAmount    Decimal      @db.Decimal(18, 2)
-  fiatCurrency  String
-  cryptoAmount  Decimal?     @db.Decimal(36, 18)
-  cryptoSymbol  String?
-  status        CardTxStatus @default(SETTLED)
-  categoryId    String?
-  notes         String?
-  parserVersion Int
-  rawHtml       String?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-
-  @@unique([userId, externalId])
-  @@index([userId, occurredAt])
-  @@index([categoryId])
-  @@map("card_transactions")
 }
 
 model ExtensionToken {
@@ -177,38 +118,67 @@ model ExtensionToken {
 }
 
 model Category {
-  id       String  @id @default(cuid())
+  id       String   @id @default(cuid())
   userId   String?
   name     String
   color    String
   icon     String
-  isSystem Boolean @default(false)
+  isSystem Boolean  @default(false)
 
   createdAt DateTime @default(now())
 
-  user              User?             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  transactions      Transaction[]
-  cardTransactions  CardTransaction[]
-  rules             Rule[]
+  user                 User?                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions         Transaction[]
+  cardMerchantMemories CardMerchantMemory[]
 
   @@unique([userId, name])
   @@map("categories")
 }
 
-model Rule {
-  id         String   @id @default(cuid())
-  userId     String
-  name       String
-  priority   Int      @default(0)
-  isActive   Boolean  @default(true)
-  condition  Json
-  categoryId String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+/// Learned mapping: normalized merchant key -> category (from AI confirmation or manual bulk assign).
+model CardMerchantMemory {
+  id            String   @id @default(cuid())
+  userId        String
+  merchantKey   String
+  categoryId    String
+  hitCount      Int      @default(1)
+  learnedSource String   @default("ai")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
+  @@unique([userId, merchantKey])
   @@index([userId])
-  @@map("rules")
+  @@map("card_merchant_memory")
+}
+
+enum CategorizationRunStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  PARTIAL
+}
+
+model CardCategorizationRun {
+  id                     String                   @id @default(cuid())
+  userId                 String
+  status                 CategorizationRunStatus    @default(QUEUED)
+  trigger                String
+  startedAt              DateTime?
+  finishedAt             DateTime?
+  scannedTxCount         Int                      @default(0)
+  scannedMerchantCount   Int                      @default(0)
+  memoryMatchedCount      Int                     @default(0)
+  aiUpdatedCount          Int                     @default(0)
+  skippedCount            Int                     @default(0)
+  errorMessage           String?
+  meta                   Json?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, startedAt(sort: Desc)])
+  @@map("card_categorization_runs")
 }

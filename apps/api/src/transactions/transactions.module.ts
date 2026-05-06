@@ -1,20 +1,12 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TransactionsController } from './transactions.controller';
 import { TransactionsService } from './transactions.service';
-import { EtherscanService } from './sync/etherscan.service';
-import { NormalizerService } from './sync/normalizer.service';
-import { PriceService } from './sync/price.service';
-import { SyncService } from './sync/sync.service';
+import { CardTransactionsModule } from '../card-transactions/card-transactions.module';
 
 @Module({
+  imports: [forwardRef(() => CardTransactionsModule)],
   controllers: [TransactionsController],
-  providers: [
-    EtherscanService,
-    NormalizerService,
-    PriceService,
-    SyncService,
-    TransactionsService,
-  ],
-  exports: [SyncService, TransactionsService, PriceService],
+  providers: [TransactionsService],
+  exports: [TransactionsService],
 })
 export class TransactionsModule {}

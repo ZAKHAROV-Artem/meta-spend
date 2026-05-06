@@ -3,29 +3,69 @@
 import { useMemo } from 'react';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { injected } from 'wagmi/connectors';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, Link2, Puzzle, RefreshCw, ShieldAlert, User, Wallet } from 'lucide-react';
+import { Link2, RefreshCw, Sparkles, Wallet } from 'lucide-react';
 import { ExtensionConnectCard } from '@/components/settings/ExtensionConnectCard';
 import { usePortfolioOverview } from '@/hooks/api/usePortfolioOverview';
+import { useCategorizationRuns } from '@/hooks/api/useCategorizationRuns';
 
-function formatRelativeTime(value: string | null) {
-  if (!value) return 'Not synced yet';
-
-  const date = new Date(value);
-  const deltaMs = Date.now() - date.getTime();
-  const minutes = Math.max(1, Math.round(deltaMs / 60_000));
-
-  if (minutes < 60) return `Updated ${minutes} min ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `Updated ${hours}h ago`;
-  return `Updated ${Math.round(hours / 24)}d ago`;
+function shortAddress(value: string | null | undefined) {
+  return value ? `${value.slice(0, 10)}...${value.slice(-6)}` : 'Not connected';
 }
 
-function syncTone(state: string): 'secondary' | 'destructive' {
-  if (state === 'PARTIAL' || state === 'ERROR') return 'destructive';
-  return 'secondary';
+function formatSyncTime(value: string | null | undefined) {
+  if (!value) return '—';
+  return new Date(value).toLocaleString();
+}
+
+function AutoCategorizationLog() {
+  const { data: runs = [], isLoading } = useCategorizationRuns();
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Sparkles className="h-4 w-4 text-primary" />
+          Auto categorization
+        </CardTitle>
+        <p className="mt-1 text-xs text-muted-foreground">
+          After each browser extension sync we match learned merchants then call AI once for unfamiliar titles. Runs in
+          the background — nothing to configure here.
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {isLoading ? (
+          <div className="h-24 animate-pulse rounded-lg bg-muted/40" />
+        ) : runs.length === 0 ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            No runs yet — sync transactions from the extension to trigger categorization.
+          </p>
+        ) : (
+          <div className="max-h-[360px] space-y-2 overflow-auto rounded-lg border border-border/70 bg-muted/28 p-2">
+            {runs.map((r) => (
+              <div key={r.id} className="rounded-md border border-border/60 bg-background/80 px-3 py-2 text-sm">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <Badge variant="outline">{r.status}</Badge>
+                  <span className="text-xs text-muted-foreground">{r.trigger}</span>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground tabular-nums">
+                  Started {r.startedAt ? new Date(r.startedAt).toLocaleString() : 'queued'} · finished{' '}
+                  {r.finishedAt ? new Date(r.finishedAt).toLocaleString() : '—'}
+                </p>
+                <p className="mt-2 text-[11px] text-muted-foreground">
+                  scanned {r.scannedTxCount} txs · merchants {r.scannedMerchantCount} · memory {r.memoryMatchedCount} · AI
+                  assigns {r.aiUpdatedCount} · skipped {r.skippedCount}
+                </p>
+                {r.errorMessage ? <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">{r.errorMessage}</p> : null}
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
 export function SettingsPanel({ email }: { email: string }) {
@@ -35,141 +75,82 @@ export function SettingsPanel({ email }: { email: string }) {
   const { disconnect } = useDisconnect();
 
   const isSiweUser = email.endsWith('@wallet.siwe');
-  const displayEmail = isSiweUser ? 'Wallet-only account' : email;
-  const connectedAddress = address?.toLowerCase() ?? null;
   const primaryAddress = overview?.address?.toLowerCase() ?? null;
+  const connectedAddress = address?.toLowerCase() ?? null;
+  const walletMatchesPortfolio = !!connectedAddress && connectedAddress === primaryAddress;
 
-  const metaMaskState = useMemo(() => {
-    if (isLoading) return 'Loading portfolio state...';
-    if (!primaryAddress) return 'No MetaMask account linked yet.';
-    if (connectedAddress && connectedAddress === primaryAddress) {
-      return 'Connected wallet matches the active portfolio.';
-    }
-    if (connectedAddress && connectedAddress !== primaryAddress) {
-      return 'The connected wallet will become the active portfolio automatically.';
-    }
-    return 'Reconnect MetaMask to switch or refresh the active portfolio.';
-  }, [connectedAddress, isLoading, primaryAddress]);
+  const portfolioStatus = useMemo(() => {
+    if (isLoading) return 'Checking...';
+    if (!primaryAddress) return 'No primary signing address linked';
+    if (walletMatchesPortfolio) return 'Connected';
+    return 'Linked';
+  }, [isLoading, primaryAddress, walletMatchesPortfolio]);
 
   return (
-    <div className="space-y-5">
-      <Card className="bg-card/72">
+    <div className="mx-auto max-w-3xl space-y-4">
+      <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-            <User className="h-4 w-4 text-primary" />
-            Profile
-          </CardTitle>
+          <CardTitle className="text-base">Account</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex items-center justify-between rounded-[1.5rem] border border-border/70 bg-background/55 px-4 py-4 backdrop-blur-xl">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Email</p>
-              <p className="mt-1 text-sm font-medium">{displayEmail}</p>
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background px-4 py-3">
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground">Signed in as</p>
+              <p className="truncate text-sm font-medium">{isSiweUser ? 'Wallet account' : email}</p>
             </div>
-            {isSiweUser && <Badge variant="secondary">MetaMask account</Badge>}
-          </div>
-          <div className="flex items-center justify-between rounded-[1.5rem] border border-border/70 bg-background/55 px-4 py-4 backdrop-blur-xl">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Authentication</p>
-              <p className="mt-1 text-sm font-medium">
-                {isSiweUser ? 'Sign-In with Ethereum (SIWE)' : 'Email & password'}
-              </p>
-            </div>
-            <CheckCircle2 className="h-4 w-4 text-primary" />
+            {isSiweUser ? <Badge variant="secondary">SIWE</Badge> : null}
           </div>
         </CardContent>
       </Card>
 
-      <Card className="bg-card/72">
+      <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+          <CardTitle className="flex items-center gap-2 text-base">
             <Wallet className="h-4 w-4 text-primary" />
-            MetaMask portfolio
+            Wallet
           </CardTitle>
-          <CardDescription className="text-xs">
-            One connected MetaMask account powers your full portfolio view across supported chains.
-          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="rounded-[1.5rem] border border-border/70 bg-background/55 px-4 py-4 backdrop-blur-xl">
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Active portfolio</p>
-            <p className="mt-2 font-mono text-sm font-semibold text-foreground">
-              {primaryAddress ? `${primaryAddress.slice(0, 10)}…${primaryAddress.slice(-6)}` : 'Not linked yet'}
-            </p>
-            <p className="mt-2 text-xs text-muted-foreground">{metaMaskState}</p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3 rounded-[1.5rem] border border-border/70 bg-background/55 px-4 py-4 backdrop-blur-xl">
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Connected wallet</p>
-              <p className="mt-1 font-mono text-sm font-medium text-foreground">
-                {isConnected && address ? `${address.slice(0, 10)}…${address.slice(-6)}` : 'No wallet connected'}
-              </p>
+        <CardContent className="space-y-3">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-lg border border-border bg-background px-4 py-3">
+              <p className="text-xs text-muted-foreground">Primary address (SIWE)</p>
+              <p className="mt-1 font-mono text-sm font-medium">{shortAddress(primaryAddress)}</p>
             </div>
-            {isConnected ? (
-              <Button type="button" variant="outline" onClick={() => disconnect()}>
-                Disconnect
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                className="gap-2"
-                disabled={isConnecting}
-                onClick={() => connect({ connector: injected() })}
-              >
-                <Link2 className="h-4 w-4" />
-                {isConnecting ? 'Connecting…' : 'Connect MetaMask'}
-              </Button>
-            )}
+            <div className="rounded-lg border border-border bg-background px-4 py-3">
+              <p className="text-xs text-muted-foreground">Browser wallet</p>
+              <p className="mt-1 font-mono text-sm font-medium">{shortAddress(connectedAddress)}</p>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.5rem] border border-border/70 bg-background/55 px-4 py-4 backdrop-blur-xl">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-background px-4 py-3">
             <div>
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Auto-sync</p>
-              <p className="mt-1 text-sm font-medium text-foreground">
-                {overview ? formatRelativeTime(overview.syncStatus.lastSyncedAt) : 'Checking sync state...'}
-              </p>
+              <p className="text-sm font-medium">{portfolioStatus}</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                {overview?.syncStatus.message ?? 'Portfolio sync runs automatically when pages need fresh data.'}
+                Last refresh: {formatSyncTime(overview?.syncStatus.lastSyncedAt)}
               </p>
             </div>
-            <Badge variant={syncTone(overview?.syncStatus.state ?? 'IDLE')} className="gap-1.5">
+            <Badge variant={overview?.syncStatus.state === 'ERROR' ? 'destructive' : 'secondary'} className="gap-1.5">
               <RefreshCw className={`h-3 w-3 ${overview?.syncStatus.state === 'SYNCING' ? 'animate-spin' : ''}`} />
               {overview?.syncStatus.state ?? 'IDLE'}
             </Badge>
           </div>
 
-          {overview?.syncStatus.failedChains?.length ? (
-            <div className="flex items-start gap-3 rounded-[1.5rem] border border-destructive/20 bg-destructive/5 px-4 py-4 text-sm">
-              <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-              <p className="text-destructive">
-                Some chains failed during the last sync. The app is still showing the most recent successful data.
-              </p>
-            </div>
-          ) : null}
+          {isConnected ? (
+            <Button type="button" variant="outline" onClick={() => disconnect()}>
+              Disconnect MetaMask
+            </Button>
+          ) : (
+            <Button type="button" className="gap-2" disabled={isConnecting} onClick={() => connect({ connector: injected() })}>
+              <Link2 className="h-4 w-4" />
+              {isConnecting ? 'Connecting...' : 'Connect MetaMask'}
+            </Button>
+          )}
         </CardContent>
       </Card>
+
+      <AutoCategorizationLog />
 
       <ExtensionConnectCard />
-
-      <Card className="bg-card/72">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-            <Puzzle className="h-4 w-4 text-primary" />
-            How sync works
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm leading-6 text-muted-foreground">
-          <p>
-            Holdings sync automatically from the active MetaMask account across supported chains. There is no manual
-            chain selection or per-wallet sync flow anymore.
-          </p>
-          <p>
-            Card activity remains separate in the UI, but it belongs to the same portfolio and uses the same account
-            context once the browser extension is paired.
-          </p>
-        </CardContent>
-      </Card>
     </div>
   );
 }

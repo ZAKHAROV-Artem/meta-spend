@@ -19,7 +19,7 @@ export function useUpdateCardTransaction() {
   return useMutation({
     mutationFn: async (vars: { id: string; body: UpdateCardTransactionInput }) => {
       if (!token) throw new Error('Not signed in');
-      const res = await fetch(`${API_URL}/card-transactions/${vars.id}`, {
+      const res = await fetch(`${API_URL}/transactions/${vars.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -33,7 +33,7 @@ export function useUpdateCardTransaction() {
       return res.json() as Promise<unknown>;
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['/card-transactions'] });
+      void queryClient.invalidateQueries({ queryKey: ['/transactions'] });
     },
   });
 }

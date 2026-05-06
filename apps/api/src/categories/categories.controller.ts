@@ -20,6 +20,11 @@ export class CategoriesController {
     return this.categoriesService.create(user.id, dto);
   }
 
+  @Post('defaults')
+  createDefaults(@CurrentUser() user: AuthUser) {
+    return this.categoriesService.createDefaults(user.id);
+  }
+
   @Patch(':id')
   update(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: Partial<CreateCategoryDto>) {
     return this.categoriesService.update(user.id, id, dto);

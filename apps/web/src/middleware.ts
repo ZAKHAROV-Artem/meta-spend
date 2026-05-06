@@ -6,11 +6,11 @@ export default auth((req) => {
   const { pathname } = req.nextUrl;
 
   const isAppRoute =
-    pathname.startsWith('/dashboard') ||
-    pathname.startsWith('/transactions') ||
+    pathname.startsWith('/holdings') ||
+    pathname.startsWith('/card') ||
     pathname.startsWith('/analytics') ||
+    pathname.startsWith('/transactions') ||
     pathname.startsWith('/categories') ||
-    pathname.startsWith('/rules') ||
     pathname.startsWith('/settings');
 
   const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/register');
@@ -20,7 +20,7 @@ export default auth((req) => {
   }
 
   if (isAuthRoute && isLoggedIn) {
-    return NextResponse.redirect(new URL('/dashboard', req.url));
+    return NextResponse.redirect(new URL('/transactions', req.url));
   }
 });
 

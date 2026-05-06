@@ -15,6 +15,7 @@
     "build": "tsup src/index.ts --format cjs --dts --clean",
     "dev": "tsup src/index.ts --format cjs --dts --watch",
     "db:generate": "prisma generate",
+    "db:reset": "dotenv -e ../../apps/api/.env -- prisma migrate reset",
     "db:migrate": "dotenv -e ../../apps/api/.env -- prisma migrate dev",
     "db:migrate:deploy": "dotenv -e ../../apps/api/.env -- prisma migrate deploy",
     "db:seed": "dotenv -e ../../apps/api/.env -- ts-node --project tsconfig.json prisma/seed.ts",

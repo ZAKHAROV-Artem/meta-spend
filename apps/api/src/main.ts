@@ -63,6 +63,7 @@ async function bootstrap() {
     // Dev: allow web app, browser extension (chrome-extension://), and curl; prod: explicit allowlist.
     origin: nodeEnv === 'development' ? true : allowedOrigins,
     credentials: true,
+    methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   });
 
   await app.listen(port, '0.0.0.0');

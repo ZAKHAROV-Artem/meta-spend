@@ -35,7 +35,7 @@ export function LoginForm() {
       if (result?.error) {
         setError('root', { message: 'Invalid email or password' });
       } else {
-        router.push('/dashboard');
+        router.push('/transactions');
         router.refresh();
       }
     } finally {

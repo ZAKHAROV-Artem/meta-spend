@@ -1,31 +1,8 @@
 import { Type } from 'class-transformer';
-import { CardTxStatus, TxType } from '@crypto-tracker/db';
-import {
-  IsDateString,
-  IsEnum,
-  IsIn,
-  IsInt,
-  IsOptional,
-  IsString,
-  Max,
-  Min,
-} from 'class-validator';
+import { CardTxStatus } from '@crypto-tracker/db';
+import { IsDateString, IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class ListTransactionsDto {
-  @IsOptional()
-  @IsIn(['HOLDINGS', 'CARD'])
-  source?: 'HOLDINGS' | 'CARD';
-
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  chainId?: number;
-
-  @IsOptional()
-  @IsEnum(TxType)
-  txType?: TxType;
-
   @IsOptional()
   @IsEnum(CardTxStatus)
   status?: CardTxStatus;

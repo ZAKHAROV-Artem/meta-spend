@@ -38,7 +38,7 @@ export function RegisterForm() {
       if (result?.error) {
         setError('root', { message: 'Registration succeeded but login failed. Please sign in.' });
       } else {
-        router.push('/dashboard');
+        router.push('/transactions');
         router.refresh();
       }
     } catch (err) {

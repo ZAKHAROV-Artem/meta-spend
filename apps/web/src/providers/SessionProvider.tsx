@@ -3,6 +3,9 @@
 import { useEffect } from 'react';
 import { SessionProvider as NextAuthSessionProvider } from 'next-auth/react';
 import { signOut, useSession } from 'next-auth/react';
+import { toast } from 'sonner';
+
+let hasShownSessionExpiredToast = false;
 
 function SessionHealth() {
   const { data: session, status } = useSession();
@@ -10,6 +13,10 @@ function SessionHealth() {
 
   useEffect(() => {
     if (status === 'authenticated' && sessionError === 'RefreshAccessTokenError') {
+      if (!hasShownSessionExpiredToast) {
+        hasShownSessionExpiredToast = true;
+        toast.error('Your session expired. Please sign in again.');
+      }
       void signOut({ callbackUrl: '/login' });
     }
   }, [sessionError, status]);

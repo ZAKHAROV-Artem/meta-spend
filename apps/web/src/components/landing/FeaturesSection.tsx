@@ -3,8 +3,7 @@ import {
   List,
   Tag,
   DollarSign,
-  BarChart2,
-  Zap,
+  CreditCard,
 } from 'lucide-react';
 
 const FEATURES = [
@@ -33,16 +32,10 @@ const FEATURES = [
       'See every transaction in USD or your local currency using historical prices at the time of the transaction.',
   },
   {
-    icon: BarChart2,
-    title: 'Spending Analytics',
+    icon: CreditCard,
+    title: 'MetaMask Card',
     description:
-      'Monthly reports, category breakdowns, and spending trends — exactly like your bank app.',
-  },
-  {
-    icon: Zap,
-    title: 'Rules Engine',
-    description:
-      'Automate categorization with custom rules. "If address = X, category = Food." Applied to all future transactions.',
+      'Pair the browser extension to import card purchases and link them back to on-chain funding transactions.',
   },
 ];
 
@@ -66,7 +59,7 @@ export function FeaturesSection() {
             return (
               <div
                 key={feature.title}
-                className="rounded-xl border border-border/60 bg-card/80 p-6 backdrop-blur-sm transition-shadow hover:shadow-md"
+                className="rounded-lg border border-border bg-card p-6"
               >
                 <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50">
                   <Icon className="h-5 w-5 text-blue-600" />

@@ -20,7 +20,7 @@ export function ThemeSwitcher() {
   }, []);
 
   return (
-    <div className="flex items-center gap-1 rounded-full border border-border/70 bg-muted/55 p-1 shadow-sm backdrop-blur-xl">
+    <div className="flex items-center gap-1 rounded-full border border-border/70 bg-muted/55 p-1">
       {THEMES.map(({ value, label, icon: Icon }) => {
         const active = mounted && theme === value;
 
@@ -33,7 +33,7 @@ export function ThemeSwitcher() {
             onClick={() => setTheme(value)}
             className={cn(
               'flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-all hover:text-foreground',
-              active && 'bg-background text-foreground shadow-sm ring-1 ring-border/80',
+              active && 'bg-background text-foreground ring-1 ring-border/80',
             )}
           >
             <Icon className="h-4 w-4" />

@@ -1,1 +1,1 @@
-import "../../../src/background/index"
+import "../../../src/background"

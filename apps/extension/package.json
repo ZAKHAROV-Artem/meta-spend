@@ -3,36 +3,59 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Import MetaMask Card activity from MetaMask card pages into CryptoTrack.",
+  "description": "Parse MetaMask Card transaction HTML for debugging.",
   "manifest": {
-    "name": "CryptoTrack — MetaMask Card sync",
+
+    "name": "CryptoTrack - MetaMask Card sync",
+
     "action": {
+
       "default_popup": "popup.html",
+
       "default_title": "CryptoTrack Card"
+
+
+
     },
+
     "permissions": [
+
       "storage",
+
       "tabs",
+
       "scripting"
+
     ],
+
     "host_permissions": [
+
       "https://portfolio.metamask.io/*",
+
       "https://card.metamask.io/*",
-      "http://localhost:3001/*",
-      "http://127.0.0.1:3001/*"
+
+      "http://localhost:4001/*"
+
     ]
+
   },
+
   "scripts": {
+
+
+
     "dev": "plasmo dev --no-cs-reload",
+
     "build": "plasmo build",
+
     "package": "plasmo package",
+
     "typecheck": "tsc --noEmit"
+
   },
   "dependencies": {
-    "@crypto-tracker/shared": "workspace:*",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "zod": "^3.24.1"
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.287",

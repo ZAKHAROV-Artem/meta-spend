@@ -1,18 +1,8 @@
 import type { Metadata } from 'next';
-import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard';
-import { PageHeader } from '@/components/layout/PageHeader';
+import { AnalyticsOverview } from '@/components/analytics/AnalyticsOverview';
 
 export const metadata: Metadata = { title: 'Analytics — CryptoTrack' };
 
 export default function AnalyticsPage() {
-  return (
-    <div className="space-y-6">
-      <PageHeader
-        eyebrow="Insights"
-        title="Analytics"
-        description="See inflows, expenses, trends, and category mix across your MetaMask portfolio."
-      />
-      <AnalyticsDashboard />
-    </div>
-  );
+  return <AnalyticsOverview />;
 }

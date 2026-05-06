@@ -1,18 +1,7 @@
 import type { CardTxStatus } from './card-transaction';
 
-export type TxType =
-  | 'TRANSFER_IN'
-  | 'TRANSFER_OUT'
-  | 'TRANSFER_SELF'
-  | 'SWAP'
-  | 'BRIDGE'
-  | 'CONTRACT_INTERACTION'
-  | 'GAS_ONLY'
-  | 'UNKNOWN';
-
-export type TransactionSource = 'HOLDINGS' | 'CARD';
+export type TransactionSource = 'CARD';
 export type TransactionDirection = 'INFLOW' | 'OUTFLOW' | 'NEUTRAL';
-export type TransactionStatsSource = TransactionSource | 'ALL';
 
 export interface Transaction {
   id: string;
@@ -20,21 +9,25 @@ export interface Transaction {
   occurredAt: string;
   title: string;
   subtitle: string | null;
-  amountUsd: string | null;
+  /** Signed amount in native fiat decimal string when available */
+  amountPrimary: string | null;
+  /** ISO fiat code (PLN, USD, …) — card native currency */
+  currency: string | null;
   direction: TransactionDirection;
   categoryId: string | null;
+  categoryName: string | null;
+  categoryColor: string | null;
   notes: string | null;
-  chainId: number | null;
-  hash: string | null;
-  txType: TxType | null;
-  assetSymbol: string | null;
-  counterpartyLabel: string | null;
+  externalId: string | null;
   merchantName: string | null;
+  merchantRaw: string | null;
   status: CardTxStatus | null;
   fiatAmount: string | null;
   fiatCurrency: string | null;
   cryptoAmount: string | null;
   cryptoSymbol: string | null;
+  parserVersion: number | null;
+  rawHtml: string | null;
 }
 
 export interface PaginatedTransactions {
@@ -59,6 +52,7 @@ export interface CategoryBreakdown {
   count: number;
 }
 
+/** Base stats (backward compatible naming) — amounts are for primary/display currency subset when noted by API */
 export interface TransactionStats {
   totalSpent: number;
   totalReceived: number;
@@ -66,4 +60,83 @@ export interface TransactionStats {
   txCount: number;
   monthly: MonthlyStats[];
   categoryBreakdown: CategoryBreakdown[];
+}
+
+export interface CategorySpendShare extends CategoryBreakdown {
+  sharePercent: number;
+}
+
+export interface CurrencySliceStats {
+  currency: string;
+  totalSpent: number;
+  totalReceived: number;
+  netSpend: number;
+  txCount: number;
+  monthly: MonthlyStats[];
+  categoryBreakdown: CategoryBreakdown[];
+}
+
+export interface CardTransactionAnalytics extends TransactionStats {
+  /** When all spending txs share one fiat code; KPIs reflect that currency only */
+  displayCurrency: string | null;
+  mixedCurrencyNotice: boolean;
+  netSpendPrimary: number;
+  declinedCount: number;
+  refundCount: number;
+  categoryShares: CategorySpendShare[];
+  byCurrency: CurrencySliceStats[];
+  topMerchants: Array<{
+    key: string;
+    displayName: string;
+    total: number;
+    count: number;
+    currency: string | null;
+  }>;
+}
+
+export interface UniqueMerchant {
+  key: string;
+  displayName: string;
+  source: TransactionSource;
+  count: number;
+  totalFiatSpend: number;
+  currency: string | null;
+  lastSeenAt: string;
+  categoryId: string | null;
+  categoryName: string | null;
+  categoryColor: string | null;
+}
+
+export interface BulkCategorizeBody {
+  categoryId: string | null;
+}
+
+export interface BulkCategorizeResult {
+  key: string;
+  categoryId: string | null;
+  updatedCount: number;
+}
+
+/** Background auto-categorization result (logged; not exposed as user-triggered control) */
+export interface AutoCategorizeCardMerchantsResult {
+  processedMerchants: number;
+  assignedMerchantCount: number;
+  skippedMerchantCount: number;
+  updatedTransactionCount: number;
+  errors: string[];
+}
+
+export interface CardCategorizationRunDto {
+  id: string;
+  status: string;
+  trigger: string;
+  startedAt: string | null;
+  finishedAt: string | null;
+  scannedTxCount: number;
+  scannedMerchantCount: number;
+  memoryMatchedCount: number;
+  aiUpdatedCount: number;
+  skippedCount: number;
+  errorMessage: string | null;
+  meta: unknown;
 }
