@@ -1,114 +1,143 @@
-'use client';
+'use client'
 
-import { createClient } from '@/lib/supabase/client';
-import { useQuery, useMutation, useQueryClient, type UseQueryOptions } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
+import { useMutation, useQuery, useQueryClient, type UseQueryOptions } from '@tanstack/react-query'
+import {
+  getAccessToken,
+  getRefreshToken,
+  setSession,
+  clearSession,
+  type StoredUser,
+} from '@/lib/auth'
 
-const API_URL = `${process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3001'}/api/v1`;
+const API_URL = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3001'
+const BASE_PATH = '/api/v1'
 
-export function useAccessToken() {
-  const [token, setToken] = useState<string | undefined>();
+// Refresh the access token using the stored refresh token.
+// Returns the new access token or null if refresh failed.
+async function refreshAccessToken(): Promise<string | null> {
+  const refreshToken = getRefreshToken()
+  if (!refreshToken) return null
+  try {
+    const res = await fetch(`${API_URL}${BASE_PATH}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    setSession(data.accessToken, data.refreshToken, data.user as StoredUser)
+    return data.accessToken as string
+  } catch {
+    return null
+  }
+}
+
+// Core fetch wrapper: attaches Bearer token, handles 401 → refresh → retry once.
+async function apiFetch(
+  path: string,
+  options: RequestInit = {},
+  onUnauthorized: () => void,
+): Promise<Response> {
+  const token = getAccessToken()
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options.headers as Record<string, string> | undefined),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  }
+
+  const res = await fetch(`${API_URL}${BASE_PATH}${path}`, { ...options, headers })
+
+  if (res.status === 401) {
+    const newToken = await refreshAccessToken()
+    if (!newToken) {
+      clearSession()
+      onUnauthorized()
+      return res
+    }
+    const retryHeaders = { ...headers, Authorization: `Bearer ${newToken}` }
+    return fetch(`${API_URL}${BASE_PATH}${path}`, { ...options, headers: retryHeaders })
+  }
+
+  return res
+}
+
+async function getErrorMessage(res: Response): Promise<string> {
+  const body = (await res.json().catch(() => null)) as { message?: string } | null
+  return body?.message ?? `API error ${res.status}`
+}
+
+// Hook: provides the current access token (updates when localStorage changes across tabs).
+export function useAccessToken(): string | null {
+  const [token, setToken] = useState<string | null>(() => getAccessToken())
+
   useEffect(() => {
-    const supabase = createClient();
-    let cancelled = false;
-    supabase.auth.getSession().then(({ data }) => {
-      if (!cancelled) setToken(data.session?.access_token);
-    });
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setToken(session?.access_token);
-    });
-    return () => {
-      cancelled = true;
-      subscription.unsubscribe();
-    };
-  }, []);
-  return token;
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'ms_access_token') setToken(e.newValue)
+    }
+    window.addEventListener('storage', handleStorage)
+    return () => window.removeEventListener('storage', handleStorage)
+  }, [])
+
+  return token
 }
 
-async function getErrorMessage(res: Response) {
-  const body = (await res.json().catch(() => null)) as { message?: string } | null;
-  return body?.message ?? `API error ${res.status}`;
-}
-
-async function getFreshToken(): Promise<string | undefined> {
-  const supabase = createClient();
-  const { data } = await supabase.auth.getSession();
-  return data.session?.access_token;
-}
-
+// Hook: useApiQuery — wraps useQuery with auto auth + error handling.
 export function useApiQuery<T>(
   path: string,
   options?: Omit<UseQueryOptions<T>, 'queryKey' | 'queryFn'>,
 ) {
-  const token = useAccessToken();
-  const router = useRouter();
-  const basePath = path.split('?')[0] ?? path;
+  const router = useRouter()
+  const onUnauthorized = useCallback(() => router.push('/auth/login'), [router])
+  const basePath = path.split('?')[0] ?? path
+
   return useQuery<T>({
     queryKey: [basePath, path],
     queryFn: async () => {
-      const accessToken = token ?? (await getFreshToken());
-      if (!accessToken) {
-        router.push('/auth/login');
-        throw new Error('Not authenticated');
-      }
-      const res = await fetch(`${API_URL}${path}`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
+      const res = await apiFetch(path, {}, onUnauthorized)
       if (!res.ok) {
-        const message = await getErrorMessage(res);
-        if (res.status === 401) {
-          router.push('/auth/login');
-        }
-        throw new Error(message);
+        const message = await getErrorMessage(res)
+        throw new Error(message)
       }
-      return res.json() as Promise<T>;
+      return res.json() as Promise<T>
     },
-    enabled: !!token && (options?.enabled ?? true),
     ...options,
-  });
+  })
 }
 
+// Hook: useApiMutation — wraps useMutation with auto auth + invalidation + callbacks.
 export function useApiMutation<TData, TVariables>(
   method: 'POST' | 'PATCH' | 'DELETE',
   path: string | ((vars: TVariables) => string),
   invalidateKeys?: string[],
   callbacks?: { onSuccess?: (data: TData) => void; onError?: (error: Error) => void },
 ) {
-  const token = useAccessToken();
-  const queryClient = useQueryClient();
-  const router = useRouter();
+  const router = useRouter()
+  const queryClient = useQueryClient()
+  const onUnauthorized = useCallback(() => router.push('/auth/login'), [router])
 
   return useMutation<TData, Error, TVariables>({
     mutationFn: async (variables) => {
-      const accessToken = token ?? (await getFreshToken());
-      if (!accessToken) {
-        router.push('/auth/login');
-        throw new Error('Not authenticated');
+      const url = typeof path === 'function' ? path(variables) : path
+      const hasJsonBody = method !== 'DELETE' && variables !== undefined
+      const fetchOptions: RequestInit = { method }
+      if (hasJsonBody) {
+        fetchOptions.body = JSON.stringify(variables)
       }
-      const url = typeof path === 'function' ? path(variables) : path;
-      const hasJsonBody = method !== 'DELETE' && variables !== undefined;
-      const headers: HeadersInit = { Authorization: `Bearer ${accessToken}` };
-      if (hasJsonBody) headers['Content-Type'] = 'application/json';
-      const res = await fetch(`${API_URL}${url}`, {
-        method,
-        headers,
-        body: hasJsonBody ? JSON.stringify(variables) : undefined,
-      });
+      // Override Content-Type for non-JSON DELETE requests
+      const res = await apiFetch(url, fetchOptions, onUnauthorized)
       if (!res.ok && res.status !== 204) {
-        const message = await getErrorMessage(res);
-        if (res.status === 401) router.push('/auth/login');
-        throw new Error(message);
+        const message = await getErrorMessage(res)
+        throw new Error(message)
       }
-      if (res.status === 204) return undefined as TData;
-      return res.json() as Promise<TData>;
+      if (res.status === 204) return undefined as TData
+      return res.json() as Promise<TData>
     },
     onSuccess: (data) => {
-      invalidateKeys?.forEach((key) => queryClient.invalidateQueries({ queryKey: [key] }));
-      callbacks?.onSuccess?.(data);
+      invalidateKeys?.forEach((key) => queryClient.invalidateQueries({ queryKey: [key] }))
+      callbacks?.onSuccess?.(data)
     },
     onError: callbacks?.onError,
-  });
+  })
 }
