@@ -18,9 +18,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CalendarDays, ChevronLeft, ChevronRight, CreditCard, Search, SlidersHorizontal } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, Search, SlidersHorizontal } from 'lucide-react';
 import { TransactionCategoryBadge } from '@/components/transactions/TransactionCategoryBadge';
 import { DateRangePicker, type AnalyticsRange } from '@/components/filters/DateRangePicker';
+import { EmptyState } from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
 import { formatMoney } from '@/lib/format';
 
@@ -292,20 +293,27 @@ export function CardTransactionsList({ initialFilters }: { initialFilters?: Tran
         <CardListSkeleton />
       ) : items.length === 0 && !isFetching ? (
         <Card className="border-dashed bg-card/70 motion-safe:transition-colors">
-          <CardContent className="py-16 text-center">
-            <CreditCard className="mx-auto mb-4 h-10 w-10 text-muted-foreground/50" />
-            <h3 className="text-lg font-semibold">
-              {hasActiveFilters ? 'No card transactions match these filters' : 'No card activity yet'}
-            </h3>
-            <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-              {hasActiveFilters
-                ? 'Adjust or clear the filters to see more card activity.'
-                : 'Pair the extension in Settings and card purchases will appear here automatically.'}
-            </p>
+          <CardContent className="px-4 py-0">
             {hasActiveFilters ? (
-              <Button type="button" variant="outline" className="mt-5" onClick={clearFilters}>
-                Clear filters
-              </Button>
+              <EmptyState
+                icon="🔍"
+                title="No card transactions match these filters"
+                description="Adjust or clear the filters to see more card activity."
+              />
+            ) : (
+              <EmptyState
+                icon="💳"
+                title="No card activity yet"
+                description="Pair the extension in Settings and card purchases will appear here automatically."
+                action={{ label: 'Go to Settings', href: '/settings' }}
+              />
+            )}
+            {hasActiveFilters ? (
+              <div className="flex justify-center pb-6">
+                <Button type="button" variant="outline" onClick={clearFilters}>
+                  Clear filters
+                </Button>
+              </div>
             ) : null}
           </CardContent>
         </Card>

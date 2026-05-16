@@ -1,6 +1,7 @@
 'use client';
 
-import { useId } from 'react';
+import { useEffect, useId, useState } from 'react';
+import { Copy, Check } from 'lucide-react';
 
 function truncateEthAddress(addr: string): string {
   const a = addr.trim();
@@ -26,8 +27,43 @@ export function MetaMaskCardWidget({
   const showAmt = balanceAmount ?? null;
   const showCur = balanceCurrency?.trim() ?? '';
 
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyAddress = () => {
+    if (!address) return;
+    navigator.clipboard.writeText(address).then(() => {
+      setCopied(true);
+    });
+  };
+
+  useEffect(() => {
+    if (!copied) return;
+    const timer = setTimeout(() => setCopied(false), 1500);
+    return () => clearTimeout(timer);
+  }, [copied]);
+
   return (
     <div className="relative mx-auto w-full max-w-[min(100%,22rem)]">
+      {address ? (
+        <div className="mb-2 flex items-center justify-end gap-1.5">
+          <span className="text-xs text-muted-foreground tabular-nums">{addrDisplay}</span>
+          <button
+            type="button"
+            onClick={handleCopyAddress}
+            className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            aria-label={copied ? 'Copied!' : 'Copy wallet address'}
+          >
+            {copied ? (
+              <>
+                <Check className="h-3 w-3 text-green-500" />
+                <span className="text-green-500">Copied!</span>
+              </>
+            ) : (
+              <Copy className="h-3 w-3" />
+            )}
+          </button>
+        </div>
+      ) : null}
       <div className="relative aspect-[343/215] w-full">
         <svg
           viewBox="0 0 343 215"

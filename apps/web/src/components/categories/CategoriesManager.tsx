@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Trash2, Wand2 } from 'lucide-react';
+import { EmptyState } from '@/components/ui/empty-state';
 
 const PRESET_COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899', '#6b7280'];
 
@@ -131,10 +132,12 @@ export function CategoriesManager() {
         <CardContent>
           {categories.length === 0 ? (
             <Card className="border-dashed bg-background/45">
-              <CardContent className="py-12 text-center">
-                <p className="text-sm text-muted-foreground">
-                  No categories yet. Add defaults or create your own to organize card spend.
-                </p>
+              <CardContent className="px-4 py-0">
+                <EmptyState
+                  icon="🏷️"
+                  title="No categories yet"
+                  description="Add defaults or create your own to organize card spend and unlock analytics."
+                />
               </CardContent>
             </Card>
           ) : (

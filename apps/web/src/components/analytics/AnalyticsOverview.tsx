@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/chart';
 import { formatMoney, formatMoneyCompact } from '@/lib/format';
 import { DateRangePicker, type AnalyticsRange } from '@/components/filters/DateRangePicker';
+import { EmptyState } from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
 
 function monthLabel(year: number, month: number) {
@@ -213,6 +214,32 @@ export function AnalyticsOverview() {
         </div>
         <Skeleton className="h-72 rounded-xl" />
         <Skeleton className="h-64 rounded-xl" />
+      </div>
+    );
+  }
+
+  if (!isLoading && data && data.txCount === 0) {
+    return (
+      <div className="space-y-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight">Card Spend Analytics</h1>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              Based on synced MetaMask Card transactions
+            </p>
+          </div>
+          <DateRangePicker value={range} onChange={setRange} align="end" />
+        </div>
+        <Card>
+          <CardContent className="px-4 py-0">
+            <EmptyState
+              icon="📊"
+              title="No analytics data yet"
+              description="Sync your first MetaMask Card transactions and your spend analytics will appear here."
+              action={{ label: 'Go to Transactions', href: '/transactions' }}
+            />
+          </CardContent>
+        </Card>
       </div>
     );
   }

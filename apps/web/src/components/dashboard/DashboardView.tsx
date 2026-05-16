@@ -88,6 +88,7 @@ export function DashboardView() {
   );
 
   const loading = (portfolioLoading && !portfolio) || (statsLoading && !stats);
+  const hasNoTransactions = !loading && (stats?.txCount ?? 0) === 0;
 
   return (
     <div className="space-y-6">
@@ -97,6 +98,37 @@ export function DashboardView() {
           Card balance matches MetaMask Portfolio after each extension sync.
         </p>
       </div>
+
+      {hasNoTransactions && (
+        <div className="rounded-xl border-l-4 border-[#F6851B] bg-card p-5 shadow-sm">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-base font-semibold text-foreground">
+                🦊 Connect the MetaSpend extension
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Install the Chrome extension and open MetaMask Portfolio to sync your first transactions.
+              </p>
+            </div>
+            <div className="flex shrink-0 flex-wrap gap-2">
+              <a
+                href="https://chrome.google.com/webstore"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+              >
+                Install extension →
+              </a>
+              <Link
+                href="/settings"
+                className="inline-flex items-center rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+              >
+                Go to Settings
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,20rem)_1fr]">
         <div>
