@@ -14,7 +14,19 @@ export class UsersRepository {
     return this.prisma.user.findUnique({ where: { id } });
   }
 
-  create(data: { email: string; passwordHash?: string | null }): Promise<User> {
+  findBySupabaseId(supabaseId: string): Promise<User | null> {
+    return this.prisma.user.findUnique({ where: { supabaseId } });
+  }
+
+  create(data: {
+    email: string;
+    passwordHash?: string | null;
+    supabaseId?: string | null;
+  }): Promise<User> {
     return this.prisma.user.create({ data });
+  }
+
+  setSupabaseId(id: string, supabaseId: string): Promise<User> {
+    return this.prisma.user.update({ where: { id }, data: { supabaseId } });
   }
 }

@@ -4,9 +4,10 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { BarChart3, CreditCard, Settings, Tag } from 'lucide-react';
+import { BarChart3, CreditCard, LayoutDashboard, Settings, Tag } from 'lucide-react';
 
 const NAV_ITEMS = [
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/transactions', label: 'Transactions', icon: CreditCard },
   { href: '/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/categories', label: 'Categories', icon: Tag },
@@ -38,8 +39,8 @@ function NavItem({
       className={cn(
         'group relative flex items-center gap-3 text-sm font-medium transition-all duration-150',
         mobile
-          ? 'rounded-lg border border-transparent px-4 py-3'
-          : 'h-11 w-11 justify-center rounded-lg border border-transparent',
+          ? 'rounded-xl border border-transparent px-4 py-3'
+          : 'h-11 w-11 justify-center rounded-xl border border-transparent',
         active
           ? 'border-sidebar-border bg-sidebar-accent text-sidebar-accent-foreground'
           : 'text-sidebar-muted-foreground hover:border-sidebar-border hover:bg-sidebar-accent/70 hover:text-sidebar-foreground',

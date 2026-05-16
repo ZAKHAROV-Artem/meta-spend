@@ -29,4 +29,17 @@ export class PortfolioService {
       cardBalance,
     };
   }
+
+  /**
+   * Upsert the user's primary wallet address — recorded when they sign in with SIWE.
+   * Existing balance fields are preserved when the row is updated.
+   */
+  async setPrimaryAddress(userId: string, address: string): Promise<void> {
+    const normalized = address.toLowerCase();
+    await this.prisma.portfolioAccount.upsert({
+      where: { userId },
+      create: { userId, address: normalized },
+      update: { address: normalized },
+    });
+  }
 }

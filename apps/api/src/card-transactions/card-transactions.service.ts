@@ -73,7 +73,19 @@ export class CardTransactionsService {
     if (!parsed.success) {
       throw new BadRequestException(parsed.error.flatten());
     }
-    const { items, parserVersion } = parsed.data;
+    const { items, parserVersion, cardBalanceSnapshot } = parsed.data;
+
+    if (cardBalanceSnapshot) {
+      await this.prisma.portfolioAccount.updateMany({
+        where: { userId },
+        data: {
+          cardBalanceAmount: new Prisma.Decimal(cardBalanceSnapshot.amount),
+          cardBalanceCurrency: cardBalanceSnapshot.currency,
+          lastSuccessfulSyncAt: new Date(),
+        },
+      });
+    }
+
     if (items.length === 0) {
       return { inserted: 0, updated: 0, skipped: 0 };
     }
@@ -87,78 +99,83 @@ export class CardTransactionsService {
     }
     const uniqueItems = [...seen.values()];
 
-    for (const item of uniqueItems) {
-      const pv = item.parserVersion ?? parserVersion;
-      const existing = await this.prisma.transaction.findUnique({
-        where: {
-          userId_source_externalId: {
-            userId,
-            source: TransactionSource.CARD,
-            externalId: item.externalId,
-          },
-        },
-        select: { id: true },
-      });
-
-      const occurredAt = new Date(item.occurredAt);
-      const fiatAmount = new Prisma.Decimal(item.fiatAmount);
-      const cryptoAmount =
-        item.cryptoAmount === null || item.cryptoAmount === undefined
-          ? null
-          : new Prisma.Decimal(item.cryptoAmount);
-
-      const existingRow = existing
-        ? await this.prisma.transaction.findUnique({
-            where: { id: existing.id },
-            select: { rawData: true },
+    const externalIds = uniqueItems.map((item) => item.externalId);
+    const existingRows =
+      externalIds.length > 0
+        ? await this.prisma.transaction.findMany({
+            where: {
+              userId,
+              source: TransactionSource.CARD,
+              externalId: { in: externalIds },
+            },
+            select: { externalId: true, rawData: true },
           })
-        : null;
+        : [];
+    const existingByExternalId = new Map(existingRows.map((r) => [r.externalId, r]));
 
-      const rawDataMerged = mergeCardRawData(existingRow?.rawData ?? null, item.fundingSourceMasked);
+    const CONCURRENCY = 10;
 
-      await this.prisma.transaction.upsert({
-        where: {
-          userId_source_externalId: {
-            userId,
-            source: TransactionSource.CARD,
-            externalId: item.externalId,
-          },
-        },
-        create: {
-          userId,
-          source: TransactionSource.CARD,
-          externalId: item.externalId,
-          timestamp: occurredAt,
-          merchantName: item.merchantName,
-          merchantRaw: item.merchantRaw ?? null,
-          fiatAmount,
-          fiatCurrency: item.fiatCurrency.toUpperCase(),
-          cryptoAmount,
-          cryptoSymbol: item.cryptoSymbol?.toUpperCase() ?? null,
-          status: item.status as CardTxStatus,
-          parserVersion: pv,
-          rawHtml: item.rawHtml ?? null,
-          rawData: rawDataMerged,
-        },
-        update: {
-          timestamp: occurredAt,
-          merchantName: item.merchantName,
-          merchantRaw: item.merchantRaw ?? null,
-          fiatAmount,
-          fiatCurrency: item.fiatCurrency.toUpperCase(),
-          cryptoAmount,
-          cryptoSymbol: item.cryptoSymbol?.toUpperCase() ?? null,
-          status: item.status as CardTxStatus,
-          parserVersion: pv,
-          rawHtml: item.rawHtml ?? null,
-          rawData: rawDataMerged,
-        },
-      });
+    for (let start = 0; start < uniqueItems.length; start += CONCURRENCY) {
+      const slice = uniqueItems.slice(start, start + CONCURRENCY);
+      const deltas = await Promise.all(
+        slice.map(async (item) => {
+          const pv = item.parserVersion ?? parserVersion;
+          const prior = existingByExternalId.get(item.externalId);
+          const occurredAt = new Date(item.occurredAt);
+          const fiatAmount = new Prisma.Decimal(item.fiatAmount);
+          const cryptoAmount =
+            item.cryptoAmount === null || item.cryptoAmount === undefined
+              ? null
+              : new Prisma.Decimal(item.cryptoAmount);
 
-      if (existing) {
-        updated += 1;
-      } else {
-        inserted += 1;
+          const rawDataMerged = mergeCardRawData(prior?.rawData ?? null, item.fundingSourceMasked);
+
+          await this.prisma.transaction.upsert({
+            where: {
+              userId_source_externalId: {
+                userId,
+                source: TransactionSource.CARD,
+                externalId: item.externalId,
+              },
+            },
+            create: {
+              userId,
+              source: TransactionSource.CARD,
+              externalId: item.externalId,
+              timestamp: occurredAt,
+              merchantName: item.merchantName,
+              merchantRaw: item.merchantRaw ?? null,
+              fiatAmount,
+              fiatCurrency: item.fiatCurrency.toUpperCase(),
+              cryptoAmount,
+              cryptoSymbol: item.cryptoSymbol?.toUpperCase() ?? null,
+              status: item.status as CardTxStatus,
+              parserVersion: pv,
+              rawHtml: item.rawHtml ?? null,
+              rawData: rawDataMerged,
+            },
+            update: {
+              timestamp: occurredAt,
+              merchantName: item.merchantName,
+              merchantRaw: item.merchantRaw ?? null,
+              fiatAmount,
+              fiatCurrency: item.fiatCurrency.toUpperCase(),
+              cryptoAmount,
+              cryptoSymbol: item.cryptoSymbol?.toUpperCase() ?? null,
+              status: item.status as CardTxStatus,
+              parserVersion: pv,
+              rawHtml: item.rawHtml ?? null,
+              rawData: rawDataMerged,
+            },
+          });
+
+          return prior ? ('updated' as const) : ('inserted' as const);
+        }),
+      );
+
+      for (const d of deltas) {
+        if (d === 'updated') updated += 1;
+        else inserted += 1;
       }
     }
 

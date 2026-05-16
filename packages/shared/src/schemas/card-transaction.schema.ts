@@ -24,9 +24,21 @@ export const ParsedCardTxSchema = z.object({
 
 export type ParsedCardTxDto = z.infer<typeof ParsedCardTxSchema>;
 
+export const CardBalanceSnapshotSchema = z.object({
+  amount: z
+    .string()
+    .min(1)
+    .max(32)
+    .transform((s) => s.replace(/,/g, '').trim())
+    .refine((s) => /^-?\d+(\.\d+)?$/.test(s), 'Invalid balance amount'),
+  currency: z.string().min(1).max(16).transform((s) => s.trim()),
+});
+
 export const CardSyncBodySchema = z.object({
   parserVersion: z.number().int().min(1).max(999),
   items: z.array(ParsedCardTxSchema).max(500),
+  /** Portfolio card widget balance captured alongside transactions */
+  cardBalanceSnapshot: CardBalanceSnapshotSchema.optional(),
 });
 
 export type CardSyncBodyDto = z.infer<typeof CardSyncBodySchema>;

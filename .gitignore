@@ -5,6 +5,7 @@ node_modules/
 
 # Build outputs
 dist/
+build/
 .next/
 .turbo/
 *.tsbuildinfo
@@ -24,6 +25,7 @@ Thumbs.db
 # IDE
 .vscode/settings.json
 .idea/
+.plasmo
 
 # Test coverage
 coverage/

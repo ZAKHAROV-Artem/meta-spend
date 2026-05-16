@@ -20,6 +20,7 @@ export type CardTxWire = 'PENDING' | 'SETTLED' | 'DECLINED' | 'REFUNDED';
 export interface CardSyncBodyWire {
   parserVersion: number;
   items: ParsedCardWire[];
+  cardBalanceSnapshot?: { amount: string; currency: string };
 }
 
 export interface CardSyncResultWire {
@@ -67,7 +68,7 @@ export async function syncCardTransactions(
   payload: CardSyncBodyWire,
 ): Promise<CardSyncResultWire> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15_000);
+  const timeout = setTimeout(() => controller.abort(), 120_000);
   const res = await fetch(`${API_URL}/card-transactions/sync`, {
     method: 'POST',
     headers: {

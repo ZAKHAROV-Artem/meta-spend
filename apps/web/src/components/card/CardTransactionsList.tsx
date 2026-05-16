@@ -77,8 +77,8 @@ function categoryFilterLabel(selectedCount: number) {
   return `${selectedCount} categories`;
 }
 
-export function CardTransactionsList() {
-  const [filters, setFilters] = useState<TransactionFilters>({});
+export function CardTransactionsList({ initialFilters }: { initialFilters?: TransactionFilters }) {
+  const [filters, setFilters] = useState<TransactionFilters>(initialFilters ?? {});
   const [page, setPage] = useState(1);
   const { data: categories = [] } = useCategories();
   const { data, isPending, isFetching, isPlaceholderData } = useTransactions(filters, page, PAGE_SIZE);

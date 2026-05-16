@@ -12,6 +12,7 @@ model User {
   email        String   @unique
   passwordHash String?
   displayName  String?
+  supabaseId   String?  @unique
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -46,6 +47,9 @@ model PortfolioAccount {
   id                     String    @id @default(cuid())
   userId                 String    @unique
   address                String
+  /// MetaMask Card widget balance from last extension sync (e.g. 685.84 mUSD).
+  cardBalanceAmount      Decimal?  @db.Decimal(24, 8)
+  cardBalanceCurrency    String?
   lastRefreshRequestedAt DateTime?
   lastSuccessfulSyncAt   DateTime?
   lastSyncState          String?   @default("IDLE")

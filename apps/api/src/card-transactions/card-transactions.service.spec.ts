@@ -16,6 +16,9 @@ function makeTransactionStore() {
 
   return {
     rows,
+    portfolioAccount: {
+      updateMany: async () => ({ count: 0 }),
+    },
     transaction: {
       findUnique: async (args: {
         where: {
