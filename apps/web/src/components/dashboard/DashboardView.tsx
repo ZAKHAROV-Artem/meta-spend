@@ -100,7 +100,7 @@ export function DashboardView() {
       </div>
 
       {hasNoTransactions && (
-        <div className="rounded-xl border-l-4 border-[#F6851B] bg-card p-5 shadow-sm">
+        <div className="rounded-xl border-l-4 border-primary bg-card p-5 shadow-sm">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
               <p className="text-base font-semibold text-foreground">
