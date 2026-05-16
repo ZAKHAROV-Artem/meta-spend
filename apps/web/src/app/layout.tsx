@@ -3,9 +3,9 @@ import { Providers } from '@/providers';
 import '@/styles/globals.css';
 
 export const metadata: Metadata = {
-  title: 'CryptoTrack — Crypto Expense Tracker',
+  title: 'MetaSpend — MetaMask Card Transaction Visualizer',
   description:
-    'Turn your crypto wallet activity into clean financial reports. Track expenses, categorize transactions, and analyze spending — just like a bank app, but for Web3.',
+    'Beautifully visualize your MetaMask Card spending. Track purchases, analyze categories, and understand where your crypto goes — in real time.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

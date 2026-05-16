@@ -1,813 +1,378 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { API_URL, pairExtension } from './src/lib/api';
+import { API_URL, pairExtension, syncCardTransactions, type CardSyncBodyWire } from './src/lib/api';
 
 const STORAGE_API_TOKEN_KEY = 'cryptotrackApiToken';
 
 type CaptureOutcome =
-  | {
-      ok: false;
-      error: string;
-
-      jobId?: string;
-
-
-      scrapeOk?: boolean;
-
-      detail?: string;
-
-    }
-
-
+  | { ok: false; error: string; jobId?: string; scrapeOk?: boolean; detail?: string }
   | {
       ok: true;
       jobId: string;
-
-
       scrapeOk: true;
-
-
-
       transactionCount: number;
-
-
-
-      parsedItems?: number;
-
-
-      synced: false;
-
-
-      message: string;
-
-
-    }
-
-
-  | {
-      ok: true;
-      jobId: string;
-
-
-
-      scrapeOk: true;
-
-
-
-      transactionCount: number;
-
-
-
-      synced: true;
-
-
-
-      inserted: number;
-
-
-      updated: number;
-
-
-      skippedDuplicateInBatch: number;
-
-
+      /** Null when not paired — push happens from popup after scrape */
+      syncPayload: CardSyncBodyWire | null;
+      scrapeOnlyMessage: string | null;
     };
 
-const LOG_PREFIX = '[CryptoTrack Card Capture]';
+const LOG_PREFIX = '[MetaSpend Capture]';
 
 function sendCaptureMessage(): Promise<CaptureOutcome> {
   return new Promise((resolve) => {
-
-
     let settled = false;
-
-
-
     const timeout = window.setTimeout(() => {
-
-
       if (settled) return;
-
-
-
       settled = true;
+      resolve({ ok: false, error: 'Timed out. Keep the MetaMask Card tab open.' });
+    }, 45_000);
 
-
-
-      console.error(LOG_PREFIX, 'background worker did not respond before timeout');
-
-
-      resolve({ ok: false, error: 'Sync timed out. Reload the extension and keep the MetaMask Card tab active.' });
-
-
-    }, 25_000);
-
-
-
-    console.log(LOG_PREFIX, 'popup sending capture request');
-
-
-
-    chrome.runtime.sendMessage({ type: 'CAPTURE_CARD_HTML' }, (response: CaptureOutcome | undefined) => {
-
-
-      if (settled) return;
-
-
-
-      settled = true;
-
-
-
-      window.clearTimeout(timeout);
-
-
-
-      if (chrome.runtime.lastError) {
-
-
-        console.error(LOG_PREFIX, 'background worker error', chrome.runtime.lastError.message);
-
-
-        resolve({
-          ok: false,
-
-          error: chrome.runtime.lastError.message ?? 'Extension messaging failed',
-        });
-
-        return;
-
-
-      }
-
-
-
-      resolve(response ?? { ok: false, error: 'No response from background worker.' });
-
-
-    });
-
-
+    chrome.runtime.sendMessage(
+      { type: 'CAPTURE_CARD_HTML' },
+      (response: CaptureOutcome | undefined) => {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timeout);
+        if (chrome.runtime.lastError) {
+          resolve({ ok: false, error: chrome.runtime.lastError.message ?? 'Extension error' });
+          return;
+        }
+        resolve(response ?? { ok: false, error: 'No response from worker.' });
+      },
+    );
   });
-
-
 }
 
-const styles = {
-  shell: {
-    width: 320,
+const FOX = (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="28" height="28" fill="none">
+    <path d="M24 3 L40 10 L44 26 L36 40 L24 45 L12 40 L4 26 L8 10 Z" fill="#F6851B" />
+    <path d="M8 10 L14 3 L20 12 Z" fill="#E2761B" />
+    <path d="M40 10 L34 3 L28 12 Z" fill="#E2761B" />
+    <path d="M20 12 L28 12 L32 20 L24 22 L16 20 Z" fill="#CD6116" />
+    <ellipse cx="16.5" cy="19" rx="3.5" ry="4" fill="white" />
+    <ellipse cx="31.5" cy="19" rx="3.5" ry="4" fill="white" />
+    <circle cx="17.5" cy="19.5" r="2" fill="#1D1D1D" />
+    <circle cx="32.5" cy="19.5" r="2" fill="#1D1D1D" />
+    <ellipse cx="24" cy="32" rx="7" ry="5.5" fill="#FCD0A3" />
+    <ellipse cx="24" cy="29.5" rx="2.2" ry="1.4" fill="#1D1D1D" />
+    <path
+      d="M19 33 Q24 37 29 33"
+      stroke="#CD6116"
+      strokeWidth="1.2"
+      strokeLinecap="round"
+      fill="none"
+    />
+    <path d="M12 40 L24 45 L36 40 L31 35 L24 37 L17 35 Z" fill="#E2761B" />
+  </svg>
+);
 
-    padding: 16,
-
+const s = {
+  root: {
+    width: 300,
+    background: '#fff',
     fontFamily: 'Inter, system-ui, sans-serif',
-
-    color: '#111827',
-
-
+    borderRadius: 16,
+    overflow: 'hidden' as const,
   },
-
-
+  header: {
+    background: 'linear-gradient(135deg, #F6851B 0%, #CD6116 100%)',
+    padding: '16px 18px 14px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+  },
+  headerText: {
+    color: 'white',
+  },
   title: {
-    margin: '0 0 6px',
-
-
-    fontSize: 18,
-
-
+    margin: 0,
+    fontSize: 15,
     fontWeight: 700,
-
-
+    color: 'white',
+    lineHeight: 1.2,
   },
-
-
-  muted: {
-
-
-    margin: '0 0 10px',
-
-    color: '#6b7280',
-
-
+  subtitle: {
+    margin: 0,
     fontSize: 11,
-
-
-    lineHeight: 1.35,
-
-    wordBreak: 'break-all' as const,
-
-
+    color: 'rgba(255,255,255,0.75)',
+    marginTop: 1,
   },
-
-
+  body: {
+    padding: '16px 18px',
+    color: '#111',
+  },
   label: {
-
-
+    display: 'block' as const,
     fontSize: 11,
-
-
     fontWeight: 600,
-
-
-    color: '#374151',
-
-
-
-    margin: '10px 0 4px',
-
-
+    color: '#6b7280',
+    marginBottom: 5,
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.05em',
   },
-
   input: {
     width: '100%',
-
-
     boxSizing: 'border-box' as const,
-
-
-    border: '1px solid #e5e7eb',
-
-
-
-    borderRadius: 8,
-
-
-    padding: '8px 10px',
-
-
-
-    fontSize: 14,
-
-
+    border: '1.5px solid #e5e7eb',
+    borderRadius: 999,
+    padding: '9px 14px',
+    fontSize: 18,
+    letterSpacing: '0.25em',
+    textAlign: 'center' as const,
     outline: 'none',
-
-
-    letterSpacing: '0.08em',
-
+    color: '#111',
+    background: '#fafafa',
+    fontFamily: 'monospace',
+    transition: 'border-color 0.15s',
   },
-
-  row: {
-
-
-    display: 'flex',
-
-    gap: 8,
-
-  },
-
-  text: {
-
-
-    margin: '0 0 14px',
-
-
-    color: '#4b5563',
-
-
-
-    fontSize: 13,
-
-
-    lineHeight: 1.4,
-
-  },
-
-  button: {
-
-    flex: 1,
-
+  btn: {
+    width: '100%',
     border: 0,
-
-    borderRadius: 8,
-
-    background: '#111827',
-
+    borderRadius: 999,
+    background: 'linear-gradient(135deg, #F6851B 0%, #E2761B 100%)',
     color: 'white',
-
-    cursor: 'pointer',
-
+    cursor: 'pointer' as const,
     fontSize: 14,
-
     fontWeight: 700,
-
-    padding: '10px 12px',
-
+    padding: '11px 0',
+    marginTop: 10,
+    transition: 'opacity 0.15s',
+    boxShadow: '0 4px 12px rgba(246,133,27,0.35)',
   },
-
-  ghost: {
-
-
+  btnDisabled: { opacity: 0.55, cursor: 'wait' as const },
+  row: { display: 'flex', gap: 8, marginTop: 0 },
+  btnHalf: {
     flex: 1,
-    borderRadius: 8,
-
-    border: '1px solid #d1d5db',
-
-
-
-    background: 'white',
-
-    color: '#111827',
-
-    cursor: 'pointer',
-
+    border: 0,
+    borderRadius: 999,
+    background: 'linear-gradient(135deg, #F6851B 0%, #E2761B 100%)',
+    color: 'white',
+    cursor: 'pointer' as const,
     fontSize: 13,
-
+    fontWeight: 700,
+    padding: '10px 0',
+    transition: 'opacity 0.15s',
+    boxShadow: '0 4px 12px rgba(246,133,27,0.3)',
+  },
+  btnGhost: {
+    flex: 1,
+    borderRadius: 999,
+    border: '1.5px solid #e5e7eb',
+    background: 'white',
+    color: '#6b7280',
+    cursor: 'pointer' as const,
+    fontSize: 13,
     fontWeight: 600,
-
-    padding: '9px 10px',
-
+    padding: '10px 0',
   },
-
-  buttonDisabled: {
-
-
-
-    cursor: 'wait',
-
-    opacity: 0.7,
-
-  },
-
-  status: {
-
-
-
-    marginTop: 12,
-
-
-    borderRadius: 8,
-
-
-    padding: 10,
-
+  hint: {
     fontSize: 12,
-
-
+    color: '#9ca3af',
+    textAlign: 'center' as const,
+    margin: '10px 0 0',
     lineHeight: 1.4,
-
-    whiteSpace: 'pre-wrap' as const,
-
   },
-
-
-  ok: {
-
-
+  status: {
+    marginTop: 12,
+    borderRadius: 10,
+    padding: '10px 12px',
+    fontSize: 12,
+    lineHeight: 1.45,
+  },
+  ok: { background: '#ecfdf5', color: '#065f46' },
+  err: { background: '#fef2f2', color: '#991b1b' },
+  divider: { height: 1, background: '#f3f4f6', margin: '0 0 14px' },
+  connectedBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 5,
     background: '#ecfdf5',
-
-
     color: '#065f46',
-
-
-
+    borderRadius: 999,
+    padding: '3px 10px 3px 7px',
+    fontSize: 11,
+    fontWeight: 600,
+    marginBottom: 14,
   },
-
-  error: {
-
-
-    background: '#fef2f2',
-
-
-    color: '#991b1b',
-
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: '50%',
+    background: '#10b981',
+    display: 'inline-block',
   },
-
 };
 
 export default function Popup() {
-
-
   const [apiToken, setApiTokenState] = useState<string | null>(null);
-
-
   const [pairCode, setPairCode] = useState('');
-
-
-
   const [isPairing, setIsPairing] = useState(false);
-
-
-
   const [isSyncing, setIsSyncing] = useState(false);
-
-
-
   const [storageReady, setStorageReady] = useState(false);
-
-
-
   const [status, setStatus] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
-
-
     chrome.storage.local.get(STORAGE_API_TOKEN_KEY, (got) => {
-
-
-
       const t = got[STORAGE_API_TOKEN_KEY];
-
-
-
       setApiTokenState(typeof t === 'string' && t.length > 0 ? t : null);
-
-
       setStorageReady(true);
-
-
-
     });
-
-
   }, []);
 
   const apiHint = useMemo(() => API_URL.replace(/\/api\/v1\/?$/u, ''), []);
 
-
   const persistToken = useCallback((token: string) => {
-
-
     void chrome.storage.local.set({ [STORAGE_API_TOKEN_KEY]: token });
-
-
     setApiTokenState(token);
-
-
   }, []);
 
   const clearToken = useCallback(() => {
-
-
-
     void chrome.storage.local.remove(STORAGE_API_TOKEN_KEY);
-
-
     setApiTokenState(null);
-
-
-
     setStatus({ kind: 'ok', text: 'Disconnected.' });
-
-
-
   }, []);
 
-
-
   async function onConnect(): Promise<void> {
-
-
-    const code = pairCode.trim();
-
     setIsPairing(true);
-
-
     setStatus(null);
-
-
     try {
-
-
-      const { token } = await pairExtension(code);
-
-
+      const { token } = await pairExtension(pairCode.trim());
       persistToken(token);
-
-
-
       setPairCode('');
-
-
-
-      setStatus({ kind: 'ok', text: 'Connected. You can sync card transactions.' });
-
-
-
+      setStatus({ kind: 'ok', text: '✓ Connected — you can now sync card transactions.' });
     } catch (error) {
-
-
-      const msg = error instanceof Error ? error.message : String(error);
-
-
-      console.warn(LOG_PREFIX, 'pair failed', error);
-
-
-      setStatus({ kind: 'error', text: msg });
-
-
-
+      setStatus({ kind: 'error', text: error instanceof Error ? error.message : String(error) });
     } finally {
-
-
       setIsPairing(false);
-
-
-
     }
-
-
-
   }
-
-
 
   async function syncNow(): Promise<void> {
-
-
-    console.log(LOG_PREFIX, 'Sync now');
-
-
     setIsSyncing(true);
-
-
     setStatus(null);
-
-
     const outcome = await sendCaptureMessage();
-
-
     if (!outcome.ok) {
-
-
       setStatus({
-
-
         kind: 'error',
-
-
         text: outcome.detail ? `${outcome.error}\n${outcome.detail}` : outcome.error,
-
-
       });
-
-
       setIsSyncing(false);
-
-
       return;
-
-
-
     }
 
-
-
-    if (outcome.synced) {
-
-
+    if (!outcome.syncPayload) {
       setStatus({
-
-
         kind: 'ok',
-
-
-        text: `Synced to API ✓
-
-
-
-Job: ${outcome.jobId}
-
-Rows on page: ${outcome.transactionCount}
-
-Inserted ${outcome.inserted}, updated ${outcome.updated}, dupes skipped in batch: ${outcome.skippedDuplicateInBatch}`,
-
-
+        text: outcome.scrapeOnlyMessage ?? `Scraped ${outcome.transactionCount} rows.`,
       });
-
-
-    } else {
-
-
-      setStatus({ kind: 'ok', text: outcome.message });
-
-
+      setIsSyncing(false);
+      return;
     }
 
+    const token = apiToken;
+    if (!token) {
+      setStatus({ kind: 'error', text: 'Session token missing. Disconnect and pair again.' });
+      setIsSyncing(false);
+      return;
+    }
 
-    setIsSyncing(false);
-
-
-
+    try {
+      const sync = await syncCardTransactions(token, outcome.syncPayload);
+      setStatus({
+        kind: 'ok',
+        text: `✓ Synced — ${sync.inserted} new, ${sync.updated} updated (${outcome.transactionCount} on page)`,
+      });
+    } catch (syncErr) {
+      const syncMessage = syncErr instanceof Error ? syncErr.message : String(syncErr);
+      setStatus({
+        kind: 'error',
+        text: `Scrape OK; API sync failed: ${syncMessage}`,
+      });
+    } finally {
+      setIsSyncing(false);
+    }
   }
-
-
 
   const connected = !!apiToken;
 
   if (!storageReady) {
     return (
-
-
-      <main style={styles.shell}>
-
-
-
-        <h1 style={styles.title}>MetaMask Card</h1>
-
-
-
-        <p style={styles.text}>Loading…</p>
-
-
-
+      <main style={s.root}>
+        <div style={s.header}>
+          {FOX}
+          <div style={s.headerText}>
+            <p style={s.title}>🦊 MetaSpend</p>
+            <p style={s.subtitle}>MetaMask Card</p>
+          </div>
+        </div>
+        <div style={{ ...s.body, color: '#9ca3af', fontSize: 13 }}>Loading…</div>
       </main>
-
-
     );
-
-
   }
 
   return (
-
-
-    <main style={styles.shell}>
-
-
-      <h1 style={styles.title}>{connected ? 'MetaMask Card sync' : 'Connect CryptoTrack'}</h1>
-
-      <p style={styles.muted}>API base: {apiHint}</p>
-
-      {!connected ? (
-
-
-
-        <>
-
-
-          <p style={styles.text}>
-
-
-            In the web app (Settings → Browser extension), generate a 6-digit code and enter it below.
-
-
-
-
-          </p>
-
-
-          <p style={styles.label}>Pair code</p>
-
-
-          <input
-
-
-            placeholder="123456"
-
-
-            autoComplete="one-time-code"
-
-            inputMode="numeric"
-
-            maxLength={6}
-
-            value={pairCode}
-
-
-            style={styles.input}
-
-
-            disabled={isPairing}
-
-
-
-            onChange={(e) => setPairCode(e.target.value.replace(/\D+/gu, '').slice(0, 6))}
-
-
-
-
-          />
-
-
-
-          <div style={{ marginTop: 12 }}>
-
-
-            <button
-
-
-              type="button"
-
-
-              style={{ ...styles.button, width: '100%', ...(isPairing ? styles.buttonDisabled : {}) }}
-
-
-
-              disabled={isPairing || pairCode.trim().length < 6}
-
-
-
-
-              onClick={() => void onConnect()}
-
-
-
-
-            >
-
-
-              {isPairing ? 'Connecting…' : 'Connect'}
-
-            </button>
-
-
-          </div>
-
-
-        </>
-
-
-
-      ) : (
-
-
-
-        <>
-
-
-
-          <p style={styles.text}>
-
-
-
-            Open the MetaMask Card activity page on this Chrome window. Then tap sync to scrape and POST to CryptoTrack.
-
-
-
-          </p>
-
-
-
-          <div style={styles.row}>
-
-
-            <button
-
-
-              type="button"
-
-
-              style={{ ...styles.button, ...(isSyncing ? styles.buttonDisabled : {}) }}
-
-
-
-              disabled={isSyncing}
-
-
-              onClick={() => void syncNow()}
-
-
-            >
-
-
-              {isSyncing ? 'Syncing…' : 'Sync now'}
-
-
-            </button>
-
-
-            <button type="button" style={styles.ghost} disabled={isSyncing} onClick={() => clearToken()}>
-
-
-
-              Disconnect
-
-
-            </button>
-
-
-          </div>
-
-
-        </>
-
-
-
-      )}
-
-
-      {status ? (
-
-
-
-
-        <div style={{ ...styles.status, ...(status.kind === 'ok' ? styles.ok : styles.error) }}>
-
-
-
-
-          {status.text}
-
-
+    <main style={s.root}>
+      {/* Header */}
+      <div style={s.header}>
+        {FOX}
+        <div style={s.headerText}>
+          <p style={s.title}>🦊 MetaSpend</p>
         </div>
+      </div>
 
+      <div style={s.body}>
+        {!connected ? (
+          <>
+            <label style={s.label} htmlFor="pair-code">
+              Pair code
+            </label>
+            <input
+              id="pair-code"
+              placeholder="000000"
+              autoComplete="one-time-code"
+              inputMode="numeric"
+              maxLength={6}
+              value={pairCode}
+              style={s.input}
+              disabled={isPairing}
+              onChange={(e) => setPairCode(e.target.value.replace(/\D+/gu, '').slice(0, 6))}
+            />
+            <p style={s.hint}>Generate a code in Settings → Browser extension</p>
+            <button
+              type="button"
+              style={{ ...s.btn, ...(isPairing ? s.btnDisabled : {}) }}
+              disabled={isPairing || pairCode.trim().length < 6}
+              onClick={() => void onConnect()}
+            >
+              {isPairing ? 'Connecting…' : 'Connect'}
+            </button>
+          </>
+        ) : (
+          <>
+            <div style={s.divider} />
+            <p style={{ ...s.hint, margin: '0 0 12px', color: '#6b7280', textAlign: 'left' }}>
+              Open the MetaMask Card activity page, then tap Sync.
+            </p>
+            <div style={s.row}>
+              <button
+                type="button"
+                style={{ ...s.btnHalf, ...(isSyncing ? s.btnDisabled : {}) }}
+                disabled={isSyncing}
+                onClick={() => void syncNow()}
+              >
+                {isSyncing ? 'Syncing…' : 'Sync now'}
+              </button>
+              <button type="button" style={s.btnGhost} disabled={isSyncing} onClick={clearToken}>
+                Disconnect
+              </button>
+            </div>
+          </>
+        )}
 
-      ) : null}
-
-
+        {status && (
+          <div style={{ ...s.status, ...(status.kind === 'ok' ? s.ok : s.err) }}>{status.text}</div>
+        )}
+      </div>
     </main>
-
-
   );
-
-
 }

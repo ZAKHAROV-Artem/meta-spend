@@ -15,10 +15,10 @@ export function Sidebar() {
     <TooltipProvider delayDuration={100}>
       <>
         <aside className="sticky top-4 hidden h-[calc(100vh-2rem)] w-[4.5rem] shrink-0 md:block md:top-5 md:h-[calc(100vh-2.5rem)]">
-          <div className="flex h-full flex-col rounded-lg border border-sidebar-border bg-sidebar-background px-2.5 py-4 text-sidebar-foreground">
+          <div className="flex h-full flex-col rounded-2xl border border-sidebar-border bg-sidebar-background px-2.5 py-4 text-sidebar-foreground">
             <div className="mb-3 flex justify-center">
-              <Link href="/transactions" className="group flex h-11 w-11 items-center justify-center rounded-lg border border-sidebar-border bg-sidebar-accent/70 text-sidebar-foreground transition hover:border-primary/40 hover:text-primary">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
+              <Link href="/dashboard" className="group flex h-11 w-11 items-center justify-center rounded-2xl border border-sidebar-border bg-sidebar-accent/70 text-sidebar-foreground transition hover:border-primary/40 hover:text-primary">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10">
                   <WalletCards className="h-4 w-4 text-primary" />
                 </div>
               </Link>
@@ -35,14 +35,14 @@ export function Sidebar() {
               className="absolute inset-0 bg-background/45"
               onClick={closeMobileNav}
             />
-            <aside className="absolute inset-y-4 left-4 flex w-[18rem] flex-col rounded-lg border border-sidebar-border bg-sidebar-background p-4 text-sidebar-foreground">
+            <aside className="absolute inset-y-4 left-4 flex w-[18rem] flex-col rounded-2xl border border-sidebar-border bg-sidebar-background p-4 text-sidebar-foreground">
               <div className="mb-5 flex items-center justify-between">
-                <Link href="/transactions" onClick={closeMobileNav} className="flex items-center gap-3 font-semibold">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                <Link href="/dashboard" onClick={closeMobileNav} className="flex items-center gap-3 font-semibold">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
                     <WalletCards className="h-4 w-4 text-primary" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-sidebar-foreground">CryptoTrack</p>
+                    <p className="text-sm font-semibold text-sidebar-foreground">🦊 MetaSpend</p>
                     <p className="text-xs text-sidebar-muted-foreground">MetaMask Card</p>
                   </div>
                 </Link>

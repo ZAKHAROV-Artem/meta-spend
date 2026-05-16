@@ -13,7 +13,7 @@ export default function LandingPage() {
         <CTASection />
       </main>
       <footer className="border-t py-8 text-center text-sm text-muted-foreground">
-        <p>© 2026 CryptoTrack. Crypto-native expense tracking.</p>
+        <p>© 2026 MetaSpend. MetaMask Card transaction visualization.</p>
       </footer>
     </>
   );
