@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { PortfolioOverview, PortfolioSyncState, PortfolioSyncStatus } from '@crypto-tracker/shared';
+import type { PortfolioOverview } from '@crypto-tracker/shared';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -19,70 +19,27 @@ export class PortfolioService {
     return this.getOverview(userId);
   }
 
-  async refresh(userId: string): Promise<PortfolioSyncStatus> {
-    await this.prisma.portfolioAccount.updateMany({
-      where: { userId },
-      data: {
-        lastRefreshRequestedAt: new Date(),
-        lastSuccessfulSyncAt: new Date(),
-        lastSyncState: 'IDLE',
-        lastSyncError: null,
-      },
-    });
-    return this.getSyncStatus(userId);
-  }
-
   async getOverview(userId: string): Promise<PortfolioOverview> {
-    const syncStatus = await this.getSyncStatus(userId);
-    const balanceRow = await this.prisma.portfolioAccount.findUnique({
-      where: { userId },
-      select: { cardBalanceAmount: true, cardBalanceCurrency: true },
-    });
-    const cardBalance =
-      balanceRow?.cardBalanceAmount != null && balanceRow.cardBalanceCurrency
-        ? {
-            amount: balanceRow.cardBalanceAmount.toString(),
-            currency: balanceRow.cardBalanceCurrency,
-          }
-        : null;
-    return {
-      address: syncStatus.address,
-      holdings: [],
-      totalBalanceUsd: '0',
-      totalTransactions: 0,
-      totalInflowsUsd: '0',
-      totalOutflowsUsd: '0',
-      syncStatus,
-      cardBalance,
-    };
-  }
-
-  async getSyncStatus(userId: string): Promise<PortfolioSyncStatus> {
     const account = await this.prisma.portfolioAccount.findUnique({
       where: { userId },
       select: {
         address: true,
-        lastSuccessfulSyncAt: true,
-        lastRefreshRequestedAt: true,
-        lastSyncError: true,
-        lastSyncState: true,
+        cardBalanceAmount: true,
+        cardBalanceCurrency: true,
       },
     });
 
-    const address = account?.address?.toLowerCase() ?? null;
-    let state: PortfolioSyncState = 'UNCONFIGURED';
-    if (address) state = account?.lastSyncState === 'SYNCING' ? 'IDLE' : 'IDLE';
+    const cardBalance =
+      account?.cardBalanceAmount != null && account.cardBalanceCurrency
+        ? {
+            amount: account.cardBalanceAmount.toString(),
+            currency: account.cardBalanceCurrency,
+          }
+        : null;
 
     return {
-      address,
-      state,
-      isStale: false,
-      lastSyncedAt: account?.lastSuccessfulSyncAt?.toISOString() ?? null,
-      lastRefreshRequestedAt: account?.lastRefreshRequestedAt?.toISOString() ?? null,
-      failedChains: [],
-      message: address
-        ? 'MetaSpend focuses on MetaMask Card spend analytics (no on-chain sync).'
-        : 'Connect MetaMask SIWE once to personalize your workspace.',
+      address: account?.address?.toLowerCase() ?? null,
+      cardBalance,
     };
   }
 }

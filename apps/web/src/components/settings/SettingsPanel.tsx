@@ -15,10 +15,6 @@ function shortAddress(value: string | null | undefined) {
   return value ? `${value.slice(0, 10)}...${value.slice(-6)}` : 'Not connected';
 }
 
-function formatSyncTime(value: string | null | undefined) {
-  if (!value) return '—';
-  return new Date(value).toLocaleString();
-}
 
 function AutoCategorizationLog() {
   const { data: runs = [], isLoading } = useCategorizationRuns();
@@ -125,13 +121,10 @@ export function SettingsPanel({ email }: { email: string }) {
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-background px-4 py-3">
             <div>
               <p className="text-sm font-medium">{portfolioStatus}</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Last refresh: {formatSyncTime(overview?.syncStatus.lastSyncedAt)}
-              </p>
             </div>
-            <Badge variant={overview?.syncStatus.state === 'ERROR' ? 'destructive' : 'secondary'} className="gap-1.5">
-              <RefreshCw className={`h-3 w-3 ${overview?.syncStatus.state === 'SYNCING' ? 'animate-spin' : ''}`} />
-              {overview?.syncStatus.state ?? 'IDLE'}
+            <Badge variant="secondary" className="gap-1.5">
+              <RefreshCw className="h-3 w-3" />
+              IDLE
             </Badge>
           </div>
 

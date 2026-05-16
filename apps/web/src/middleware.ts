@@ -6,8 +6,6 @@ export default auth((req) => {
   const { pathname } = req.nextUrl;
 
   const isAppRoute =
-    pathname.startsWith('/holdings') ||
-    pathname.startsWith('/card') ||
     pathname.startsWith('/analytics') ||
     pathname.startsWith('/transactions') ||
     pathname.startsWith('/categories') ||
