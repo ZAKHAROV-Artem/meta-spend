@@ -710,7 +710,7 @@ export function AnalyticsOverview() {
             </ChartContainer>
           ) : (
             <div className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
-              {data!.topMerchants.slice(0, 8).map((m, i) => (
+              {(data?.topMerchants ?? []).slice(0, 8).map((m, i) => (
                 <button
                   key={m.key}
                   type="button"

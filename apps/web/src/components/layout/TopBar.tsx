@@ -50,10 +50,11 @@ export function TopBar() {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user ?? null);
+    let cancelled = false;
+    createClient().auth.getUser().then(({ data }) => {
+      if (!cancelled) setUser(data.user ?? null);
     });
+    return () => { cancelled = true; };
   }, []);
 
   const pageInfo =
@@ -75,6 +76,7 @@ export function TopBar() {
           onClick={openMobileNav}
           className="shrink-0 rounded-full md:hidden"
           type="button"
+          aria-label="Open navigation"
         >
           <Menu className="size-4" />
         </Button>

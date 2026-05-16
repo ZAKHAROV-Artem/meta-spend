@@ -31,9 +31,10 @@ export function MetaMaskCardWidget({
 
   const handleCopyAddress = () => {
     if (!address) return;
-    navigator.clipboard.writeText(address).then(() => {
-      setCopied(true);
-    });
+    navigator.clipboard.writeText(address).then(
+      () => setCopied(true),
+      (err) => console.error('Clipboard write failed:', err),
+    );
   };
 
   useEffect(() => {
