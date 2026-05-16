@@ -10,7 +10,6 @@ import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
 import { createHash } from 'crypto';
 import { SiweMessage } from 'siwe';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { UsersService } from '../users/users.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
@@ -21,14 +20,8 @@ import { AuthUser, AuthTokens, TokenPayload } from '@crypto-tracker/shared';
 import { PortfolioService } from '../portfolio/portfolio.service';
 
 export type SiweVerifyResult = {
-  /** Supabase session access token (returned when SUPABASE_* env vars are set). */
-  supabaseAccessToken?: string;
-  /** Supabase session refresh token (returned when SUPABASE_* env vars are set). */
-  supabaseRefreshToken?: string;
-  /** Legacy access token (fallback when Supabase is not configured). */
-  accessToken?: string;
-  /** Legacy refresh token (fallback when Supabase is not configured). */
-  refreshToken?: string;
+  accessToken: string;
+  refreshToken: string;
   user: AuthUser;
 };
 
@@ -140,37 +133,12 @@ export class AuthService {
     const address = siweMessage.address.toLowerCase();
     const siweEmail = `${address}@wallet.metaspend.app`;
 
-    // Look up existing local user once (prefer canonical email, fall back to legacy).
+    // Maintain backward-compatible synthetic email so existing users keep their data.
     const legacyEmail = `${address}@wallet.siwe`;
-    const existingUser =
+    let user =
       (await this.usersService.findByEmail(siweEmail)) ??
       (await this.usersService.findByEmail(legacyEmail));
 
-    // Try Supabase integration first. If we already know this user's Supabase ID,
-    // we can skip the expensive listUsers scan entirely.
-    const supabaseSession = await this.tryMintSupabaseSessionForSiwe({
-      address,
-      siweEmail,
-      knownSupabaseId: existingUser?.supabaseId ?? null,
-    });
-
-    if (supabaseSession) {
-      // Provision/link local user using the Supabase ID
-      const user = await this.usersService.provisionFromSupabase({
-        supabaseId: supabaseSession.supabaseUserId,
-        email: siweEmail,
-      });
-      await this.portfolioService.setPrimaryAddress(user.id, address);
-      return {
-        supabaseAccessToken: supabaseSession.accessToken,
-        supabaseRefreshToken: supabaseSession.refreshToken,
-        user: { id: user.id, email: user.email },
-      };
-    }
-
-    // Fallback: legacy JWT path (Supabase not configured)
-    // Maintain backward-compatible synthetic email so existing users keep their data.
-    let user = existingUser;
     if (!user) {
       user = await this.usersService.create({ email: legacyEmail });
     }
@@ -180,107 +148,6 @@ export class AuthService {
     const tokens = await this.generateTokens({ sub: user.id, email: user.email });
     await this.createSession(user.id, tokens.refreshToken);
     return { ...tokens, user: { id: user.id, email: user.email } };
-  }
-
-  private async tryMintSupabaseSessionForSiwe(params: {
-    address: string;
-    siweEmail: string;
-    knownSupabaseId: string | null;
-  }): Promise<{ accessToken: string; refreshToken: string; supabaseUserId: string } | null> {
-    const supabaseUrl = this.configService.get<string>('supabase.url');
-    const serviceRoleKey = this.configService.get<string>('supabase.serviceRoleKey');
-    if (!supabaseUrl || !serviceRoleKey) {
-      this.logger.warn(
-        'Supabase auth not configured: SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY missing.',
-      );
-      return null;
-    }
-
-    let admin: SupabaseClient;
-    try {
-      admin = createClient(supabaseUrl, serviceRoleKey, {
-        auth: { autoRefreshToken: false, persistSession: false },
-      });
-    } catch (err) {
-      this.logger.warn(`Failed to construct Supabase admin client: ${(err as Error).message}`);
-      return null;
-    }
-
-    try {
-      let supabaseUserId: string | undefined;
-
-      if (params.knownSupabaseId) {
-        // We already linked this local user to a Supabase ID — skip the O(n) listUsers scan.
-        supabaseUserId = params.knownSupabaseId;
-      } else {
-        // First-time SIWE for this wallet. Search Supabase for an existing synthetic user.
-        const supabaseUser = await this.findSupabaseUserByEmail(admin, params.siweEmail);
-        supabaseUserId = supabaseUser?.id;
-      }
-
-      if (!supabaseUserId) {
-        const { data: created, error: createErr } = await admin.auth.admin.createUser({
-          email: params.siweEmail,
-          email_confirm: true,
-          user_metadata: { wallet_address: params.address },
-        });
-        if (createErr || !created?.user) {
-          this.logger.warn(`Supabase admin.createUser failed: ${createErr?.message ?? 'unknown'}`);
-          return null;
-        }
-        supabaseUserId = created.user.id;
-      }
-
-      // Generate a magic link, then exchange its hashed token for a session.
-      const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
-        type: 'magiclink',
-        email: params.siweEmail,
-      });
-      if (linkErr || !linkData?.properties?.hashed_token) {
-        this.logger.warn(
-          `Supabase admin.generateLink failed: ${linkErr?.message ?? 'no hashed_token'}`,
-        );
-        return null;
-      }
-
-      const { data: sessionData, error: verifyErr } = await admin.auth.verifyOtp({
-        token_hash: linkData.properties.hashed_token,
-        type: 'magiclink',
-      });
-      if (verifyErr || !sessionData?.session) {
-        this.logger.warn(`Supabase verifyOtp failed: ${verifyErr?.message ?? 'no session'}`);
-        return null;
-      }
-
-      return {
-        accessToken: sessionData.session.access_token,
-        refreshToken: sessionData.session.refresh_token,
-        supabaseUserId,
-      };
-    } catch (err) {
-      this.logger.error(`Supabase SIWE provisioning failed: ${(err as Error).message}`);
-      return null;
-    }
-  }
-
-  private async findSupabaseUserByEmail(
-    admin: SupabaseClient,
-    email: string,
-  ): Promise<{ id: string } | null> {
-    // listUsers paginates; cap at a few pages to bound work.
-    const PAGE_SIZE = 100;
-    const MAX_PAGES = 50;
-    for (let page = 1; page <= MAX_PAGES; page += 1) {
-      const { data, error } = await admin.auth.admin.listUsers({ page, perPage: PAGE_SIZE });
-      if (error) {
-        this.logger.warn(`Supabase admin.listUsers failed: ${error.message}`);
-        return null;
-      }
-      const match = data?.users?.find((u) => u.email?.toLowerCase() === email.toLowerCase());
-      if (match) return { id: match.id };
-      if (!data?.users || data.users.length < PAGE_SIZE) return null;
-    }
-    return null;
   }
 
   private async generateTokens(payload: TokenPayload): Promise<AuthTokens> {

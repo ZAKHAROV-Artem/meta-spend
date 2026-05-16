@@ -15,40 +15,6 @@ type RequestWithUser = {
   user?: AuthUser;
 };
 
-/**
- * Supabase-issued JWT payload (HS256 signed with SUPABASE_JWT_SECRET).
- * `sub` is the Supabase auth user UUID.
- */
-interface SupabaseJwtPayload {
-  sub: string;
-  email?: string;
-  aud?: string;
-  exp?: number;
-  iat?: number;
-  user_metadata?: { email?: string };
-  app_metadata?: Record<string, unknown>;
-}
-
-type AnyJwtPayload = TokenPayload | SupabaseJwtPayload;
-
-function looksLikeSupabasePayload(payload: AnyJwtPayload): payload is SupabaseJwtPayload {
-  return (
-    typeof (payload as SupabaseJwtPayload).aud === 'string' &&
-    (payload as SupabaseJwtPayload).aud === 'authenticated'
-  );
-}
-
-function decodeUnverified(token: string): AnyJwtPayload | null {
-  try {
-    const segments = token.split('.');
-    if (segments.length < 2 || !segments[1]) return null;
-    const json = Buffer.from(segments[1], 'base64url').toString('utf8');
-    return JSON.parse(json) as AnyJwtPayload;
-  } catch {
-    return null;
-  }
-}
-
 @Injectable()
 export class JwtOrExtensionAuthGuard implements CanActivate {
   constructor(
@@ -65,42 +31,23 @@ export class JwtOrExtensionAuthGuard implements CanActivate {
       throw new UnauthorizedException('Missing bearer token');
     }
     const token = authHeader.slice(7).trim();
-    const legacySecret = this.configService.get<string>('jwt.secret') ?? '';
-    const supabaseSecret = this.configService.get<string>('supabase.jwtSecret') ?? '';
+    const jwtSecret = this.configService.get<string>('jwt.secret') ?? '';
 
-    // Peek at the unverified payload to decide which secret to try first.
-    const unverified = decodeUnverified(token);
-
-    if (unverified && looksLikeSupabasePayload(unverified) && supabaseSecret) {
+    // Path 1: standard JWT (signed with jwt.secret)
+    if (jwtSecret) {
       try {
-        const payload = this.jwtService.verify<SupabaseJwtPayload>(token, {
-          secret: supabaseSecret,
-        });
-        const email = payload.email ?? payload.user_metadata?.email;
-        if (!email) {
-          throw new UnauthorizedException('Supabase token is missing an email claim');
+        const payload = this.jwtService.verify<TokenPayload>(token, { secret: jwtSecret });
+        const user = await this.usersService.findById(payload.sub);
+        if (user) {
+          request.user = { id: user.id, email: user.email };
+          return true;
         }
-        const user = await this.usersService.provisionFromSupabase({
-          supabaseId: payload.sub,
-          email,
-        });
-        request.user = { id: user.id, email: user.email };
-        return true;
-      } catch {
-        // fall through to legacy / extension paths
-      }
-    }
-
-    if (legacySecret) {
-      try {
-        const payload = this.jwtService.verify<TokenPayload>(token, { secret: legacySecret });
-        request.user = { id: payload.sub, email: payload.email };
-        return true;
       } catch {
         // fall through to extension token path
       }
     }
 
+    // Path 2: extension token (hashed bearer token in ExtensionToken table)
     const extensionUser = await this.extensionTokenService.validateAndTouch(token);
     if (!extensionUser) {
       throw new UnauthorizedException('Invalid or expired token');

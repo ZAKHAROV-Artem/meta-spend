@@ -12,7 +12,6 @@ model User {
   email        String   @unique
   passwordHash String?
   displayName  String?
-  supabaseId   String?  @unique
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
