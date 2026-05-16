@@ -47,7 +47,7 @@ export function useApiQuery<T>(
   const router = useRouter();
   const basePath = path.split('?')[0] ?? path;
   return useQuery<T>({
-    queryKey: [basePath, path, token],
+    queryKey: [basePath, path],
     queryFn: async () => {
       const accessToken = token ?? (await getFreshToken());
       if (!accessToken) {

@@ -65,8 +65,11 @@ export function SiweButton() {
         });
         if (setSessionError) throw setSessionError;
       } else {
-        // Supabase not configured on backend — surface a helpful error.
-        throw new Error('Supabase auth not configured. Set SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY on the API.');
+        // Supabase not configured on backend — log internal detail, show generic message to user.
+        console.error(
+          '[SIWE] Backend did not return Supabase session tokens; SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY likely unset on the API.',
+        );
+        throw new Error('Wallet sign-in is temporarily unavailable.');
       }
 
       router.push('/dashboard');

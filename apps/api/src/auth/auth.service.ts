@@ -119,7 +119,14 @@ export class AuthService {
   }
 
   async verifySiwe(message: string, signature: string): Promise<SiweVerifyResult> {
-    const siweMessage = new SiweMessage(message);
+    let siweMessage: SiweMessage;
+    try {
+      siweMessage = new SiweMessage(message);
+    } catch (err) {
+      throw new BadRequestException(
+        `Malformed SIWE message: ${err instanceof Error ? err.message : 'parse error'}`,
+      );
+    }
 
     if (!this.nonceStore.consume(siweMessage.nonce)) {
       throw new UnauthorizedException('Invalid or expired nonce');
@@ -133,8 +140,19 @@ export class AuthService {
     const address = siweMessage.address.toLowerCase();
     const siweEmail = `${address}@wallet.metaspend.app`;
 
-    // Try Supabase integration first
-    const supabaseSession = await this.tryMintSupabaseSessionForSiwe({ address, siweEmail });
+    // Look up existing local user once (prefer canonical email, fall back to legacy).
+    const legacyEmail = `${address}@wallet.siwe`;
+    const existingUser =
+      (await this.usersService.findByEmail(siweEmail)) ??
+      (await this.usersService.findByEmail(legacyEmail));
+
+    // Try Supabase integration first. If we already know this user's Supabase ID,
+    // we can skip the expensive listUsers scan entirely.
+    const supabaseSession = await this.tryMintSupabaseSessionForSiwe({
+      address,
+      siweEmail,
+      knownSupabaseId: existingUser?.supabaseId ?? null,
+    });
 
     if (supabaseSession) {
       // Provision/link local user using the Supabase ID
@@ -152,10 +170,7 @@ export class AuthService {
 
     // Fallback: legacy JWT path (Supabase not configured)
     // Maintain backward-compatible synthetic email so existing users keep their data.
-    const legacyEmail = `${address}@wallet.siwe`;
-    let user =
-      (await this.usersService.findByEmail(legacyEmail)) ??
-      (await this.usersService.findByEmail(siweEmail));
+    let user = existingUser;
     if (!user) {
       user = await this.usersService.create({ email: legacyEmail });
     }
@@ -170,10 +185,16 @@ export class AuthService {
   private async tryMintSupabaseSessionForSiwe(params: {
     address: string;
     siweEmail: string;
+    knownSupabaseId: string | null;
   }): Promise<{ accessToken: string; refreshToken: string; supabaseUserId: string } | null> {
     const supabaseUrl = this.configService.get<string>('supabase.url');
     const serviceRoleKey = this.configService.get<string>('supabase.serviceRoleKey');
-    if (!supabaseUrl || !serviceRoleKey) return null;
+    if (!supabaseUrl || !serviceRoleKey) {
+      this.logger.warn(
+        'Supabase auth not configured: SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY missing.',
+      );
+      return null;
+    }
 
     let admin: SupabaseClient;
     try {
@@ -186,10 +207,16 @@ export class AuthService {
     }
 
     try {
-      // Find existing Supabase user with this synthetic email.
-      // listUsers is paginated; we search across pages until we either find it or exhaust.
-      const supabaseUser = await this.findSupabaseUserByEmail(admin, params.siweEmail);
-      let supabaseUserId: string | undefined = supabaseUser?.id;
+      let supabaseUserId: string | undefined;
+
+      if (params.knownSupabaseId) {
+        // We already linked this local user to a Supabase ID — skip the O(n) listUsers scan.
+        supabaseUserId = params.knownSupabaseId;
+      } else {
+        // First-time SIWE for this wallet. Search Supabase for an existing synthetic user.
+        const supabaseUser = await this.findSupabaseUserByEmail(admin, params.siweEmail);
+        supabaseUserId = supabaseUser?.id;
+      }
 
       if (!supabaseUserId) {
         const { data: created, error: createErr } = await admin.auth.admin.createUser({
