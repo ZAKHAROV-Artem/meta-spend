@@ -5,18 +5,16 @@ import { useAccount, useConnect, useDisconnect, useChainId, useSignMessage } fro
 import { injected } from 'wagmi/connectors';
 import { createSiweMessage } from 'viem/siwe';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { setSession } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Wallet, Loader2 } from 'lucide-react';
 
 const API_URL = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3001';
 
 type SiweVerifyResponse = {
-  supabaseAccessToken?: string;
-  supabaseRefreshToken?: string;
-  accessToken?: string;
-  refreshToken?: string;
-  user: { id: string; email: string };
+  accessToken: string;
+  refreshToken: string;
+  user: { id: string; email: string; displayName?: string | null };
 };
 
 export function SiweButton() {
@@ -57,23 +55,8 @@ export function SiweButton() {
       if (!verifyRes.ok) throw new Error('SIWE verification failed');
       const data = (await verifyRes.json()) as SiweVerifyResponse;
 
-      if (data.supabaseAccessToken && data.supabaseRefreshToken) {
-        const supabase = createClient();
-        const { error: setSessionError } = await supabase.auth.setSession({
-          access_token: data.supabaseAccessToken,
-          refresh_token: data.supabaseRefreshToken,
-        });
-        if (setSessionError) throw setSessionError;
-      } else {
-        // Supabase not configured on backend — log internal detail, show generic message to user.
-        console.error(
-          '[SIWE] Backend did not return Supabase session tokens; SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY likely unset on the API.',
-        );
-        throw new Error('Wallet sign-in is temporarily unavailable.');
-      }
-
+      setSession(data.accessToken, data.refreshToken, data.user);
       router.push('/dashboard');
-      router.refresh();
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Sign-in failed';
       if (msg.toLowerCase().includes('rejected') || msg.toLowerCase().includes('denied')) {
