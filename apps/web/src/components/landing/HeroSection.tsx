@@ -4,12 +4,7 @@ import { ArrowRight } from 'lucide-react';
 
 export function HeroSection() {
   return (
-    <section
-      className="w-full overflow-hidden"
-      style={{
-        background: 'linear-gradient(160deg, #fff8f2 0%, #fef3e8 50%, #fff 100%)',
-      }}
-    >
+    <section className="w-full overflow-hidden bg-[linear-gradient(160deg,#fff8f2_0%,#fef3e8_50%,#fff_100%)]">
       <div className="mx-auto max-w-6xl px-6 py-20 sm:py-28 lg:py-32">
         <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
           {/* Left: text content */}

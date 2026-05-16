@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { LandingNav } from '@/components/landing/LandingNav';
 import { HeroSection } from '@/components/landing/HeroSection';
 import { HowItWorksSection } from '@/components/landing/HowItWorksSection';
@@ -19,8 +20,8 @@ export default function LandingPage() {
           <span className="text-base font-bold text-gray-900">🦊 MetaSpend</span>
           <p className="text-sm text-gray-500">© 2025 MetaSpend. All rights reserved.</p>
           <div className="flex items-center gap-4 text-sm text-gray-500">
-            <a href="/privacy" className="hover:text-gray-900 transition-colors">Privacy</a>
-            <a href="/terms" className="hover:text-gray-900 transition-colors">Terms</a>
+            <Link href="/privacy" className="hover:text-gray-900 transition-colors">Privacy</Link>
+            <Link href="/terms" className="hover:text-gray-900 transition-colors">Terms</Link>
           </div>
         </div>
       </footer>

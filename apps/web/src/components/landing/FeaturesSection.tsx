@@ -1,4 +1,10 @@
-const FEATURES = [
+interface Feature {
+  emoji: string
+  title: string
+  description: string
+}
+
+const FEATURES: Feature[] = [
   {
     emoji: '📊',
     title: 'Transaction History',

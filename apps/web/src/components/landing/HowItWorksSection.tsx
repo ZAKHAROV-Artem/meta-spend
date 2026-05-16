@@ -1,4 +1,10 @@
-const STEPS = [
+interface Step {
+  number: string
+  title: string
+  description: string
+}
+
+const STEPS: Step[] = [
   {
     number: '1',
     title: 'Install extension',
