@@ -1,6 +1,7 @@
 import type { PlasmoCSConfig } from 'plasmo';
 
 import type { ScrapedCardTransaction } from './src/lib/normalize';
+import { scrapeCardBalanceSnapshot } from './src/lib/scrape-card-balance';
 
 type CaptureResult =
   | {
@@ -10,6 +11,7 @@ type CaptureResult =
       capturedAt: string;
       transactionCount: number;
       transactions: ScrapedCardTransaction[];
+      cardBalance?: { amount: string; currency: string };
     }
   | {
       ok: false;
@@ -20,7 +22,7 @@ type CaptureResult =
 
 type ScrapeMessage = { type: 'SCRAPE_CARD_HTML' };
 
-const LOG_PREFIX = '[CryptoTrack Card Capture]';
+const LOG_PREFIX = '[MetaSpend Card Capture]';
 
 export const config: PlasmoCSConfig = {
   matches: ['https://portfolio.metamask.io/*', 'https://card.metamask.io/*'],
@@ -139,7 +141,7 @@ function scrapeTransactions(): CaptureResult {
 
     const transactions = rows.map(parseTransaction);
 
-
+    const cardSnap = scrapeCardBalanceSnapshot();
 
     const result = {
       ok: true,
@@ -148,6 +150,7 @@ function scrapeTransactions(): CaptureResult {
       capturedAt,
       transactionCount: transactions.length,
       transactions,
+      ...(cardSnap ? { cardBalance: cardSnap } : {}),
     } satisfies CaptureResult;
 
 

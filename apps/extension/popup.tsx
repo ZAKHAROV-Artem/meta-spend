@@ -299,7 +299,6 @@ export default function Popup() {
     return (
       <main style={s.root}>
         <div style={s.header}>
-          {FOX}
           <div style={s.headerText}>
             <p style={s.title}>🦊 MetaSpend</p>
             <p style={s.subtitle}>MetaMask Card</p>
@@ -314,7 +313,6 @@ export default function Popup() {
     <main style={s.root}>
       {/* Header */}
       <div style={s.header}>
-        {FOX}
         <div style={s.headerText}>
           <p style={s.title}>🦊 MetaSpend</p>
         </div>

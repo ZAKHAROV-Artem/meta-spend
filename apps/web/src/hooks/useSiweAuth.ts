@@ -32,7 +32,7 @@ export function useSiweAuth() {
         nonce,
         uri: window.location.origin,
         version: '1',
-        statement: 'Sign in to CryptoTrack',
+        statement: 'Sign in to MetaSpend',
       });
 
       const signature = await signMessageAsync({ message });

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { CategoriesManager } from '@/components/categories/CategoriesManager';
 
-export const metadata: Metadata = { title: 'Categories — CryptoTrack' };
+export const metadata: Metadata = { title: 'Categories — MetaSpend' };
 
 export default function CategoriesPage() {
   return (

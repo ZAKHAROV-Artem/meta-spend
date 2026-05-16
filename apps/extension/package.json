@@ -6,13 +6,13 @@
   "description": "Parse MetaMask Card transaction HTML for debugging.",
   "manifest": {
 
-    "name": "CryptoTrack - MetaMask Card sync",
+    "name": "MetaSpend - MetaMask Card sync",
 
     "action": {
 
       "default_popup": "popup.html",
 
-      "default_title": "CryptoTrack Card"
+      "default_title": "MetaSpend Card"
 
 
 

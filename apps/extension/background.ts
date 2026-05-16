@@ -4,8 +4,6 @@ import {
   type ScrapedCardTransaction,
 } from './src/lib/normalize';
 
-import { syncCardTransactions } from './src/lib/api';
-
 type CaptureResult =
   | {
       ok: true;
@@ -14,6 +12,7 @@ type CaptureResult =
       capturedAt: string;
       transactionCount: number;
       transactions: ScrapedCardTransaction[];
+      cardBalance?: { amount: string; currency: string };
     }
   | {
       ok: false;
@@ -33,10 +32,11 @@ type StoredCapture = CaptureResult & {
 /** Pairing token is saved from the popup. */
 export const STORAGE_API_TOKEN_KEY = 'cryptotrackApiToken';
 
-const LOG_PREFIX = '[CryptoTrack Card Capture]';
+const LOG_PREFIX = '[MetaSpend Card Capture]';
 
 const STORAGE_KEY = 'cardCaptures';
-const SCRAPE_TIMEOUT_MS = 8_000;
+/** Content-script scrape must finish quickly; sync HTTP runs in the popup (MV3 workers suspend on long fetch). */
+const SCRAPE_TIMEOUT_MS = 15_000;
 
 function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -142,8 +142,36 @@ function scrapeFromPage(): CaptureResult {
     const rowsFromDom = Array.from(list.querySelectorAll('.transactionRow__accordion_main_container'));
     const transactions = rowsFromDom.map(parseTransaction);
 
-    return {
+    const scrapeCardBalanceSnapshot = (): { amount: string; currency: string } | null => {
+      const container = document.querySelector('.cardImagery__card_svg_container');
+      if (!container) return null;
+      const textEls = container.querySelectorAll('svg text');
+      for (let ti = 0; ti < textEls.length; ti++) {
+        const textEl = textEls[ti];
+        const tspans = textEl.querySelectorAll('tspan');
+        if (tspans.length === 0) continue;
+        let amount = '';
+        for (let ni = 0; ni < textEl.childNodes.length; ni++) {
+          const node = textEl.childNodes[ni];
+          if (node.nodeType === Node.TEXT_NODE) {
+            amount += (node.textContent || '').trim();
+          }
+        }
+        amount = amount.replace(/\s/g, '');
+        const currencyEl = tspans[tspans.length - 1];
+        const currency = ((currencyEl && currencyEl.textContent) || '')
+          .trim()
+          .replace(/\s/g, '');
+        if (!amount || !currency) continue;
+        const normalizedAmount = amount.replace(/,/g, '');
+        if (!/^\d+(\.\d+)?$/.test(normalizedAmount)) continue;
+        return { amount: normalizedAmount, currency };
+      }
+      return null;
+    };
 
+    const snap = scrapeCardBalanceSnapshot();
+    const out: CaptureResult = {
       ok: true,
       html: '',
       sourceUrl: location.href,
@@ -151,6 +179,8 @@ function scrapeFromPage(): CaptureResult {
       transactionCount: transactions.length,
       transactions,
     };
+    if (snap) out.cardBalance = snap;
+    return out;
 
   } catch (error) {
 
@@ -341,78 +371,36 @@ chrome.runtime.onMessage.addListener((message: CaptureMessage, _sender, sendResp
         return;
       }
 
-
       const token = await getStoredApiToken();
-
-
-      const items = scrapedManyToParsedPayload(result.transactions);
-
-
-      const parserVersionUsed = CARD_PARSER_VERSION;
 
       if (!token) {
         sendResponse({
           ok: true as const,
           jobId,
           scrapeOk: true,
-
           transactionCount: result.transactionCount,
-          parsedItems: items.length,
-          synced: false,
-          message: `Scraped ${result.transactionCount} rows. Pair the extension first to push transactions.`,
+          syncPayload: null,
+          scrapeOnlyMessage: `Scraped ${result.transactionCount} rows. Pair the extension first to push transactions.`,
         });
         return;
-
-
-
       }
 
+      const items = scrapedManyToParsedPayload(result.transactions);
 
-
-      try {
-        const sync = await syncCardTransactions(token, { parserVersion: parserVersionUsed, items });
-
-        console.log(LOG_PREFIX, 'API sync OK', sync);
-
-        sendResponse({
-          ok: true as const,
-          jobId,
-          scrapeOk: true,
-
-          transactionCount: result.transactionCount,
-
-          synced: true,
-          inserted: sync.inserted,
-          updated: sync.updated,
-
-          skippedDuplicateInBatch: sync.skipped,
-        });
-
-
-      } catch (syncErr) {
-
-
-
-        const syncMessage = syncErr instanceof Error ? syncErr.message : String(syncErr);
-
-
-
-        console.warn(LOG_PREFIX, 'API sync failed', syncErr);
-
-
-
-        sendResponse({
-          ok: false as const,
-
-          jobId,
-          scrapeOk: true,
-          error: syncMessage,
-
-          detail: `Scrape saved locally; sync failed: ${syncMessage}`,
-        });
-
-
-      }
+      sendResponse({
+        ok: true as const,
+        jobId,
+        scrapeOk: true,
+        transactionCount: result.transactionCount,
+        syncPayload: {
+          parserVersion: CARD_PARSER_VERSION,
+          items,
+          ...(result.ok && result.cardBalance
+            ? { cardBalanceSnapshot: result.cardBalance }
+            : {}),
+        },
+        scrapeOnlyMessage: null,
+      });
 
 
     } catch (outer) {

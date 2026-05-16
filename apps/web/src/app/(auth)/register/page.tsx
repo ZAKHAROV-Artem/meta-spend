@@ -3,7 +3,7 @@ import { RegisterForm } from '@/components/auth/RegisterForm';
 import { SiweButton } from '@/components/auth/SiweButton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-export const metadata: Metadata = { title: 'Create account — CryptoTrack' };
+export const metadata: Metadata = { title: 'Create account — MetaSpend' };
 
 export default function RegisterPage() {
   return (

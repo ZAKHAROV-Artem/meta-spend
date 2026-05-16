@@ -3,7 +3,7 @@ import { LoginForm } from '@/components/auth/LoginForm';
 import { SiweButton } from '@/components/auth/SiweButton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-export const metadata: Metadata = { title: 'Sign in — CryptoTrack' };
+export const metadata: Metadata = { title: 'Sign in — MetaSpend' };
 
 export default function LoginPage() {
   return (

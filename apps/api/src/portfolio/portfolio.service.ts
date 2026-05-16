@@ -34,6 +34,17 @@ export class PortfolioService {
 
   async getOverview(userId: string): Promise<PortfolioOverview> {
     const syncStatus = await this.getSyncStatus(userId);
+    const balanceRow = await this.prisma.portfolioAccount.findUnique({
+      where: { userId },
+      select: { cardBalanceAmount: true, cardBalanceCurrency: true },
+    });
+    const cardBalance =
+      balanceRow?.cardBalanceAmount != null && balanceRow.cardBalanceCurrency
+        ? {
+            amount: balanceRow.cardBalanceAmount.toString(),
+            currency: balanceRow.cardBalanceCurrency,
+          }
+        : null;
     return {
       address: syncStatus.address,
       holdings: [],
@@ -42,6 +53,7 @@ export class PortfolioService {
       totalInflowsUsd: '0',
       totalOutflowsUsd: '0',
       syncStatus,
+      cardBalance,
     };
   }
 
@@ -69,7 +81,7 @@ export class PortfolioService {
       lastRefreshRequestedAt: account?.lastRefreshRequestedAt?.toISOString() ?? null,
       failedChains: [],
       message: address
-        ? 'CryptoTrack focuses on MetaMask Card spend analytics (no on-chain sync).'
+        ? 'MetaSpend focuses on MetaMask Card spend analytics (no on-chain sync).'
         : 'Connect MetaMask SIWE once to personalize your workspace.',
     };
   }

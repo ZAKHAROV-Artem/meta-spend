@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { MetaMaskLogo } from './MetaMaskLogo';
 
 export function LandingNav() {
   return (
