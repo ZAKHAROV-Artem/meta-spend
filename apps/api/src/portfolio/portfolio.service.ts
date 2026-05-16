@@ -6,19 +6,6 @@ import { PrismaService } from '../prisma/prisma.service';
 export class PortfolioService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async setPrimaryAddress(userId: string, address: string): Promise<void> {
-    await this.prisma.portfolioAccount.upsert({
-      where: { userId },
-      create: { userId, address: address.toLowerCase() },
-      update: { address: address.toLowerCase() },
-    });
-  }
-
-  async connect(userId: string, address: string): Promise<PortfolioOverview> {
-    await this.setPrimaryAddress(userId, address.toLowerCase());
-    return this.getOverview(userId);
-  }
-
   async getOverview(userId: string): Promise<PortfolioOverview> {
     const account = await this.prisma.portfolioAccount.findUnique({
       where: { userId },

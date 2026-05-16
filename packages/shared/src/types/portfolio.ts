@@ -10,7 +10,3 @@ export interface PortfolioOverview {
   /** Present after extension sync captured the card balance from portfolio.metamask.io */
   cardBalance: CardBalanceSnapshot | null;
 }
-
-export interface ConnectPortfolioDto {
-  address: string;
-}
