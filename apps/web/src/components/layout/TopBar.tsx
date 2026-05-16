@@ -14,8 +14,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useUiStore } from '@/store/ui.store';
 import { ThemeSwitcher } from './ThemeSwitcher';
-import { createClient } from '@/lib/supabase/client';
-import type { User } from '@supabase/supabase-js';
+import { getStoredUser, clearSession, type StoredUser } from '@/lib/auth';
 
 const PAGE_LABELS: Record<string, { title: string; description: string }> = {
   '/dashboard': { title: 'Dashboard', description: 'Overview and recent activity' },
@@ -25,45 +24,40 @@ const PAGE_LABELS: Record<string, { title: string; description: string }> = {
   '/settings': { title: 'Settings', description: 'Account, wallet, and extension' },
 };
 
-function getAvatarLabel(user: User | null): string {
+function getAvatarLabel(user: StoredUser | null): string {
   if (!user) return '?';
   if (user.email) return user.email[0]!.toUpperCase();
-  const wallet = user.user_metadata?.wallet_address as string | undefined;
-  if (wallet) return wallet[0]!.toUpperCase();
   return '?';
 }
 
-function getUserDisplayLabel(user: User | null): string {
+function getUserDisplayLabel(user: StoredUser | null): string {
   if (!user) return '';
-  if (user.email) return user.email;
-  const wallet = user.user_metadata?.wallet_address as string | undefined;
-  if (wallet && wallet.length > 10) {
-    return `${wallet.slice(0, 6)}…${wallet.slice(-4)}`;
-  }
-  return wallet ?? '';
+  return user.displayName ?? user.email ?? '';
 }
 
 export function TopBar() {
   const openMobileNav = useUiStore((s) => s.openMobileNav);
   const pathname = usePathname();
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<StoredUser | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
-    createClient().auth.getUser().then(({ data }) => {
-      if (!cancelled) setUser(data.user ?? null);
-    });
-    return () => { cancelled = true; };
+    setUser(getStoredUser());
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'ms_user') {
+        setUser(e.newValue ? JSON.parse(e.newValue) : null);
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
   }, []);
 
   const pageInfo =
     Object.entries(PAGE_LABELS).find(([key]) => pathname === key || pathname.startsWith(`${key}/`))?.[1] ??
     PAGE_LABELS['/transactions'];
 
-  const handleSignOut = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+  const handleSignOut = () => {
+    clearSession();
     router.push('/');
   };
 
