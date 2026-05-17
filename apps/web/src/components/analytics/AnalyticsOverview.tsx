@@ -10,12 +10,14 @@ import {
   CartesianGrid,
   Cell,
   ComposedChart,
+  Label,
   Line,
   Pie,
   PieChart,
   XAxis,
   YAxis,
 } from 'recharts';
+import { ArrowDownCircle, BarChart2, Calendar, TrendingDown, X } from 'lucide-react';
 
 import { PeriodComparison } from '@/components/analytics/PeriodComparison';
 import { useTransactionStats } from '@/hooks/api/useTransactionStats';
@@ -55,18 +57,23 @@ function StatCard({
   label,
   value,
   sub,
+  icon: Icon,
   children,
 }: {
   label: string;
   value: string;
   sub?: string;
+  icon?: React.ElementType;
   children?: React.ReactNode;
 }) {
   return (
     <Card>
       <CardContent className="px-5 py-4">
-        <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="mt-1.5 text-2xl font-bold tracking-tight tabular-nums leading-tight sm:text-3xl">
+        <div className="flex items-start justify-between">
+          <p className="text-sm text-muted-foreground">{label}</p>
+          {Icon && <Icon className="h-4 w-4 text-muted-foreground shrink-0" />}
+        </div>
+        <p className="mt-2 text-2xl font-bold tracking-tight tabular-nums leading-tight sm:text-3xl">
           {value}
         </p>
         {sub && <p className="mt-1.5 text-xs text-muted-foreground">{sub}</p>}
@@ -83,6 +90,7 @@ function toIsoDate(d?: Date): string | undefined {
 export function AnalyticsOverview() {
   const router = useRouter();
   const [range, setRange] = useState<AnalyticsRange>({});
+  const [currencyDismissed, setCurrencyDismissed] = useState(false);
   const filters = useMemo(
     () => ({ from: toIsoDate(range.from), to: toIsoDate(range.to) }),
     [range.from, range.to],
@@ -207,8 +215,8 @@ export function AnalyticsOverview() {
   if (isLoading && !data) {
     return (
       <div className="space-y-6">
-        <div className="grid gap-4 sm:grid-cols-3">
-          {[0, 1, 2].map((i) => (
+        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+          {[0, 1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-28 rounded-xl" />
           ))}
         </div>
@@ -284,10 +292,11 @@ export function AnalyticsOverview() {
         </div>
       </div>
 
-      {/* KPI cards */}
-      <div className="grid gap-3 sm:grid-cols-3">
+      {/* KPI cards — 4 in one row */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Total spend"
+          icon={TrendingDown}
           value={formatMoney(data?.totalSpent ?? 0, ccy)}
           sub={`Net ${formatMoney(data?.netSpendPrimary ?? 0, ccy)} after refunds`}
         >
@@ -305,63 +314,63 @@ export function AnalyticsOverview() {
 
         <StatCard
           label="This month"
+          icon={Calendar}
           value={formatMoney(currentMonth?.spent ?? 0, ccy)}
           sub={currentMonth ? monthLabel(currentMonth.year, currentMonth.month) : 'No data yet'}
         />
 
         <StatCard
           label="Refunds received"
+          icon={ArrowDownCircle}
           value={formatMoney(data?.totalReceived ?? 0, ccy)}
           sub={`${data?.refundCount ?? 0} refund transactions`}
         />
+
+        <StatCard
+          label="Avg monthly"
+          icon={BarChart2}
+          value={formatMoney(velocity?.avg ?? 0, ccy)}
+          sub="Mean across selected period"
+        />
       </div>
 
-      {/* Spend velocity (same date filter as above) */}
-      {velocity && (
-        <div className="grid gap-3 sm:grid-cols-3">
-          <StatCard
-            label="Avg monthly spend"
-            value={formatMoney(velocity.avg, ccy)}
-            sub="Mean across months in range"
-          />
-          <StatCard
-            label="Peak month"
-            value={formatMoney(velocity.max, ccy)}
-            sub={
-              velocity.maxMonth
-                ? monthLabel(velocity.maxMonth.year, velocity.maxMonth.month)
-                : '—'
-            }
-          />
-          <StatCard
-            label="Quietest month"
-            value={velocity.min > 0 ? formatMoney(velocity.min, ccy) : '—'}
-            sub={
-              velocity.minMonth && velocity.min > 0
-                ? monthLabel(velocity.minMonth.year, velocity.minMonth.month)
-                : 'No spend months'
-            }
-          />
+      {/* Peak / quietest insight row */}
+      {velocity && monthlyChartData.length >= 2 && (
+        <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
+          {velocity.maxMonth && (
+            <span>
+              Peak:{' '}
+              <span className="font-medium text-foreground">
+                {formatMoney(velocity.max, ccy)}
+              </span>{' '}
+              · {monthLabel(velocity.maxMonth.year, velocity.maxMonth.month)}
+            </span>
+          )}
+          {velocity.minMonth && velocity.min > 0 && (
+            <span>
+              Quietest:{' '}
+              <span className="font-medium text-foreground">
+                {formatMoney(velocity.min, ccy)}
+              </span>{' '}
+              · {monthLabel(velocity.minMonth.year, velocity.minMonth.month)}
+            </span>
+          )}
         </div>
       )}
 
-      {/* Mixed currency breakdown */}
-      {data?.mixedCurrencyNotice && data.byCurrency.length > 1 && (
-        <div className="grid gap-3 sm:grid-cols-2">
-          {data.byCurrency.map((slice) => (
-            <Card key={slice.currency}>
-              <CardContent className="px-5 py-4">
-                <p className="text-sm text-muted-foreground">{slice.currency}</p>
-                <p className="mt-1 text-2xl font-semibold tabular-nums">
-                  {formatMoney(slice.netSpend, slice.currency)}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {formatMoney(slice.totalSpent, slice.currency)} spent ·{' '}
-                  {formatMoney(slice.totalReceived, slice.currency)} back · {slice.txCount} tx
-                </p>
-              </CardContent>
-            </Card>
-          ))}
+      {/* Mixed currency: dismissible info banner */}
+      {data?.mixedCurrencyNotice && !currencyDismissed && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/50 px-4 py-2.5 text-sm">
+          <span className="text-muted-foreground">
+            Multiple currencies detected. Amounts shown in primary currency where possible.
+          </span>
+          <button
+            onClick={() => setCurrencyDismissed(true)}
+            className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Dismiss"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
       )}
 
@@ -380,7 +389,7 @@ export function AnalyticsOverview() {
             ) : (
               <ChartContainer
                 config={monthlyChartConfig}
-                className="h-[200px] w-full sm:h-[220px]"
+                className="h-[280px] w-full"
               >
                 <BarChart
                   accessibilityLayer
@@ -531,6 +540,33 @@ export function AnalyticsOverview() {
                           fill={entry.fill ?? CHART_COLORS[index % CHART_COLORS.length]}
                         />
                       ))}
+                      <Label
+                        content={({ viewBox }) => {
+                          const vb = viewBox as { cx?: number; cy?: number };
+                          if (!vb?.cx || !vb?.cy) return null;
+                          const total = formatMoneyCompact(data?.totalSpent ?? 0, ccy);
+                          return (
+                            <text x={vb.cx} y={vb.cy} textAnchor="middle" dominantBaseline="central">
+                              <tspan
+                                x={vb.cx}
+                                dy="-0.3em"
+                                className="fill-foreground text-sm font-bold"
+                                style={{ fontSize: '13px', fontWeight: 700 }}
+                              >
+                                {total}
+                              </tspan>
+                              <tspan
+                                x={vb.cx}
+                                dy="1.2em"
+                                className="fill-muted-foreground"
+                                style={{ fontSize: '10px' }}
+                              >
+                                total
+                              </tspan>
+                            </text>
+                          );
+                        }}
+                      />
                     </Pie>
                   </PieChart>
                 </ChartContainer>
@@ -568,171 +604,174 @@ export function AnalyticsOverview() {
         </Card>
       </div>
 
-      {/* Cumulative spend */}
-      <Card>
-        <CardHeader className="pb-1 pt-4 px-5">
-          <CardTitle className="text-base font-semibold">Cumulative spend</CardTitle>
-          <p className="text-xs text-muted-foreground">Running total over months in this range</p>
-        </CardHeader>
-        <CardContent className="px-3 pb-4">
-          {cumulativeChartData.length === 0 ? (
-            <p className="py-10 text-center text-sm text-muted-foreground">No monthly data yet.</p>
-          ) : (
-            <ChartContainer config={cumulativeChartConfig} className="h-[200px] w-full sm:h-[220px]">
-              <ComposedChart data={cumulativeChartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border/40" />
-                <XAxis
-                  dataKey="month"
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={8}
-                  tick={{ fontSize: 12 }}
-                />
-                <YAxis
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={4}
-                  width={52}
-                  tick={{ fontSize: 12 }}
-                  tickFormatter={(v) => formatMoneyCompact(v as number, ccy)}
-                />
-                <ChartTooltip
-                  content={
-                    <ChartTooltipContent
-                      formatter={(value, name) => (
-                        <span className="font-mono font-medium">
-                          {formatMoney(Number(value), ccy)}
-                          <span className="ml-1 text-muted-foreground font-normal">
-                            {name === 'cumulative' ? ' cumulative' : ' this month'}
+      {/* Row 2: Cumulative + Top merchants side by side */}
+      <div className="grid gap-3 lg:grid-cols-2">
+        {/* Cumulative spend */}
+        <Card>
+          <CardHeader className="pb-1 pt-4 px-5">
+            <CardTitle className="text-base font-semibold">Cumulative spend</CardTitle>
+            <p className="text-xs text-muted-foreground">Running total over months in this range</p>
+          </CardHeader>
+          <CardContent className="px-3 pb-4">
+            {cumulativeChartData.length === 0 ? (
+              <p className="py-10 text-center text-sm text-muted-foreground">No monthly data yet.</p>
+            ) : (
+              <ChartContainer config={cumulativeChartConfig} className="h-[220px] w-full sm:h-[240px]">
+                <ComposedChart data={cumulativeChartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border/40" />
+                  <XAxis
+                    dataKey="month"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                    tick={{ fontSize: 12 }}
+                  />
+                  <YAxis
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={4}
+                    width={52}
+                    tick={{ fontSize: 12 }}
+                    tickFormatter={(v) => formatMoneyCompact(v as number, ccy)}
+                  />
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent
+                        formatter={(value, name) => (
+                          <span className="font-mono font-medium">
+                            {formatMoney(Number(value), ccy)}
+                            <span className="ml-1 text-muted-foreground font-normal">
+                              {name === 'cumulative' ? ' cumulative' : ' this month'}
+                            </span>
                           </span>
-                        </span>
-                      )}
-                    />
-                  }
-                />
-                <Area
-                  type="monotone"
-                  dataKey="cumulative"
-                  stroke="var(--color-cumulative)"
-                  fill="var(--color-cumulative)"
-                  fillOpacity={0.15}
-                  strokeWidth={2}
-                />
-                <Line
-                  type="linear"
-                  dataKey="delta"
-                  stroke="var(--color-delta)"
-                  strokeWidth={1.5}
-                  strokeDasharray="4 4"
-                  dot={false}
-                  legendType="none"
-                  tooltipType="none"
-                  isAnimationActive={false}
-                />
-              </ComposedChart>
-            </ChartContainer>
-          )}
-        </CardContent>
-      </Card>
+                        )}
+                      />
+                    }
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="cumulative"
+                    stroke="var(--color-cumulative)"
+                    fill="var(--color-cumulative)"
+                    fillOpacity={0.15}
+                    strokeWidth={2}
+                  />
+                  <Line
+                    type="linear"
+                    dataKey="delta"
+                    stroke="var(--color-delta)"
+                    strokeWidth={1.5}
+                    strokeDasharray="4 4"
+                    dot={false}
+                    legendType="none"
+                    tooltipType="none"
+                    isAnimationActive={false}
+                  />
+                </ComposedChart>
+              </ChartContainer>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Top merchants */}
+        <Card>
+          <CardHeader className="pb-1 pt-4 px-5">
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle className="text-base font-semibold">Top merchants</CardTitle>
+              <span className="text-xs text-muted-foreground">By total spend</span>
+            </div>
+          </CardHeader>
+          <CardContent className="px-5 pb-4">
+            {(data?.topMerchants ?? []).length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                No merchant data yet.
+              </p>
+            ) : merchantChartData.length >= 3 ? (
+              <ChartContainer
+                config={merchantChartConfig}
+                className="aspect-auto w-full min-h-[180px]"
+                style={{
+                  height: Math.min(merchantChartData.length * 44 + 56, 380),
+                }}
+              >
+                <BarChart
+                  accessibilityLayer
+                  layout="vertical"
+                  data={merchantChartData}
+                  margin={{ top: 4, right: 16, left: 4, bottom: 4 }}
+                >
+                  <CartesianGrid horizontal={false} strokeDasharray="3 3" className="stroke-border/40" />
+                  <XAxis
+                    type="number"
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fontSize: 11 }}
+                    tickFormatter={(v) => formatMoneyCompact(v as number, ccy)}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="shortName"
+                    width={112}
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fontSize: 11 }}
+                  />
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent
+                        formatter={(value) => (
+                          <span className="font-mono font-medium">
+                            {formatMoney(Number(value), ccy)}
+                          </span>
+                        )}
+                        labelFormatter={(_, payload) =>
+                          (payload?.[0]?.payload as { displayName?: string })?.displayName ?? ''
+                        }
+                      />
+                    }
+                  />
+                  <Bar
+                    dataKey="total"
+                    fill="var(--color-total)"
+                    radius={[0, 4, 4, 0]}
+                    maxBarSize={22}
+                    className="cursor-pointer"
+                    onClick={(payload) => {
+                      const row = payload?.payload as { displayName?: string } | undefined;
+                      if (!row?.displayName) return;
+                      goToTransactions({ search: row.displayName });
+                    }}
+                  />
+                </BarChart>
+              </ChartContainer>
+            ) : (
+              <div className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+                {(data?.topMerchants ?? []).slice(0, 8).map((m, i) => (
+                  <button
+                    key={m.key}
+                    type="button"
+                    onClick={() => goToTransactions({ search: m.displayName })}
+                    className="flex items-center gap-3 rounded-md px-1 py-0.5 text-left hover:bg-muted/50"
+                  >
+                    <span className="w-5 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
+                      {i + 1}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{m.displayName}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">{m.count} tx</p>
+                    </div>
+                    <span className="shrink-0 text-sm font-semibold tabular-nums">
+                      {formatMoneyCompact(m.total, (m.currency ?? ccy) as string | null)}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       <PeriodComparison />
-
-      {/* Top merchants */}
-      <Card>
-        <CardHeader className="pb-1 pt-4 px-5">
-          <div className="flex items-center justify-between gap-2">
-            <CardTitle className="text-base font-semibold">Top merchants</CardTitle>
-            <span className="text-xs text-muted-foreground">By total spend</span>
-          </div>
-        </CardHeader>
-        <CardContent className="px-5 pb-4">
-          {(data?.topMerchants ?? []).length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              No merchant data yet.
-            </p>
-          ) : merchantChartData.length >= 3 ? (
-            <ChartContainer
-              config={merchantChartConfig}
-              className="aspect-auto w-full min-h-[180px]"
-              style={{
-                height: Math.min(merchantChartData.length * 44 + 56, 380),
-              }}
-            >
-              <BarChart
-                accessibilityLayer
-                layout="vertical"
-                data={merchantChartData}
-                margin={{ top: 4, right: 16, left: 4, bottom: 4 }}
-              >
-                <CartesianGrid horizontal={false} strokeDasharray="3 3" className="stroke-border/40" />
-                <XAxis
-                  type="number"
-                  tickLine={false}
-                  axisLine={false}
-                  tick={{ fontSize: 11 }}
-                  tickFormatter={(v) => formatMoneyCompact(v as number, ccy)}
-                />
-                <YAxis
-                  type="category"
-                  dataKey="shortName"
-                  width={112}
-                  tickLine={false}
-                  axisLine={false}
-                  tick={{ fontSize: 11 }}
-                />
-                <ChartTooltip
-                  content={
-                    <ChartTooltipContent
-                      formatter={(value) => (
-                        <span className="font-mono font-medium">
-                          {formatMoney(Number(value), ccy)}
-                        </span>
-                      )}
-                      labelFormatter={(_, payload) =>
-                        (payload?.[0]?.payload as { displayName?: string })?.displayName ?? ''
-                      }
-                    />
-                  }
-                />
-                <Bar
-                  dataKey="total"
-                  fill="var(--color-total)"
-                  radius={[0, 4, 4, 0]}
-                  maxBarSize={22}
-                  className="cursor-pointer"
-                  onClick={(payload) => {
-                    const row = payload?.payload as { displayName?: string } | undefined;
-                    if (!row?.displayName) return;
-                    goToTransactions({ search: row.displayName });
-                  }}
-                />
-              </BarChart>
-            </ChartContainer>
-          ) : (
-            <div className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
-              {(data?.topMerchants ?? []).slice(0, 8).map((m, i) => (
-                <button
-                  key={m.key}
-                  type="button"
-                  onClick={() => goToTransactions({ search: m.displayName })}
-                  className="flex items-center gap-3 rounded-md px-1 py-0.5 text-left hover:bg-muted/50"
-                >
-                  <span className="w-5 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
-                    {i + 1}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{m.displayName}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">{m.count} tx</p>
-                  </div>
-                  <span className="shrink-0 text-sm font-semibold tabular-nums">
-                    {formatMoneyCompact(m.total, (m.currency ?? ccy) as string | null)}
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 }
