@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import {
@@ -96,6 +96,10 @@ export function AnalyticsOverview() {
     [range.from, range.to],
   );
   const { data, isLoading, isFetching } = useTransactionStats(filters);
+
+  useEffect(() => {
+    if (data?.mixedCurrencyNotice) setCurrencyDismissed(false);
+  }, [data?.mixedCurrencyNotice]);
 
   const ccy = data?.displayCurrency ?? null;
 
@@ -215,7 +219,7 @@ export function AnalyticsOverview() {
   if (isLoading && !data) {
     return (
       <div className="space-y-6">
-        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[0, 1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-28 rounded-xl" />
           ))}
@@ -300,16 +304,11 @@ export function AnalyticsOverview() {
           value={formatMoney(data?.totalSpent ?? 0, ccy)}
           sub={`Net ${formatMoney(data?.netSpendPrimary ?? 0, ccy)} after refunds`}
         >
-          <div className="mt-2.5 flex flex-wrap gap-1.5">
-            {typeof data?.declinedCount === 'number' && data.declinedCount > 0 && (
+          {typeof data?.declinedCount === 'number' && data.declinedCount > 0 && (
+            <div className="mt-2.5">
               <Badge variant="secondary">{data.declinedCount} declined</Badge>
-            )}
-            {typeof data?.refundCount === 'number' && data.refundCount > 0 && (
-              <Badge variant="outline" className="border-success/40 text-success">
-                {data.refundCount} refunds
-              </Badge>
-            )}
-          </div>
+            </div>
+          )}
         </StatCard>
 
         <StatCard
@@ -365,6 +364,7 @@ export function AnalyticsOverview() {
             Multiple currencies detected. Amounts shown in primary currency where possible.
           </span>
           <button
+            type="button"
             onClick={() => setCurrencyDismissed(true)}
             className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
             aria-label="Dismiss"
@@ -543,14 +543,14 @@ export function AnalyticsOverview() {
                       <Label
                         content={({ viewBox }) => {
                           const vb = viewBox as { cx?: number; cy?: number };
-                          if (!vb?.cx || !vb?.cy) return null;
+                          if (vb?.cx == null || vb?.cy == null) return null;
                           const total = formatMoneyCompact(data?.totalSpent ?? 0, ccy);
                           return (
                             <text x={vb.cx} y={vb.cy} textAnchor="middle" dominantBaseline="central">
                               <tspan
                                 x={vb.cx}
                                 dy="-0.3em"
-                                className="fill-foreground text-sm font-bold"
+                                className="fill-foreground"
                                 style={{ fontSize: '13px', fontWeight: 700 }}
                               >
                                 {total}
