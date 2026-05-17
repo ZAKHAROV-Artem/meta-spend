@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useRef } from 'react'
+import { Fragment, useRef } from 'react'
 import { motion, useInView } from 'motion/react'
 
 interface Step {
@@ -39,18 +39,23 @@ export function HowItWorksSection() {
   return (
     <section id="how-it-works" ref={ref} className="bg-muted/30 py-24">
       <div className="mx-auto max-w-6xl px-6">
-        <div className="mb-14 text-center">
+        <motion.div
+          className="mb-14 text-center"
+          initial={{ opacity: 0, y: 16 }}
+          animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+        >
           <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             How it works
           </h2>
           <p className="mt-3 text-lg text-muted-foreground">
             Up and running in under a minute.
           </p>
-        </div>
+        </motion.div>
 
         <div className="flex flex-col gap-8 sm:grid sm:grid-cols-2 sm:gap-8 lg:flex lg:flex-row lg:items-start lg:gap-0">
           {STEPS.map((step, index) => (
-            <React.Fragment key={step.number}>
+            <Fragment key={step.number}>
               <motion.div
                 className="flex flex-col items-start"
                 initial={{ opacity: 0, x: -16 }}
@@ -72,7 +77,7 @@ export function HowItWorksSection() {
                   transition={{ duration: 0.6, delay: 0.4 + index * 0.1 }}
                 />
               )}
-            </React.Fragment>
+            </Fragment>
           ))}
         </div>
       </div>
