@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { motion, type Variants } from 'motion/react';
+import { motion, type Variants, useReducedMotion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 
@@ -37,6 +37,8 @@ const chips = [
 ] as const;
 
 export function HeroSection() {
+  const shouldFloat = !useReducedMotion();
+
   return (
     <section className="relative w-full overflow-hidden bg-background">
       {/* SVG atmospheric background */}
@@ -46,17 +48,17 @@ export function HeroSection() {
         xmlns="http://www.w3.org/2000/svg"
       >
         <defs>
-          <radialGradient id="blob-orange" cx="80%" cy="20%" r="50%">
+          <radialGradient id="hero-blob-orange" cx="80%" cy="20%" r="50%">
             <stop offset="0%" stopColor="#F6851B" stopOpacity="0.12" />
             <stop offset="100%" stopColor="#F6851B" stopOpacity="0" />
           </radialGradient>
-          <radialGradient id="blob-amber" cx="20%" cy="90%" r="50%">
+          <radialGradient id="hero-blob-amber" cx="20%" cy="90%" r="50%">
             <stop offset="0%" stopColor="#F59E0B" stopOpacity="0.08" />
             <stop offset="100%" stopColor="#F59E0B" stopOpacity="0" />
           </radialGradient>
         </defs>
-        <rect width="100%" height="100%" fill="url(#blob-orange)" />
-        <rect width="100%" height="100%" fill="url(#blob-amber)" />
+        <rect width="100%" height="100%" fill="url(#hero-blob-orange)" />
+        <rect width="100%" height="100%" fill="url(#hero-blob-amber)" />
       </svg>
 
       <div className="relative mx-auto max-w-6xl px-6 py-20 sm:py-28 lg:py-32">
@@ -133,8 +135,8 @@ export function HeroSection() {
               >
                 {/* Float animation wrapper */}
                 <motion.div
-                  animate={{ y: [0, -10, 0] }}
-                  transition={{ repeat: Infinity, duration: 4, ease: 'easeInOut' }}
+                  animate={shouldFloat ? { y: [0, -10, 0] } : undefined}
+                  transition={shouldFloat ? { repeat: Infinity, duration: 4, ease: 'easeInOut' } : undefined}
                 >
                   {/* Main card */}
                   <div className="relative rounded-2xl bg-[#1a0d00] p-5 text-white shadow-2xl">
@@ -177,7 +179,7 @@ export function HeroSection() {
                         <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                           {chip.label}
                         </p>
-                        <p className="mt-0.5 text-sm font-bold text-foreground">
+                        <p className="mt-0.5 text-base font-bold text-foreground">
                           {chip.value}
                         </p>
                       </motion.div>
