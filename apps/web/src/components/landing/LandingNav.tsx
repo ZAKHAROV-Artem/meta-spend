@@ -12,6 +12,7 @@ export function LandingNav() {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
     };
+    handleScroll(); // call immediately to sync state with current scroll position
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -23,7 +24,7 @@ export function LandingNav() {
       transition={{ duration: 0.5, ease: 'easeOut' }}
       className={`sticky top-0 z-50 w-full transition-all duration-300 ${
         scrolled
-          ? 'bg-background/80 backdrop-blur border-b border-border'
+          ? 'bg-background/80 backdrop-blur-md border-b border-border'
           : 'bg-transparent'
       }`}
     >
