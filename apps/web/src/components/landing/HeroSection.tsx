@@ -40,7 +40,7 @@ export function HeroSection() {
   const shouldFloat = !useReducedMotion();
 
   return (
-    <section className="relative w-full overflow-hidden bg-background">
+    <section className="bg-background relative w-full overflow-hidden">
       {/* SVG atmospheric background */}
       <svg
         aria-hidden="true"
@@ -63,7 +63,6 @@ export function HeroSection() {
 
       <div className="relative mx-auto max-w-6xl px-6 py-20 sm:py-28 lg:py-32">
         <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-
           {/* Left: animated text content */}
           <motion.div
             className="flex flex-col items-start"
@@ -73,7 +72,7 @@ export function HeroSection() {
           >
             {/* Badge */}
             <motion.div variants={itemVariants}>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+              <span className="border-primary/20 bg-primary/10 text-primary inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium">
                 ✦ Now in beta
               </span>
             </motion.div>
@@ -81,25 +80,21 @@ export function HeroSection() {
             {/* Headline */}
             <motion.h1
               variants={itemVariants}
-              className="mt-5 text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl"
+              className="text-foreground mt-5 text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl"
             >
-              Smart analytics for your{' '}
-              <span className="text-primary">MetaMask Card</span>
+              Smart analytics for your <span className="text-primary">MetaMask Card</span>
             </motion.h1>
 
             {/* Subtitle */}
             <motion.p
               variants={itemVariants}
-              className="mt-5 text-lg leading-relaxed text-muted-foreground sm:text-xl"
+              className="text-muted-foreground mt-5 text-lg leading-relaxed sm:text-xl"
             >
               Track every spend, categorize automatically, understand your habits.
             </motion.p>
 
             {/* CTA buttons */}
-            <motion.div
-              variants={itemVariants}
-              className="mt-8 flex flex-wrap items-center gap-4"
-            >
+            <motion.div variants={itemVariants} className="mt-8 flex flex-wrap items-center gap-4">
               <Button
                 asChild
                 size="lg"
@@ -110,12 +105,7 @@ export function HeroSection() {
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>
-              <Button
-                asChild
-                size="lg"
-                variant="outline"
-                className="text-base"
-              >
+              <Button asChild size="lg" variant="outline" className="text-base">
                 <Link href="#how-it-works">See how it works</Link>
               </Button>
             </motion.div>
@@ -125,7 +115,7 @@ export function HeroSection() {
           <div className="relative flex justify-center lg:justify-end">
             <div className="relative w-full max-w-sm">
               {/* Orange glow behind card */}
-              <div className="absolute inset-0 scale-105 rounded-3xl bg-primary opacity-20 blur-3xl" />
+              <div className="bg-primary absolute inset-0 scale-105 rounded-3xl opacity-20 blur-3xl" />
 
               {/* Entrance animation wrapper */}
               <motion.div
@@ -136,9 +126,11 @@ export function HeroSection() {
                 {/* Float animation wrapper */}
                 <motion.div
                   animate={shouldFloat ? { y: [0, -10, 0] } : undefined}
-                  transition={shouldFloat ? { repeat: Infinity, duration: 4, ease: 'easeInOut' } : undefined}
+                  transition={
+                    shouldFloat ? { repeat: Infinity, duration: 4, ease: 'easeInOut' } : undefined
+                  }
                 >
-                  {/* Main card */}
+                  {/* bg-[#1a0d00]: MetaMask brand dark — intentional hardcode */}
                   <div className="relative rounded-2xl bg-[#1a0d00] p-5 text-white shadow-2xl">
                     <div className="mb-6 flex items-center justify-between">
                       <div>
@@ -167,7 +159,7 @@ export function HeroSection() {
                     {chips.map((chip, index) => (
                       <motion.div
                         key={chip.label}
-                        className={`${chip.position} rounded-xl bg-card px-3 py-2 shadow-lg`}
+                        className={`${chip.position} bg-card rounded-xl px-3 py-2 shadow-lg`}
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{
@@ -176,12 +168,10 @@ export function HeroSection() {
                           ease: 'easeOut',
                         }}
                       >
-                        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                        <p className="text-muted-foreground text-[10px] font-medium uppercase tracking-wide">
                           {chip.label}
                         </p>
-                        <p className="mt-0.5 text-base font-bold text-foreground">
-                          {chip.value}
-                        </p>
+                        <p className="text-foreground mt-0.5 text-base font-bold">{chip.value}</p>
                       </motion.div>
                     ))}
                   </div>
@@ -189,7 +179,6 @@ export function HeroSection() {
               </motion.div>
             </div>
           </div>
-
         </div>
       </div>
     </section>

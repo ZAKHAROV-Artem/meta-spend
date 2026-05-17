@@ -1,14 +1,15 @@
-'use client'
+'use client';
 
-import Link from 'next/link'
-import { motion } from 'motion/react'
-import { Button } from '@/components/ui/button'
-import { ArrowRight } from 'lucide-react'
+import Link from 'next/link';
+import { motion } from 'motion/react';
+import { Button } from '@/components/ui/button';
+import { ArrowRight } from 'lucide-react';
 
 export function CTASection() {
+  // bg-[#1a0d00]: MetaMask brand dark — intentional hardcode
   return (
-    <section className="relative bg-[#1a0d00] py-24 text-white overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(246,133,27,0.15)_0%,transparent_70%)] pointer-events-none" />
+    <section className="relative overflow-hidden bg-[#1a0d00] py-24 text-white">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(246,133,27,0.15)_0%,transparent_70%)]" />
 
       <div className="relative mx-auto max-w-3xl px-6 text-center">
         <motion.h2
@@ -46,7 +47,7 @@ export function CTASection() {
             <Button
               asChild
               size="lg"
-              className="gap-2 text-base bg-[#F6851B] hover:bg-[#E2761B] text-white border-0 shadow-xl shadow-primary/40"
+              className="shadow-primary/40 gap-2 border-0 bg-[#F6851B] text-base text-white shadow-xl hover:bg-[#E2761B]"
             >
               <Link href="/auth/login">
                 Get started free
@@ -57,5 +58,5 @@ export function CTASection() {
         </motion.div>
       </div>
     </section>
-  )
+  );
 }

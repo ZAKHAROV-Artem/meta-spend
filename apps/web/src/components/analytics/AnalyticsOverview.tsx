@@ -70,13 +70,13 @@ function StatCard({
     <Card>
       <CardContent className="px-5 py-4">
         <div className="flex items-start justify-between">
-          <p className="text-sm text-muted-foreground">{label}</p>
-          {Icon && <Icon className="h-4 w-4 text-muted-foreground shrink-0" />}
+          <p className="text-muted-foreground text-sm">{label}</p>
+          {Icon && <Icon className="text-muted-foreground h-4 w-4 shrink-0" />}
         </div>
-        <p className="mt-2 text-2xl font-bold tracking-tight tabular-nums leading-tight sm:text-3xl">
+        <p className="mt-2 text-2xl font-bold tabular-nums leading-tight tracking-tight sm:text-3xl">
           {value}
         </p>
-        {sub && <p className="mt-1.5 text-xs text-muted-foreground">{sub}</p>}
+        {sub && <p className="text-muted-foreground mt-1.5 text-xs">{sub}</p>}
         {children}
       </CardContent>
     </Card>
@@ -173,8 +173,7 @@ export function AnalyticsOverview() {
     () =>
       (data?.topMerchants ?? []).slice(0, 8).map((m) => ({
         key: m.key,
-        shortName:
-          m.displayName.length > 26 ? `${m.displayName.slice(0, 24)}…` : m.displayName,
+        shortName: m.displayName.length > 26 ? `${m.displayName.slice(0, 24)}…` : m.displayName,
         displayName: m.displayName,
         total: m.total,
         count: m.count,
@@ -236,7 +235,7 @@ export function AnalyticsOverview() {
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           <div>
             <h1 className="text-xl font-semibold tracking-tight">Card Spend Analytics</h1>
-            <p className="mt-0.5 text-sm text-muted-foreground">
+            <p className="text-muted-foreground mt-0.5 text-sm">
               Based on synced MetaMask Card transactions
             </p>
           </div>
@@ -271,14 +270,14 @@ export function AnalyticsOverview() {
     <div
       className={cn(
         'space-y-5 transition-opacity duration-200',
-        isFetching ? 'opacity-85' : 'opacity-100',
+        isFetching ? 'opacity-80' : 'opacity-100',
       )}
     >
       {/* Header row */}
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Card Spend Analytics</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">
+          <p className="text-muted-foreground mt-0.5 text-sm">
             Based on synced MetaMask Card transactions
           </p>
         </div>
@@ -335,22 +334,18 @@ export function AnalyticsOverview() {
 
       {/* Peak / quietest insight row */}
       {velocity && monthlyChartData.length >= 2 && (
-        <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
+        <div className="text-muted-foreground flex flex-wrap gap-x-6 gap-y-1 text-sm">
           {velocity.maxMonth && (
             <span>
               Peak:{' '}
-              <span className="font-medium text-foreground">
-                {formatMoney(velocity.max, ccy)}
-              </span>{' '}
+              <span className="text-foreground font-medium">{formatMoney(velocity.max, ccy)}</span>{' '}
               · {monthLabel(velocity.maxMonth.year, velocity.maxMonth.month)}
             </span>
           )}
           {velocity.minMonth && velocity.min > 0 && (
             <span>
               Quietest:{' '}
-              <span className="font-medium text-foreground">
-                {formatMoney(velocity.min, ccy)}
-              </span>{' '}
+              <span className="text-foreground font-medium">{formatMoney(velocity.min, ccy)}</span>{' '}
               · {monthLabel(velocity.minMonth.year, velocity.minMonth.month)}
             </span>
           )}
@@ -359,14 +354,14 @@ export function AnalyticsOverview() {
 
       {/* Mixed currency: dismissible info banner */}
       {data?.mixedCurrencyNotice && !currencyDismissed && (
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/50 px-4 py-2.5 text-sm">
+        <div className="border-border bg-muted/50 flex items-center justify-between gap-3 rounded-lg border px-4 py-2.5 text-sm">
           <span className="text-muted-foreground">
             Multiple currencies detected. Amounts shown in primary currency where possible.
           </span>
           <button
             type="button"
             onClick={() => setCurrencyDismissed(true)}
-            className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+            className="text-muted-foreground hover:text-foreground shrink-0 transition-colors"
             aria-label="Dismiss"
           >
             <X className="h-4 w-4" />
@@ -378,26 +373,29 @@ export function AnalyticsOverview() {
       <div className="grid gap-3 lg:grid-cols-5">
         {/* Monthly bar chart */}
         <Card className="lg:col-span-3">
-          <CardHeader className="pb-1 pt-4 px-5">
+          <CardHeader className="px-5 pb-1 pt-4">
             <div className="flex items-center gap-2">
               <CardTitle className="text-base font-semibold">Monthly spend</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="px-3 pb-4">
             {monthlyChartData.length === 0 ? (
-              <p className="py-10 text-center text-sm text-muted-foreground">No monthly data yet.</p>
+              <p className="text-muted-foreground py-10 text-center text-sm">
+                No monthly data yet.
+              </p>
             ) : (
-              <ChartContainer
-                config={monthlyChartConfig}
-                className="h-[280px] w-full"
-              >
+              <ChartContainer config={monthlyChartConfig} className="h-[280px] w-full">
                 <BarChart
                   accessibilityLayer
                   data={monthlyChartData}
                   margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
                   barCategoryGap="22%"
                 >
-                  <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border/40" />
+                  <CartesianGrid
+                    vertical={false}
+                    strokeDasharray="3 3"
+                    className="stroke-border/40"
+                  />
                   <XAxis
                     dataKey="month"
                     tickLine={false}
@@ -419,7 +417,7 @@ export function AnalyticsOverview() {
                         formatter={(value, name) => (
                           <span className="font-mono font-medium">
                             {formatMoney(Number(value), ccy)}
-                            <span className="ml-1 text-muted-foreground font-normal">
+                            <span className="text-muted-foreground ml-1 font-normal">
                               {name === 'spent' ? 'spent' : 'refunds'}
                             </span>
                           </span>
@@ -468,7 +466,6 @@ export function AnalyticsOverview() {
                     dot={false}
                     activeDot={false}
                     legendType="none"
-                    tooltipType="none"
                     isAnimationActive={false}
                   />
                   {(data?.totalReceived ?? 0) > 0 && (
@@ -487,17 +484,17 @@ export function AnalyticsOverview() {
 
         {/* Category donut chart */}
         <Card className="lg:col-span-2">
-          <CardHeader className="pb-1 pt-4 px-5">
+          <CardHeader className="px-5 pb-1 pt-4">
             <div className="flex items-center justify-between gap-2">
               <CardTitle className="text-base font-semibold">By category</CardTitle>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-muted-foreground text-xs">
                 {categoryChartData.length} buckets
               </span>
             </div>
           </CardHeader>
           <CardContent className="px-5 pb-4">
             {categoryChartData.length === 0 ? (
-              <p className="py-10 text-center text-sm text-muted-foreground">
+              <p className="text-muted-foreground py-10 text-center text-sm">
                 No categorized spend yet.
               </p>
             ) : (
@@ -546,7 +543,12 @@ export function AnalyticsOverview() {
                           if (vb?.cx == null || vb?.cy == null) return null;
                           const total = formatMoneyCompact(data?.totalSpent ?? 0, ccy);
                           return (
-                            <text x={vb.cx} y={vb.cy} textAnchor="middle" dominantBaseline="central">
+                            <text
+                              x={vb.cx}
+                              y={vb.cy}
+                              textAnchor="middle"
+                              dominantBaseline="central"
+                            >
                               <tspan
                                 x={vb.cx}
                                 dy="-0.3em"
@@ -571,7 +573,7 @@ export function AnalyticsOverview() {
                   </PieChart>
                 </ChartContainer>
 
-                <div className="w-full flex-1 space-y-2 min-w-0">
+                <div className="w-full min-w-0 flex-1 space-y-2">
                   {categoryChartData.map((item, i) => (
                     <button
                       key={item.name}
@@ -580,7 +582,7 @@ export function AnalyticsOverview() {
                         if (!item.categoryId) return;
                         goToTransactions({ categoryId: item.categoryId });
                       }}
-                      className="flex w-full items-center gap-2.5 rounded-md px-1 py-0.5 text-sm hover:bg-muted/50"
+                      className="hover:bg-muted/50 flex w-full items-center gap-2.5 rounded-md px-1 py-0.5 text-sm"
                     >
                       <span
                         className="h-2.5 w-2.5 shrink-0 rounded-sm"
@@ -589,10 +591,10 @@ export function AnalyticsOverview() {
                         }}
                       />
                       <span className="min-w-0 flex-1 truncate">{item.name}</span>
-                      <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+                      <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
                         {formatMoney(item.value, ccy)}
                       </span>
-                      <span className="shrink-0 font-medium tabular-nums w-12 text-right">
+                      <span className="w-12 shrink-0 text-right font-medium tabular-nums">
                         {item.percent}%
                       </span>
                     </button>
@@ -608,17 +610,29 @@ export function AnalyticsOverview() {
       <div className="grid gap-3 lg:grid-cols-2">
         {/* Cumulative spend */}
         <Card>
-          <CardHeader className="pb-1 pt-4 px-5">
+          <CardHeader className="px-5 pb-1 pt-4">
             <CardTitle className="text-base font-semibold">Cumulative spend</CardTitle>
-            <p className="text-xs text-muted-foreground">Running total over months in this range</p>
+            <p className="text-muted-foreground text-xs">Running total over months in this range</p>
           </CardHeader>
           <CardContent className="px-3 pb-4">
             {cumulativeChartData.length === 0 ? (
-              <p className="py-10 text-center text-sm text-muted-foreground">No monthly data yet.</p>
+              <p className="text-muted-foreground py-10 text-center text-sm">
+                No monthly data yet.
+              </p>
             ) : (
-              <ChartContainer config={cumulativeChartConfig} className="h-[220px] w-full sm:h-[240px]">
-                <ComposedChart data={cumulativeChartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                  <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border/40" />
+              <ChartContainer
+                config={cumulativeChartConfig}
+                className="h-[220px] w-full sm:h-[240px]"
+              >
+                <ComposedChart
+                  data={cumulativeChartData}
+                  margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+                >
+                  <CartesianGrid
+                    vertical={false}
+                    strokeDasharray="3 3"
+                    className="stroke-border/40"
+                  />
                   <XAxis
                     dataKey="month"
                     tickLine={false}
@@ -640,7 +654,7 @@ export function AnalyticsOverview() {
                         formatter={(value, name) => (
                           <span className="font-mono font-medium">
                             {formatMoney(Number(value), ccy)}
-                            <span className="ml-1 text-muted-foreground font-normal">
+                            <span className="text-muted-foreground ml-1 font-normal">
                               {name === 'cumulative' ? ' cumulative' : ' this month'}
                             </span>
                           </span>
@@ -664,7 +678,6 @@ export function AnalyticsOverview() {
                     strokeDasharray="4 4"
                     dot={false}
                     legendType="none"
-                    tooltipType="none"
                     isAnimationActive={false}
                   />
                 </ComposedChart>
@@ -675,21 +688,21 @@ export function AnalyticsOverview() {
 
         {/* Top merchants */}
         <Card>
-          <CardHeader className="pb-1 pt-4 px-5">
+          <CardHeader className="px-5 pb-1 pt-4">
             <div className="flex items-center justify-between gap-2">
               <CardTitle className="text-base font-semibold">Top merchants</CardTitle>
-              <span className="text-xs text-muted-foreground">By total spend</span>
+              <span className="text-muted-foreground text-xs">By total spend</span>
             </div>
           </CardHeader>
           <CardContent className="px-5 pb-4">
             {(data?.topMerchants ?? []).length === 0 ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">
+              <p className="text-muted-foreground py-8 text-center text-sm">
                 No merchant data yet.
               </p>
             ) : merchantChartData.length >= 3 ? (
               <ChartContainer
                 config={merchantChartConfig}
-                className="aspect-auto w-full min-h-[180px]"
+                className="aspect-auto min-h-[180px] w-full"
                 style={{
                   height: Math.min(merchantChartData.length * 44 + 56, 380),
                 }}
@@ -700,7 +713,11 @@ export function AnalyticsOverview() {
                   data={merchantChartData}
                   margin={{ top: 4, right: 16, left: 4, bottom: 4 }}
                 >
-                  <CartesianGrid horizontal={false} strokeDasharray="3 3" className="stroke-border/40" />
+                  <CartesianGrid
+                    horizontal={false}
+                    strokeDasharray="3 3"
+                    className="stroke-border/40"
+                  />
                   <XAxis
                     type="number"
                     tickLine={false}
@@ -751,14 +768,14 @@ export function AnalyticsOverview() {
                     key={m.key}
                     type="button"
                     onClick={() => goToTransactions({ search: m.displayName })}
-                    className="flex items-center gap-3 rounded-md px-1 py-0.5 text-left hover:bg-muted/50"
+                    className="hover:bg-muted/50 flex items-center gap-3 rounded-md px-1 py-0.5 text-left"
                   >
-                    <span className="w-5 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
+                    <span className="text-muted-foreground w-5 shrink-0 text-right text-xs tabular-nums">
                       {i + 1}
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{m.displayName}</p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">{m.count} tx</p>
+                      <p className="text-muted-foreground mt-0.5 text-xs">{m.count} tx</p>
                     </div>
                     <span className="shrink-0 text-sm font-semibold tabular-nums">
                       {formatMoneyCompact(m.total, (m.currency ?? ccy) as string | null)}
