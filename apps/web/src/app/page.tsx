@@ -15,13 +15,13 @@ export default function LandingPage() {
         <FeaturesSection />
         <CTASection />
       </main>
-      <footer className="border-t border-gray-100 bg-white py-8">
+      <footer className="border-t border-border bg-background py-8">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 sm:flex-row">
-          <span className="text-base font-bold text-gray-900">🦊 MetaSpend</span>
-          <p className="text-sm text-gray-500">© 2025 MetaSpend. All rights reserved.</p>
-          <div className="flex items-center gap-4 text-sm text-gray-500">
-            <Link href="/privacy" className="hover:text-gray-900 transition-colors">Privacy</Link>
-            <Link href="/terms" className="hover:text-gray-900 transition-colors">Terms</Link>
+          <span className="text-base font-bold text-foreground">🦊 MetaSpend</span>
+          <p className="text-sm text-muted-foreground">© 2025 MetaSpend. All rights reserved.</p>
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
+            <Link href="/terms" className="hover:text-foreground transition-colors">Terms</Link>
           </div>
         </div>
       </footer>
