@@ -52,7 +52,7 @@ export function CTASection() {
               <Button
                 asChild
                 size="lg"
-                className="gap-2 text-base bg-[#F6851B] hover:bg-[#E2761B] text-white border-0 shadow-xl shadow-orange-500/40"
+                className="gap-2 text-base bg-[#F6851B] hover:bg-[#E2761B] text-white border-0 shadow-xl shadow-primary/40"
               >
                 <Link href="/auth/login">
                   Get started free
