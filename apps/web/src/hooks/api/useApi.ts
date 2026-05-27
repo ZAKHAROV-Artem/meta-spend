@@ -41,10 +41,15 @@ async function apiFetch(
   onUnauthorized: () => void,
 ): Promise<Response> {
   const token = getAccessToken()
+  const providedHeaders = (options.headers as Record<string, string> | undefined) ?? {}
+  const hasContentType = Object.keys(providedHeaders).some(
+    (key) => key.toLowerCase() === 'content-type',
+  )
+  const hasBody = options.body !== undefined && options.body !== null
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(options.headers as Record<string, string> | undefined),
+    ...providedHeaders,
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(!hasContentType && hasBody ? { 'Content-Type': 'application/json' } : {}),
   }
 
   const res = await fetch(`${API_URL}${BASE_PATH}${path}`, { ...options, headers })

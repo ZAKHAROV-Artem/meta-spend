@@ -6,6 +6,7 @@ const AssignmentItemSchema = z
   .object({
     merchantKey: z.string().min(1),
     categoryId: z.union([z.string().min(1), z.null()]),
+    subcategoryId: z.union([z.string().min(1), z.null()]),
     confidence: z.number().optional(),
     reason: z.string().optional(),
   })
@@ -45,8 +46,10 @@ export function validateAssignmentsForChunk(params: {
   assignments: AutoCategorizeAiResponse['assignments'];
   expectedKeys: ReadonlySet<string>;
   categoryIds: ReadonlySet<string>;
+  subcategoryIds: ReadonlySet<string>;
+  subcategoryParentMap: ReadonlyMap<string, string>;
 }): void {
-  const { assignments, expectedKeys, categoryIds } = params;
+  const { assignments, expectedKeys, categoryIds, subcategoryIds, subcategoryParentMap } = params;
 
   if (assignments.length !== expectedKeys.size) {
     throw new BadRequestException(
@@ -67,6 +70,20 @@ export function validateAssignmentsForChunk(params: {
 
     if (row.categoryId !== null && !categoryIds.has(row.categoryId)) {
       throw new BadRequestException(`Auto-categorize: unknown categoryId "${row.categoryId}"`);
+    }
+
+    if (row.subcategoryId !== null) {
+      if (!subcategoryIds.has(row.subcategoryId)) {
+        throw new BadRequestException(`Auto-categorize: unknown subcategoryId "${row.subcategoryId}"`);
+      }
+      if (row.categoryId !== null) {
+        const parentId = subcategoryParentMap.get(row.subcategoryId);
+        if (parentId !== row.categoryId) {
+          throw new BadRequestException(
+            `Auto-categorize: subcategoryId "${row.subcategoryId}" does not belong to categoryId "${row.categoryId}"`,
+          );
+        }
+      }
     }
   }
 

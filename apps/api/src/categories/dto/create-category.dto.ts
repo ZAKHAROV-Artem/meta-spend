@@ -1,4 +1,4 @@
-import { IsString, MinLength, MaxLength, Matches } from 'class-validator';
+import { IsString, IsOptional, MinLength, MaxLength, Matches } from 'class-validator';
 
 export class CreateCategoryDto {
   @IsString()
@@ -13,4 +13,8 @@ export class CreateCategoryDto {
   @IsString()
   @MinLength(1)
   icon!: string;
+
+  @IsString()
+  @IsOptional()
+  parentId?: string;
 }

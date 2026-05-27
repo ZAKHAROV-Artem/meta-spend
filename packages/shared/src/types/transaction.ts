@@ -1,6 +1,7 @@
 import type { CardTxStatus } from './card-transaction';
 
 export type TransactionSource = 'CARD';
+export type TransactionSourceFilter = TransactionSource | 'ALL';
 export type TransactionDirection = 'INFLOW' | 'OUTFLOW' | 'NEUTRAL';
 
 export interface Transaction {
@@ -17,6 +18,9 @@ export interface Transaction {
   categoryId: string | null;
   categoryName: string | null;
   categoryColor: string | null;
+  subcategoryId: string | null;
+  subcategoryName: string | null;
+  subcategoryColor: string | null;
   notes: string | null;
   externalId: string | null;
   merchantName: string | null;
@@ -26,6 +30,10 @@ export interface Transaction {
   fiatCurrency: string | null;
   cryptoAmount: string | null;
   cryptoSymbol: string | null;
+  gasFeeAmount: string | null;
+  gasFeeSymbol: string | null;
+  /** Fiat currency per one crypto unit, computed from abs(fiatAmount) / abs(cryptoAmount). */
+  exchangeRate: string | null;
   parserVersion: number | null;
   rawHtml: string | null;
 }
@@ -76,6 +84,32 @@ export interface CurrencySliceStats {
   categoryBreakdown: CategoryBreakdown[];
 }
 
+export interface CryptoSpendSummary {
+  symbol: string;
+  totalSpent: number;
+  totalGasFee: number;
+  averageFiatPerCryptoRate: number | null;
+  txCount: number;
+}
+
+export interface ExchangeRateTrendPoint {
+  date: string;
+  fiatCurrency: string;
+  cryptoSymbol: string;
+  rate: number;
+  fiatTotal: number;
+  cryptoTotal: number;
+  txCount: number;
+}
+
+export interface AvgTransactionAmountTrendPoint {
+  date: string;
+  currency: string;
+  avgAmount: number;
+  fiatTotal: number;
+  txCount: number;
+}
+
 export interface CardTransactionAnalytics extends TransactionStats {
   /** When all spending txs share one fiat code; KPIs reflect that currency only */
   displayCurrency: string | null;
@@ -85,6 +119,9 @@ export interface CardTransactionAnalytics extends TransactionStats {
   refundCount: number;
   categoryShares: CategorySpendShare[];
   byCurrency: CurrencySliceStats[];
+  cryptoSpendSummaries: CryptoSpendSummary[];
+  exchangeRateTrend: ExchangeRateTrendPoint[];
+  avgTransactionAmountTrend: AvgTransactionAmountTrendPoint[];
   topMerchants: Array<{
     key: string;
     displayName: string;
@@ -108,6 +145,8 @@ export interface UniqueMerchant {
 }
 
 export interface BulkCategorizeBody {
+  key: string;
+  source: TransactionSource;
   categoryId: string | null;
 }
 

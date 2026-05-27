@@ -1,0 +1,33 @@
+@startuml
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam ParticipantPadding 30
+skinparam BoxPadding 10
+
+title Diagram sekwencji - synchronizacja transakcji MetaMask Card
+
+actor "Użytkownik" as User
+participant "Popup rozszerzenia\nChrome" as Popup
+participant "Content script\nMetaMask page" as Content
+participant "Background script" as Background
+participant "CardTransactionsController\n(NestJS API)" as Api
+participant "CardTransactionsService" as Service
+database "PostgreSQL\n(Prisma)" as Db
+
+User -> Popup : Kliknięcie "Sync now"
+Popup -> Background : Żądanie synchronizacji
+Background -> Content : SCRAPE_CARD_HTML
+Content -> Content : Odczyt wierszy z HTML\ncard.metamask.io
+Content --> Background : Surowe transakcje
+
+Background -> Background : Normalizacja do ParsedCardTx\n(parserVersion = 2)
+Background -> Api : POST /api/v1/card-transactions/sync\nBearer extension token
+Api -> Service : sync(userId, parsedTransactions)
+Service -> Db : upsert transactions\npo (userId, source, externalId)
+Db --> Service : inserted / updated
+Service --> Api : wynik synchronizacji
+Api --> Background : 200 OK
+Background --> Popup : status sukcesu
+Popup --> User : Komunikat: transakcje zsynchronizowane
+
+@enduml

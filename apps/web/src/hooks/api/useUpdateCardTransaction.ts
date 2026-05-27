@@ -5,7 +5,11 @@ import { useAccessToken } from './useApi';
 
 const API_URL = `${process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3001'}/api/v1`;
 
-export type UpdateCardTransactionInput = { categoryId?: string | null; notes?: string | null };
+export type UpdateCardTransactionInput = {
+  categoryId?: string | null;
+  subcategoryId?: string | null;
+  notes?: string | null;
+};
 
 async function getErrorMessage(res: Response) {
   const body = (await res.json().catch(() => null)) as { message?: string } | null;

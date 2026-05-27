@@ -9,6 +9,10 @@ export interface ParsedCardWire {
   fiatCurrency: string;
   cryptoAmount: string | null;
   cryptoSymbol: string | null;
+  gasFeeAmount?: string | null;
+  gasFeeSymbol?: string | null;
+  gasFeeRaw?: string | null;
+  spentRaw?: string | null;
   status: CardTxWire;
   parserVersion: number;
   rawHtml?: string | null;
@@ -98,4 +102,29 @@ export async function syncCardTransactions(
     updated: Number(body?.updated ?? 0),
     skipped: Number(body?.skipped ?? 0),
   };
+}
+
+export async function disconnectExtension(bearerToken: string): Promise<void> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12_000);
+  const res = await fetch(`${API_URL}/auth/extension/disconnect-current`, {
+    method: 'DELETE',
+    headers: {
+      accept: 'application/json',
+      authorization: `Bearer ${bearerToken}`,
+    },
+    signal: controller.signal,
+  }).finally(() => clearTimeout(timeout));
+
+  if (res.ok || res.status === 401) {
+    // 401 means server already considers it disconnected/invalid.
+    return;
+  }
+
+  const body = (await res.json().catch(() => null)) as { message?: string | unknown } | null;
+  if (body && typeof body === 'object' && body.message !== undefined) {
+    const msg = body.message;
+    throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
+  }
+  throw new Error(`disconnect failed (${res.status})`);
 }

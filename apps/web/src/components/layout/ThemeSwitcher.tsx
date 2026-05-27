@@ -11,7 +11,13 @@ const THEMES = [
   { value: 'system', label: 'System', icon: Monitor },
 ] as const;
 
-export function ThemeSwitcher() {
+export function ThemeSwitcher({
+  variant = 'default',
+  className,
+}: {
+  variant?: 'default' | 'sidebar';
+  className?: string;
+}) {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -19,8 +25,18 @@ export function ThemeSwitcher() {
     setMounted(true);
   }, []);
 
+  const isSidebar = variant === 'sidebar';
+
   return (
-    <div className="flex items-center gap-1 rounded-full border border-border/70 bg-muted/55 p-1">
+    <div
+      className={cn(
+        'flex gap-1 p-1',
+        isSidebar
+          ? 'flex-col rounded-xl border border-sidebar-border bg-sidebar-accent/50'
+          : 'flex-row items-center rounded-full border border-border/70 bg-muted/55',
+        className,
+      )}
+    >
       {THEMES.map(({ value, label, icon: Icon }) => {
         const active = mounted && theme === value;
 
@@ -32,8 +48,15 @@ export function ThemeSwitcher() {
             aria-pressed={active}
             onClick={() => setTheme(value)}
             className={cn(
-              'flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-all hover:text-foreground',
-              active && 'bg-background text-foreground ring-1 ring-border/80',
+              'flex items-center justify-center rounded-lg transition-all',
+              isSidebar ? 'h-9 w-9' : 'h-9 w-9 rounded-full',
+              isSidebar
+                ? 'text-sidebar-muted-foreground hover:text-sidebar-foreground'
+                : 'text-muted-foreground hover:text-foreground',
+              active &&
+                (isSidebar
+                  ? 'bg-sidebar-accent text-sidebar-accent-foreground ring-1 ring-sidebar-border'
+                  : 'bg-background text-foreground ring-1 ring-border/80'),
             )}
           >
             <Icon className="h-4 w-4" />

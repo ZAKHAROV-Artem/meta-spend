@@ -14,10 +14,17 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ListCardTransactionsDto } from './dto/list-card-transactions.dto';
 import { UpdateCardTransactionDto } from './dto/update-card-transaction.dto';
 import { CardCategorizationRunService } from './card-categorization-run.service';
+import { cardExchangeRate, cardGasFee } from '../transactions/card-transaction-metrics';
 
 function mergeCardRawData(
   existing: Prisma.JsonValue | null | undefined,
-  fundingSourceMasked: string | null | undefined,
+  cardScrape: {
+    fundingSourceMasked?: string | null;
+    gasFeeAmount?: string | null;
+    gasFeeSymbol?: string | null;
+    gasFeeRaw?: string | null;
+    spentRaw?: string | null;
+  },
 ): Prisma.InputJsonValue {
   const base =
     existing && typeof existing === 'object' && !Array.isArray(existing)
@@ -30,16 +37,21 @@ function mergeCardRawData(
 
   return {
     ...base,
-    cardScrape:
-      fundingSourceMasked != null && fundingSourceMasked !== ''
-        ? { ...prevScrape, fundingSourceMasked }
-        : { ...prevScrape },
+    cardScrape: {
+      ...prevScrape,
+      ...(cardScrape.fundingSourceMasked ? { fundingSourceMasked: cardScrape.fundingSourceMasked } : {}),
+      ...(cardScrape.gasFeeAmount ? { gasFeeAmount: cardScrape.gasFeeAmount } : {}),
+      ...(cardScrape.gasFeeSymbol ? { gasFeeSymbol: cardScrape.gasFeeSymbol.toUpperCase() } : {}),
+      ...(cardScrape.gasFeeRaw ? { gasFeeRaw: cardScrape.gasFeeRaw } : {}),
+      ...(cardScrape.spentRaw ? { spentRaw: cardScrape.spentRaw } : {}),
+    },
   } as Prisma.InputJsonValue;
 }
 
 type CardRowDb = Prisma.TransactionGetPayload<{
   include: {
-    category: { select: { name: true, color: true } };
+    category: { select: { name: true; color: true } };
+    subcategory: { select: { name: true; color: true } };
   };
 }>;
 
@@ -128,7 +140,13 @@ export class CardTransactionsService {
               ? null
               : new Prisma.Decimal(item.cryptoAmount);
 
-          const rawDataMerged = mergeCardRawData(prior?.rawData ?? null, item.fundingSourceMasked);
+          const rawDataMerged = mergeCardRawData(prior?.rawData ?? null, {
+            fundingSourceMasked: item.fundingSourceMasked,
+            gasFeeAmount: item.gasFeeAmount ?? null,
+            gasFeeSymbol: item.gasFeeSymbol ?? null,
+            gasFeeRaw: item.gasFeeRaw ?? null,
+            spentRaw: item.spentRaw ?? null,
+          });
 
           await this.prisma.transaction.upsert({
             where: {
@@ -199,6 +217,7 @@ export class CardTransactionsService {
         take: limit,
         include: {
           category: { select: { name: true, color: true } },
+          subcategory: { select: { name: true, color: true } },
         },
       }),
       this.prisma.transaction.count({ where }),
@@ -219,22 +238,36 @@ export class CardTransactionsService {
     if (!existing) {
       throw new NotFoundException('Card transaction not found');
     }
+
+    const nextCategoryId = dto.categoryId === undefined ? existing.categoryId : dto.categoryId;
+    const nextSubcategoryId = dto.subcategoryId === undefined ? existing.subcategoryId : dto.subcategoryId;
+
+    if (nextSubcategoryId && nextCategoryId) {
+      const sub = await this.prisma.category.findUnique({ where: { id: nextSubcategoryId } });
+      if (!sub || sub.parentId !== nextCategoryId) {
+        throw new BadRequestException('Subcategory does not belong to the selected category');
+      }
+    }
+
     await this.prisma.transaction.update({
       where: { id },
       data: {
-        categoryId: dto.categoryId === undefined ? existing.categoryId : dto.categoryId,
+        categoryId: nextCategoryId,
+        subcategoryId: nextSubcategoryId,
         notes: dto.notes === undefined ? existing.notes : dto.notes,
       },
     });
+
     const hydrated = await this.prisma.transaction.findFirstOrThrow({
       where: { id, userId, source: TransactionSource.CARD },
       include: {
         category: { select: { name: true, color: true } },
+        subcategory: { select: { name: true, color: true } },
       },
     });
-    const nextCat = dto.categoryId === undefined ? existing.categoryId : dto.categoryId;
-    if (nextCat && hydrated.merchantName) {
-      await this.persistMerchantMemory(userId, hydrated.merchantName, nextCat, 'manual');
+
+    if (nextCategoryId && hydrated.merchantName) {
+      await this.persistMerchantMemory(userId, hydrated.merchantName, nextCategoryId, nextSubcategoryId ?? null, 'manual');
     }
     return this.toResponse(hydrated);
   }
@@ -243,20 +276,21 @@ export class CardTransactionsService {
     userId: string,
     merchantName: string,
     categoryId: string,
+    subcategoryId: string | null,
     learnedSource: 'manual' | 'ai',
   ): Promise<void> {
     const merchantKey = normalizeMerchantKey(merchantName);
     if (!merchantKey) return;
     await this.prisma.cardMerchantMemory.upsert({
       where: { userId_merchantKey: { userId, merchantKey } },
-      create: { userId, merchantKey, categoryId, learnedSource },
-      update: { categoryId, learnedSource },
+      create: { userId, merchantKey, categoryId, subcategoryId, learnedSource },
+      update: { categoryId, subcategoryId, learnedSource },
     });
   }
 
   private buildWhere(
     userId: string,
-    dto: Pick<ListCardTransactionsDto, 'categoryId' | 'status' | 'merchant' | 'from' | 'to' | 'search'>,
+    dto: Pick<ListCardTransactionsDto, 'categoryId' | 'subcategoryId' | 'status' | 'merchant' | 'from' | 'to' | 'search'>,
   ): Prisma.TransactionWhereInput {
     const from = parseFromDate(dto.from);
     const to = parseToDate(dto.to);
@@ -264,6 +298,9 @@ export class CardTransactionsService {
 
     if (dto.categoryId) {
       where.categoryId = dto.categoryId;
+    }
+    if (dto.subcategoryId) {
+      where.subcategoryId = dto.subcategoryId;
     }
     if (dto.status) {
       where.status = dto.status;
@@ -292,6 +329,7 @@ export class CardTransactionsService {
     const merchantName = row.merchantName ?? 'Card transaction';
     const fiatAmount = row.fiatAmount?.toString() ?? null;
     const fiatCurrency = row.fiatCurrency ?? null;
+    const gasFee = cardGasFee(row);
 
     return {
       id: row.id,
@@ -306,6 +344,9 @@ export class CardTransactionsService {
       categoryId: row.categoryId,
       categoryName: row.category?.name ?? null,
       categoryColor: row.category?.color ?? null,
+      subcategoryId: row.subcategoryId,
+      subcategoryName: row.subcategory?.name ?? null,
+      subcategoryColor: row.subcategory?.color ?? null,
       notes: row.notes,
       externalId: row.externalId ?? null,
       merchantName,
@@ -315,6 +356,9 @@ export class CardTransactionsService {
       fiatCurrency,
       cryptoAmount: row.cryptoAmount?.toString() ?? null,
       cryptoSymbol: row.cryptoSymbol,
+      gasFeeAmount: gasFee?.amount ?? null,
+      gasFeeSymbol: gasFee?.symbol ?? null,
+      exchangeRate: cardExchangeRate(row),
       parserVersion: row.parserVersion,
       rawHtml: row.rawHtml,
     };

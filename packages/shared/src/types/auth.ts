@@ -18,3 +18,15 @@ export interface AuthUser {
 export interface AuthResponse extends AuthTokens {
   user: AuthUser;
 }
+
+export interface ExtensionConnectionDto {
+  id: string;
+  label: string | null;
+  lastUsedAt: string | null;
+  createdAt: string;
+}
+
+export interface ExtensionStatusResponse {
+  connected: boolean;
+  connections: ExtensionConnectionDto[];
+}

@@ -25,6 +25,31 @@ export class ExtensionTokenService {
     return rawToken;
   }
 
+  async listForUser(userId: string) {
+    return this.prisma.extensionToken.findMany({
+      where: { userId },
+      orderBy: { lastUsedAt: 'desc' },
+      select: {
+        id: true,
+        label: true,
+        lastUsedAt: true,
+        createdAt: true,
+        expiresAt: true,
+      },
+    });
+  }
+
+  async revokeAllForUser(userId: string): Promise<number> {
+    const result = await this.prisma.extensionToken.deleteMany({ where: { userId } });
+    return result.count;
+  }
+
+  async revokeByRawToken(rawToken: string): Promise<boolean> {
+    const tokenHash = this.hashToken(rawToken);
+    const result = await this.prisma.extensionToken.deleteMany({ where: { tokenHash } });
+    return result.count > 0;
+  }
+
   async validateAndTouch(rawToken: string): Promise<AuthUser | null> {
     const tokenHash = this.hashToken(rawToken);
     const row = await this.prisma.extensionToken.findUnique({

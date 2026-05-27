@@ -1,7 +1,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, subDays, subMonths } from 'date-fns';
+import {
+  format,
+  startOfDay,
+  endOfDay,
+  startOfWeek,
+  endOfWeek,
+  startOfMonth,
+  endOfMonth,
+  startOfYear,
+  subDays,
+  subMonths,
+} from 'date-fns';
 import { CalendarDays } from 'lucide-react';
 import type { DateRange } from 'react-day-picker';
 
@@ -125,12 +136,14 @@ export function DateRangePicker({
   align = 'start',
   triggerClassName,
   emptyLabel = 'All time',
+  className,
 }: {
   value: AnalyticsRange;
   onChange: (range: AnalyticsRange) => void;
   align?: 'start' | 'end' | 'center';
   triggerClassName?: string;
   emptyLabel?: string;
+  className?: string;
 }) {
   const [open, setOpen] = useState(false);
   // Pending range while the popover is open. Only committed when complete.
@@ -171,11 +184,11 @@ export function DateRangePicker({
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          size="sm"
           className={cn(
-            'h-9 justify-start gap-2 font-normal',
+            'gap-2 justify-start font-normal',
             !hasSelection && 'text-muted-foreground',
             triggerClassName,
+            className,
           )}
         >
           <CalendarDays className="h-4 w-4 shrink-0" />
@@ -202,8 +215,7 @@ export function DateRangePicker({
                 <Button
                   key={preset.id}
                   variant={isActive ? 'secondary' : 'ghost'}
-                  size="sm"
-                  className="h-8 justify-start px-3 text-xs sm:w-36"
+                  className="justify-start sm:w-36"
                   onClick={() => commit(presetRange)}
                 >
                   {preset.label}
@@ -212,8 +224,7 @@ export function DateRangePicker({
             })}
             <Button
               variant={!hasSelection ? 'secondary' : 'ghost'}
-              size="sm"
-              className="h-8 justify-start px-3 text-xs sm:w-36"
+              className="justify-start sm:w-36"
               onClick={() => commit({})}
             >
               All time
@@ -229,16 +240,13 @@ export function DateRangePicker({
             />
             {(pending.from || pending.to) && (
               <div className="flex items-center justify-between gap-2 border-t px-3 py-2">
-                <span className="text-xs text-muted-foreground">
-                  {pending.from && !pending.to
-                    ? 'Pick the end date…'
-                    : formatRangeLabel(pending)}
+                <span className="text-muted-foreground">
+                  {pending.from && !pending.to ? 'Pick the end date…' : formatRangeLabel(pending)}
                 </span>
                 <Button
                   type="button"
                   variant="ghost"
-                  size="sm"
-                  className="h-7 text-xs text-muted-foreground"
+                  className="text-muted-foreground"
                   onClick={() => {
                     setPending({});
                     commit({});

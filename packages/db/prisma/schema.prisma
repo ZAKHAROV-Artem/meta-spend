@@ -78,19 +78,22 @@ model Transaction {
   parserVersion Int?
   rawHtml       String?
   categoryId    String?
+  subcategoryId String?
   notes         String?
   rawData       Json?
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
 
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category    Category? @relation("TransactionCategory", fields: [categoryId], references: [id], onDelete: SetNull)
+  subcategory Category? @relation("TransactionSubcategory", fields: [subcategoryId], references: [id], onDelete: SetNull)
 
   @@unique([userId, source, externalId])
   @@index([userId])
   @@index([userId, source, timestamp])
   @@index([timestamp])
   @@index([categoryId])
+  @@index([subcategoryId])
   @@map("transactions")
 }
 
@@ -121,20 +124,26 @@ model ExtensionToken {
 }
 
 model Category {
-  id       String   @id @default(cuid())
-  userId   String?
-  name     String
-  color    String
-  icon     String
-  isSystem Boolean  @default(false)
+  id        String   @id @default(cuid())
+  userId    String?
+  name      String
+  color     String
+  icon      String
+  isSystem  Boolean  @default(false)
+  parentId  String?
 
   createdAt DateTime @default(now())
 
-  user                 User?                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  transactions         Transaction[]
-  cardMerchantMemories CardMerchantMemory[]
+  user          User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent        Category?  @relation("SubCategories", fields: [parentId], references: [id], onDelete: Cascade)
+  subCategories Category[] @relation("SubCategories")
 
-  @@unique([userId, name])
+  transactions            Transaction[]         @relation("TransactionCategory")
+  subTransactions         Transaction[]         @relation("TransactionSubcategory")
+  cardMerchantMemories    CardMerchantMemory[]  @relation("MerchantMemoryCategory")
+  cardMerchantMemoriesSub CardMerchantMemory[]  @relation("MerchantMemorySubcategory")
+
+  @@index([userId, parentId])
   @@map("categories")
 }
 
@@ -144,13 +153,15 @@ model CardMerchantMemory {
   userId        String
   merchantKey   String
   categoryId    String
+  subcategoryId String?
   hitCount      Int      @default(1)
   learnedSource String   @default("ai")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category    Category  @relation("MerchantMemoryCategory", fields: [categoryId], references: [id], onDelete: Cascade)
+  subcategory Category? @relation("MerchantMemorySubcategory", fields: [subcategoryId], references: [id], onDelete: SetNull)
 
   @@unique([userId, merchantKey])
   @@index([userId])

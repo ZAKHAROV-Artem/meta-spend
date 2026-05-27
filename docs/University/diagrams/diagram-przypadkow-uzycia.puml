@@ -1,0 +1,93 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam linetype ortho
+skinparam nodesep 55
+skinparam ranksep 45
+skinparam usecase {
+  BackgroundColor White
+  BorderColor Black
+  ArrowColor Black
+}
+
+title Diagram przypadków użycia - CryptoTrack
+
+actor "Użytkownik\n(właściciel karty)" as User
+actor "Rozszerzenie\nChrome" as Extension
+actor "MetaMask Card\n(card.metamask.io)" as MetaMask
+actor "OpenAI API" as OpenAI
+
+rectangle "CryptoTrack" {
+  package "Uwierzytelnianie" {
+    usecase "Rejestracja konta" as UC_Register
+    usecase "Logowanie e-mail / hasło" as UC_Login
+    usecase "Logowanie SIWE\n(portfel)" as UC_SIWE
+
+    UC_Register -[hidden]down- UC_Login
+    UC_Login -[hidden]down- UC_SIWE
+  }
+
+  package "Integracja MetaMask Card" {
+    usecase "Generowanie kodu\nparowania" as UC_PairCode
+    usecase "Parowanie\nrozszerzenia" as UC_PairExtension
+    usecase "Synchronizacja\ntransakcji" as UC_Sync
+
+    UC_PairCode -[hidden]down- UC_PairExtension
+    UC_PairExtension -[hidden]down- UC_Sync
+  }
+
+  package "Transakcje" {
+    usecase "Przeglądanie\ntransakcji" as UC_ListTx
+    usecase "Edycja kategorii\ntransakcji" as UC_EditTx
+    usecase "Przeglądanie\ndashboardu" as UC_Dashboard
+
+    UC_Dashboard -[hidden]down- UC_ListTx
+    UC_ListTx -[hidden]down- UC_EditTx
+  }
+
+  package "Kategorie i analityka" {
+    usecase "Zarządzanie\nkategoriami" as UC_Categories
+    usecase "Masowa kategoryzacja\nmerchantów" as UC_Bulk
+    usecase "Automatyczna\nkategoryzacja AI" as UC_AI
+    usecase "Wyświetlanie\nstatystyk" as UC_Stats
+    usecase "Analityka i wykresy" as UC_Analytics
+
+    UC_Categories -[hidden]down- UC_Bulk
+    UC_Bulk -[hidden]down- UC_AI
+    UC_AI -[hidden]down- UC_Stats
+    UC_Stats -[hidden]down- UC_Analytics
+  }
+
+  package "Ustawienia" {
+    usecase "Zarządzanie kontem" as UC_Settings
+  }
+}
+
+User -right-> UC_Register
+User -right-> UC_Login
+User -right-> UC_PairExtension
+User -right-> UC_Dashboard
+User -right-> UC_ListTx
+User -right-> UC_Categories
+User -right-> UC_Bulk
+User -right-> UC_Analytics
+User -right-> UC_Settings
+
+Extension -left-> UC_PairExtension
+Extension -left-> UC_Sync
+MetaMask -left-> UC_Sync
+OpenAI -left-> UC_AI
+
+UC_SIWE .up.> UC_Login : <<extend>>
+UC_Register .down.> UC_Login : <<extend>>
+UC_PairExtension .up.> UC_PairCode : <<include>>
+UC_Sync .up.> UC_PairExtension : <<include>>
+UC_Bulk .up.> UC_Categories : <<include>>
+UC_AI .up.> UC_Categories : <<include>>
+UC_Analytics .up.> UC_Stats : <<include>>
+UC_EditTx .up.> UC_ListTx : <<extend>>
+UC_EditTx .right.> UC_Categories : <<include>>
+UC_Dashboard .right.> UC_Stats : <<include>>
+
+@enduml

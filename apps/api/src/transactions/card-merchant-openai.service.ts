@@ -8,12 +8,14 @@ import {
 } from './card-merchant-auto-categorize.schema';
 
 const CHUNK_MERCHANT_INSTRUCTION = [
-  'You assign debit card merchants to budget categories.',
+  'You assign debit card merchants to budget categories and subcategories.',
   'Reply with ONLY valid JSON matching this shape:',
-  '{"assignments":[{"merchantKey":string,"categoryId":string|null,"confidence"?:number,"reason"?:string}]}',
+  '{"assignments":[{"merchantKey":string,"categoryId":string|null,"subcategoryId":string|null,"confidence"?:number,"reason"?:string}]}',
   'Rules:',
   '- Copy each merchantKey EXACTLY as given (same spelling and casing normalization as input).',
-  '- categoryId must be one of the provided category IDs, or JSON null if you cannot pick one.',
+  '- categoryId must be one of the provided parent category IDs, or null if you cannot pick one.',
+  '- subcategoryId must be one of the subcategory IDs listed under the chosen categoryId, or null. Never assign a subcategoryId from a different parent.',
+  '- If you cannot confidently pick a subcategory, set subcategoryId to null (parent-only assignment is fine).',
   '- Return exactly ONE assignment object per merchant in the request (same count).',
   '- Use only JSON; no Markdown, no prose, no code fences.',
 ].join('\n');
@@ -38,7 +40,7 @@ export class CardMerchantOpenAiService {
    * Classifies one chunk of merchants. Validates response against chunk keys + category IDs.
    */
   async classifyMerchantsChunk(input: {
-    categories: Array<{ id: string; name: string }>;
+    categories: Array<{ id: string; name: string; subCategories: Array<{ id: string; name: string }> }>;
     merchants: Array<{ merchantKey: string; sampleTitle: string }>;
   }) {
     const apiKey = this.getApiKey();
@@ -53,6 +55,13 @@ export class CardMerchantOpenAiService {
       categories: input.categories,
       merchants: input.merchants,
     });
+
+    const allSubcategoryIds = new Set(
+      input.categories.flatMap((c) => c.subCategories.map((s) => s.id)),
+    );
+    const subcategoryParentMap = new Map(
+      input.categories.flatMap((c) => c.subCategories.map((s) => [s.id, c.id])),
+    );
 
     try {
       const completion = await client.chat.completions.create({
@@ -77,6 +86,8 @@ export class CardMerchantOpenAiService {
         assignments: parsed.assignments,
         expectedKeys: new Set(input.merchants.map((m) => m.merchantKey)),
         categoryIds: new Set(input.categories.map((c) => c.id)),
+        subcategoryIds: allSubcategoryIds,
+        subcategoryParentMap,
       });
 
       return parsed.assignments;

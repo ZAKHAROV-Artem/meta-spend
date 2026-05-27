@@ -7,5 +7,9 @@ export class UpdateCardTransactionDto {
 
   @IsOptional()
   @IsString()
+  subcategoryId?: string | null;
+
+  @IsOptional()
+  @IsString()
   notes?: string | null;
 }

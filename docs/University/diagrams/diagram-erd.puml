@@ -1,0 +1,125 @@
+@startuml
+left to right direction
+hide circle
+skinparam linetype ortho
+skinparam shadowing false
+skinparam nodesep 60
+skinparam ranksep 55
+skinparam class {
+  BackgroundColor White
+  BorderColor Black
+}
+
+title Diagram ERD - CryptoTrack
+
+entity "users" as users {
+  * id : TEXT <<PK>>
+  --
+  * email : TEXT <<UK>>
+  passwordHash : TEXT
+  displayName : TEXT
+  createdAt : TIMESTAMP
+  updatedAt : TIMESTAMP
+}
+
+entity "sessions" as sessions {
+  * id : TEXT <<PK>>
+  --
+  * userId : TEXT <<FK>>
+  * refreshTokenHash : TEXT <<UK>>
+  * expiresAt : TIMESTAMP
+}
+
+entity "portfolio_accounts" as portfolio {
+  * id : TEXT <<PK>>
+  --
+  * userId : TEXT <<FK, UK>>
+  * address : TEXT
+  cardBalanceAmount : DECIMAL
+  cardBalanceCurrency : TEXT
+  lastSuccessfulSyncAt : TIMESTAMP
+}
+
+entity "transactions" as transactions {
+  * id : TEXT <<PK>>
+  --
+  * userId : TEXT <<FK>>
+  * source : TransactionSource
+  * externalId : TEXT
+  * timestamp : TIMESTAMP
+  merchantName : TEXT
+  fiatAmount : DECIMAL
+  fiatCurrency : TEXT
+  cryptoAmount : DECIMAL
+  cryptoSymbol : TEXT
+  status : CardTxStatus
+  categoryId : TEXT <<FK>>
+  subcategoryId : TEXT <<FK>>
+}
+
+entity "categories" as categories {
+  * id : TEXT <<PK>>
+  --
+  userId : TEXT <<FK>>
+  * name : TEXT
+  * color : TEXT
+  * icon : TEXT
+  * isSystem : BOOLEAN
+  parentId : TEXT <<FK>>
+}
+
+entity "extension_tokens" as extension_tokens {
+  * id : TEXT <<PK>>
+  --
+  * userId : TEXT <<FK>>
+  * tokenHash : TEXT <<UK>>
+  label : TEXT
+  lastUsedAt : TIMESTAMP
+  expiresAt : TIMESTAMP
+}
+
+entity "card_merchant_memory" as merchant_memory {
+  * id : TEXT <<PK>>
+  --
+  * userId : TEXT <<FK>>
+  * merchantKey : TEXT
+  * categoryId : TEXT <<FK>>
+  subcategoryId : TEXT <<FK>>
+  * hitCount : INTEGER
+  * learnedSource : TEXT
+}
+
+entity "card_categorization_runs" as categorization_runs {
+  * id : TEXT <<PK>>
+  --
+  * userId : TEXT <<FK>>
+  * status : CategorizationRunStatus
+  * trigger : TEXT
+  scannedTxCount : INTEGER
+  scannedMerchantCount : INTEGER
+  memoryMatchedCount : INTEGER
+  aiUpdatedCount : INTEGER
+  skippedCount : INTEGER
+}
+
+sessions -[hidden]down- portfolio
+portfolio -[hidden]down- extension_tokens
+transactions -[hidden]down- categories
+categories -[hidden]down- merchant_memory
+merchant_memory -[hidden]down- categorization_runs
+
+users ||--o{ sessions
+users ||--o| portfolio
+users ||--o{ extension_tokens
+users ||--o{ transactions
+users ||--o{ categories
+users ||--o{ merchant_memory
+users ||--o{ categorization_runs
+
+categories ||--o{ transactions : categoryId
+categories ||--o{ transactions : subcategoryId
+categories ||--o{ merchant_memory : categoryId
+categories ||--o{ merchant_memory : subcategoryId
+categories ||--o{ categories : parentId
+
+@enduml

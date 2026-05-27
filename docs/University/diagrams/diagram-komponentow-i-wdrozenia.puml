@@ -1,0 +1,59 @@
+@startuml
+left to right direction
+skinparam shadowing false
+skinparam componentStyle rectangle
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 55
+
+title Diagram komponentów i wdrożenia - CryptoTrack
+
+node "Przeglądarka użytkownika" as Browser {
+  component "Aplikacja web\nNext.js 15 / React 19\napps/web" as Web
+  component "Rozszerzenie Chrome\nPlasmo MV3\napps/extension" as Extension
+}
+
+cloud "MetaMask Card\ncard.metamask.io\nportfolio.metamask.io" as MetaMask
+
+node "Serwer aplikacji" as AppServer {
+  component "API REST\nNestJS + Fastify\napps/api" as Api
+  component "Auth Module\nJWT + SIWE" as Auth
+  component "Transactions Module" as Transactions
+  component "Categories Module" as Categories
+  component "CardTransactions Module" as CardTx
+  component "OpenAI Categorization\nService" as OpenAIService
+}
+
+database "PostgreSQL" as Db
+component "Prisma ORM\npackages/db" as Prisma
+component "@crypto-tracker/shared\nschemas + types" as Shared
+cloud "OpenAI API" as OpenAI
+
+Web -right-> Api : HTTPS REST\nJWT Bearer
+Extension -right-> Api : HTTPS REST\nExtension token
+Extension -down-> MetaMask : DOM scraping
+
+Auth -[hidden]down- Transactions
+Transactions -[hidden]down- Categories
+Categories -[hidden]down- CardTx
+
+Api -down-> Auth
+Api -down-> Transactions
+Api -down-> Categories
+Api -down-> CardTx
+Transactions -right-> Prisma
+Categories -right-> Prisma
+CardTx -right-> Prisma
+Prisma -right-> Db : SQL
+
+Api .down.> Shared : shared DTO/types
+Transactions -down-> OpenAIService : AI categorization
+OpenAIService -right-> OpenAI : HTTPS
+
+note bottom
+  Wdrożenie lokalne/projektowe:
+  pnpm + Turbo, Docker / Docker Compose,
+  PostgreSQL jako główna baza danych.
+end note
+
+@enduml

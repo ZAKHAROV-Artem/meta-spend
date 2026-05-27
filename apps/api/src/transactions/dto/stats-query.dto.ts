@@ -27,5 +27,9 @@ export class StatsQueryDto {
 
   @IsOptional()
   @IsString()
+  subcategoryId?: string;
+
+  @IsOptional()
+  @IsString()
   search?: string;
 }

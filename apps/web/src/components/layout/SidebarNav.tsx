@@ -4,16 +4,14 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { BarChart3, CreditCard, LayoutDashboard, Settings, Tag } from 'lucide-react';
+import { CreditCard, LayoutDashboard, Settings, Tag } from 'lucide-react';
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/transactions', label: 'Transactions', icon: CreditCard },
-  { href: '/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/categories', label: 'Categories', icon: Tag },
+  { href: '/settings', label: 'Settings', icon: Settings },
 ];
-
-const BOTTOM_ITEMS = [{ href: '/settings', label: 'Settings', icon: Settings }];
 
 function NavItem({
   href,
@@ -74,33 +72,17 @@ export function SidebarNav({
   const collapsed = !mobile;
 
   return (
-    <div className={cn('flex flex-1 flex-col justify-between')}>
-      <nav className={cn('flex flex-col items-center justify-center space-y-2')}>
-        {NAV_ITEMS.map((item) => (
-          <NavItem
-            key={item.href}
-            {...item}
-            collapsed={collapsed}
-            mobile={mobile}
-            onNavigate={onNavigate}
-            active={pathname === item.href || pathname.startsWith(item.href + '/')}
-          />
-        ))}
-      </nav>
-      <nav
-        className={cn('flex flex-col items-center justify-center space-y-2', mobile ? '' : 'px-0')}
-      >
-        {BOTTOM_ITEMS.map((item) => (
-          <NavItem
-            key={item.href}
-            {...item}
-            collapsed={collapsed}
-            mobile={mobile}
-            onNavigate={onNavigate}
-            active={pathname === item.href}
-          />
-        ))}
-      </nav>
-    </div>
+    <nav className={cn('flex flex-1 flex-col space-y-2', mobile ? '' : 'items-center')}>
+      {NAV_ITEMS.map((item) => (
+        <NavItem
+          key={item.href}
+          {...item}
+          collapsed={collapsed}
+          mobile={mobile}
+          onNavigate={onNavigate}
+          active={pathname === item.href || pathname.startsWith(`${item.href}/`)}
+        />
+      ))}
+    </nav>
   );
 }

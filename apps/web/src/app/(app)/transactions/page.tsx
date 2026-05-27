@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { CardTransactionsList } from '@/components/card/CardTransactionsList';
+import { PageContainer } from '@/components/layout/PageContainer';
 import type { CardTxStatus } from '@crypto-tracker/shared';
 
 export const metadata: Metadata = { title: 'Transactions — MetaSpend' };
@@ -25,9 +26,16 @@ export default async function TransactionsPage({
         .map((value) => value.trim())
         .filter(Boolean)
     : undefined;
+  const subcategoryIdRaw = first(params?.subcategoryId);
+  const subcategoryId = subcategoryIdRaw
+    ? subcategoryIdRaw
+        .split(',')
+        .map((value) => value.trim())
+        .filter(Boolean)
+    : undefined;
 
   return (
-    <div className="mx-auto w-full max-w-6xl motion-safe:scroll-smooth">
+    <PageContainer>
       <CardTransactionsList
         initialFilters={{
           status,
@@ -35,8 +43,9 @@ export default async function TransactionsPage({
           to: to || undefined,
           search: search || undefined,
           categoryId: categoryId?.length ? categoryId : undefined,
+          subcategoryId: subcategoryId?.length ? subcategoryId : undefined,
         }}
       />
-    </div>
+    </PageContainer>
   );
 }

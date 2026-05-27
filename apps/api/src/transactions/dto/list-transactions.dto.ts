@@ -12,6 +12,10 @@ export class ListTransactionsDto {
   categoryId?: string;
 
   @IsOptional()
+  @IsString()
+  subcategoryId?: string;
+
+  @IsOptional()
   @IsDateString()
   from?: string;
 

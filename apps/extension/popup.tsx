@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { API_URL, pairExtension, syncCardTransactions, type CardSyncBodyWire } from './src/lib/api';
+import {
+  API_URL,
+  disconnectExtension,
+  pairExtension,
+  syncCardTransactions,
+  type CardSyncBodyWire,
+} from './src/lib/api';
 
 const STORAGE_API_TOKEN_KEY = 'cryptotrackApiToken';
 
@@ -226,11 +232,23 @@ export default function Popup() {
     setApiTokenState(token);
   }, []);
 
-  const clearToken = useCallback(() => {
+  const clearToken = useCallback(async () => {
+    const currentToken = apiToken;
+    try {
+      if (currentToken) {
+        await disconnectExtension(currentToken);
+      }
+    } catch (error) {
+      setStatus({
+        kind: 'error',
+        text: error instanceof Error ? error.message : String(error),
+      });
+      return;
+    }
     void chrome.storage.local.remove(STORAGE_API_TOKEN_KEY);
     setApiTokenState(null);
     setStatus({ kind: 'ok', text: 'Disconnected.' });
-  }, []);
+  }, [apiToken]);
 
   async function onConnect(): Promise<void> {
     setIsPairing(true);
@@ -335,7 +353,7 @@ export default function Popup() {
               disabled={isPairing}
               onChange={(e) => setPairCode(e.target.value.replace(/\D+/gu, '').slice(0, 6))}
             />
-            <p style={s.hint}>Generate a code in Settings → Browser extension</p>
+            <p style={s.hint}>Copy the pairing code from Settings → Browser extension</p>
             <button
               type="button"
               style={{ ...s.btn, ...(isPairing ? s.btnDisabled : {}) }}
@@ -347,7 +365,10 @@ export default function Popup() {
           </>
         ) : (
           <>
-            <div style={s.divider} />
+            <div style={s.connectedBadge}>
+              <span style={s.dot} />
+              Connected
+            </div>
             <p style={{ ...s.hint, margin: '0 0 12px', color: '#6b7280', textAlign: 'left' }}>
               Open the MetaMask Card activity page, then tap Sync.
             </p>
@@ -360,7 +381,12 @@ export default function Popup() {
               >
                 {isSyncing ? 'Syncing…' : 'Sync now'}
               </button>
-              <button type="button" style={s.btnGhost} disabled={isSyncing} onClick={clearToken}>
+              <button
+                type="button"
+                style={s.btnGhost}
+                disabled={isSyncing}
+                onClick={() => void clearToken()}
+              >
                 Disconnect
               </button>
             </div>

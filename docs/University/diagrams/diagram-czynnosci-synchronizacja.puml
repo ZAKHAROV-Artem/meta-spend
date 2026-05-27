@@ -1,0 +1,37 @@
+@startuml
+skinparam shadowing false
+skinparam activity {
+  BackgroundColor White
+  BorderColor Black
+  ArrowColor Black
+}
+
+title Diagram czynności - synchronizacja transakcji
+
+start
+
+if (Rozszerzenie sparowane?) then (tak)
+  :Użytkownik otwiera stronę\nMetaMask Card;
+  :Kliknięcie "Sync now"\nw popup rozszerzenia;
+  :Content script odczytuje\nwiersze transakcji z HTML;
+
+  if (Znaleziono transakcje?) then (tak)
+    :Normalizacja danych\ndo ParsedCardTx;
+    :Wysłanie POST\n/api/v1/card-transactions/sync;
+
+    if (API zaakceptowało token?) then (tak)
+      :Upsert transakcji\nw PostgreSQL;
+      :Zapis informacji o synchronizacji;
+      :Wyświetlenie komunikatu sukcesu;
+    else (nie)
+      :Wyświetlenie błędu autoryzacji;
+    endif
+  else (nie)
+    :Wyświetlenie komunikatu\nbrak nowych danych;
+  endif
+else (nie)
+  :Wyświetlenie prośby\no sparowanie rozszerzenia;
+endif
+
+stop
+@enduml

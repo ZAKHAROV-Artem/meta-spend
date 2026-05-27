@@ -10,6 +10,10 @@ export interface ParsedCardTx {
   fiatCurrency: string;
   cryptoAmount: string | null;
   cryptoSymbol: string | null;
+  gasFeeAmount?: string | null;
+  gasFeeSymbol?: string | null;
+  gasFeeRaw?: string | null;
+  spentRaw?: string | null;
   status: CardTxStatus;
   parserVersion: number;
   rawHtml?: string | null;

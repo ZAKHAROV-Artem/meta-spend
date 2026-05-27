@@ -10,7 +10,7 @@ import { CardCategorizationRunService } from '../card-transactions/card-categori
 
 describe('cardMerchantAutoCategorize schema helpers', () => {
   it('stripJsonFence removes markdown fences', () => {
-    const inner = '{"assignments":[{"merchantKey":"m","categoryId":"c1"}]}';
+    const inner = '{"assignments":[{"merchantKey":"m","categoryId":"c1","subcategoryId":null}]}';
     assert.equal(stripJsonFence('```json\n' + inner + '\n```'), inner);
     assert.equal(stripJsonFence('```\n' + inner + '\n```'), inner);
     assert.equal(stripJsonFence('  ' + inner + '  '), inner);
@@ -20,8 +20,8 @@ describe('cardMerchantAutoCategorize schema helpers', () => {
     const data = parseAutoCategorizeAiPayload(
       JSON.stringify({
         assignments: [
-          { merchantKey: 'coffee shop', categoryId: 'cid_abc', confidence: 0.9 },
-          { merchantKey: 'metro', categoryId: null },
+          { merchantKey: 'coffee shop', categoryId: 'cid_abc', subcategoryId: null, confidence: 0.9 },
+          { merchantKey: 'metro', categoryId: null, subcategoryId: null },
         ],
       }),
     );
@@ -34,7 +34,7 @@ describe('cardMerchantAutoCategorize schema helpers', () => {
     assert.throws(() => {
       parseAutoCategorizeAiPayload(
         JSON.stringify({
-          assignments: [{ merchantKey: 'x', categoryId: null }],
+          assignments: [{ merchantKey: 'x', categoryId: null, subcategoryId: null }],
           stray: true,
         }),
       );
@@ -44,33 +44,41 @@ describe('cardMerchantAutoCategorize schema helpers', () => {
   it('validateAssignmentsForChunk enforces full coverage', () => {
     const expectedKeys = new Set(['a', 'b']);
     const categoryIds = new Set(['cat1']);
+    const subcategoryIds = new Set(['sub1']);
+    const subcategoryParentMap = new Map([['sub1', 'cat1']]);
 
     assert.throws(() => {
       validateAssignmentsForChunk({
-        assignments: [{ merchantKey: 'a', categoryId: 'cat1' }],
+        assignments: [{ merchantKey: 'a', categoryId: 'cat1', subcategoryId: null }],
         expectedKeys,
         categoryIds,
+        subcategoryIds,
+        subcategoryParentMap,
       });
     });
 
     assert.throws(() => {
       validateAssignmentsForChunk({
         assignments: [
-          { merchantKey: 'a', categoryId: 'cat1' },
-          { merchantKey: 'b', categoryId: 'bogus' },
+          { merchantKey: 'a', categoryId: 'cat1', subcategoryId: null },
+          { merchantKey: 'b', categoryId: 'bogus', subcategoryId: null },
         ],
         expectedKeys,
         categoryIds,
+        subcategoryIds,
+        subcategoryParentMap,
       });
     });
 
     validateAssignmentsForChunk({
       assignments: [
-        { merchantKey: 'a', categoryId: 'cat1' },
-        { merchantKey: 'b', categoryId: null },
+        { merchantKey: 'a', categoryId: 'cat1', subcategoryId: 'sub1' },
+        { merchantKey: 'b', categoryId: null, subcategoryId: null },
       ],
       expectedKeys,
       categoryIds,
+      subcategoryIds,
+      subcategoryParentMap,
     });
   });
 });
@@ -91,7 +99,7 @@ describe('CardCategorizationRunService AI assignment', () => {
 
     const prisma = {
       category: {
-        findMany: async () => [{ id: 'cat_food', name: 'Food' }],
+        findMany: async () => [{ id: 'cat_food', name: 'Food', subCategories: [] }],
       },
       transaction: {
         findMany: async () =>
@@ -118,7 +126,7 @@ describe('CardCategorizationRunService AI assignment', () => {
     };
 
     const openAi = {
-      classifyMerchantsChunk: async () => [{ merchantKey: 'starbucks 123', categoryId: 'cat_food' }],
+      classifyMerchantsChunk: async () => [{ merchantKey: 'starbucks 123', categoryId: 'cat_food', subcategoryId: null }],
     };
 
     const service = new CardCategorizationRunService(prisma as never, openAi as never);
@@ -136,7 +144,7 @@ describe('CardCategorizationRunService AI assignment', () => {
   it('returns zeros when nothing to categorize', async () => {
     const prisma = {
       category: {
-        findMany: async () => [{ id: 'cat_food', name: 'Food' }],
+        findMany: async () => [{ id: 'cat_food', name: 'Food', subCategories: [] }],
       },
       transaction: {
         findMany: async () => [] as { id: string; merchantName: string }[],

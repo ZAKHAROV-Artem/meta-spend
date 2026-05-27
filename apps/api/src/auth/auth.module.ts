@@ -10,6 +10,7 @@ import { ExtensionPairCodeStore } from './extension-pair-code.store';
 import { ExtensionTokenService } from './extension-token.service';
 import { UsersModule } from '../users/users.module';
 import { PortfolioModule } from '../portfolio/portfolio.module';
+import { JwtOrExtensionAuthGuard } from '../common/guards/jwt-or-extension-auth.guard';
 
 @Module({
   imports: [UsersModule, PassportModule, JwtModule.register({}), forwardRef(() => PortfolioModule)],
@@ -21,6 +22,7 @@ import { PortfolioModule } from '../portfolio/portfolio.module';
     NonceStore,
     ExtensionPairCodeStore,
     ExtensionTokenService,
+    JwtOrExtensionAuthGuard,
   ],
   exports: [JwtModule, AuthService, ExtensionPairCodeStore, ExtensionTokenService],
 })

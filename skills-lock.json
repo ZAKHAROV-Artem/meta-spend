@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "pandoc": {
+      "source": "smithery.ai",
+      "sourceType": "well-known",
+      "computedHash": "91f2695f37bf6f5cb4fa66dd414db43f81f889201e988232976faed719fd5d69"
+    }
+  }
+}

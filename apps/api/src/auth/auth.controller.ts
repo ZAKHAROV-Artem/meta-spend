@@ -2,11 +2,15 @@ import {
   Controller,
   Post,
   Get,
+  Delete,
   Body,
   UseGuards,
   HttpCode,
   HttpStatus,
+  Req,
+  UnauthorizedException,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { RefreshDto } from './dto/refresh.dto';
@@ -14,6 +18,7 @@ import { SiweVerifyDto } from './dto/siwe-verify.dto';
 import { ExtensionPairDto } from './dto/extension-pair.dto';
 import { LocalAuthGuard } from '../common/guards/local-auth.guard';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { JwtOrExtensionAuthGuard } from '../common/guards/jwt-or-extension-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { AuthUser } from '@crypto-tracker/shared';
 
@@ -54,6 +59,31 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   verifySiwe(@Body() dto: SiweVerifyDto) {
     return this.authService.verifySiwe(dto.message, dto.signature);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('extension/status')
+  getExtensionStatus(@CurrentUser() user: AuthUser) {
+    return this.authService.getExtensionStatus(user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('extension/disconnect')
+  @HttpCode(HttpStatus.OK)
+  disconnectExtension(@CurrentUser() user: AuthUser) {
+    return this.authService.disconnectExtension(user.id);
+  }
+
+  @UseGuards(JwtOrExtensionAuthGuard)
+  @Delete('extension/disconnect-current')
+  @HttpCode(HttpStatus.OK)
+  disconnectCurrentExtension(@Req() req: Request) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+      throw new UnauthorizedException('Missing bearer token');
+    }
+    const token = authHeader.slice(7).trim();
+    return this.authService.disconnectCurrentExtension(token);
   }
 
   @UseGuards(JwtAuthGuard)

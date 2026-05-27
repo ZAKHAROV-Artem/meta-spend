@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8"/>
+<title>CryptoTrack — dokumentacja projektu</title>
+<style>
+body { font-family: "Liberation Serif", "Times New Roman", serif; font-size: 12pt; line-height: 1.35; margin: 2cm; }
+h1 { font-size: 18pt; text-align: center; margin-top: 2em; }
+h2 { font-size: 14pt; margin-top: 1.2em; page-break-before: auto; }
+h3 { font-size: 12pt; margin-top: 0.8em; }
+.title-page { text-align: center; margin-top: 4cm; }
+.title-page p { font-size: 14pt; }
+table { border-collapse: collapse; width: 100%; margin: 0.5em 0; font-size: 11pt; }
+th, td { border: 1px solid #333; padding: 6px 8px; vertical-align: top; }
+th { background: #eee; }
+.placeholder { border: 2px dashed #888; background: #f9f9f9; color: #555; padding: 24px; text-align: center; margin: 12px 0; font-style: italic; min-height: 120px; }
+ul { margin: 0.3em 0; }
+li { margin: 0.2em 0; }
+code, pre { font-family: "Liberation Mono", monospace; font-size: 9pt; background: #f4f4f4; }
+pre { padding: 8px; overflow-x: auto; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+
+<div class="title-page">
+<p><strong>CryptoTrack</strong></p>
+<p>System wizualizacji i analizy transakcji MetaMask Card</p>
+<p><br/></p>
+<p>Artem Zakharov</p>
+<p>Przedmiot: Systemowe Projektowanie</p>
+<p>Grupa: A1</p>
+<p>Rok akademicki: 2025/2026</p>
+</div>
+
+<h1>1. Cel projektu</h1>
+<p>Celem projektu jest stworzenie funkcjonalnego oprogramowania umożliwiającego użytkownikom kart MetaMask Card śledzenie wydatków w sposób zbliżony do tradycyjnych aplikacji bankowych. Transakcje kryptowalutowe prezentowane w portfelu MetaMask są trudne do analizy pod kątem codziennych wydatków — brakuje kategoryzacji, podsumowań miesięcznych oraz przejrzystych wykresów.</p>
+<p>CryptoTrack rozwiązuje ten problem poprzez:</p>
+<ul>
+<li>synchronizację historii transakcji z panelu MetaMask Card (rozszerzenie Chrome),</li>
+<li>przechowywanie i normalizację danych w centralnej bazie PostgreSQL,</li>
+<li>ręczną i automatyczną (AI) kategoryzację wydatków według kategorii i podkategorii,</li>
+<li>dashboard, listę transakcji oraz moduł analityki z wykresami i porównaniem okresów.</li>
+</ul>
+<p>Ostatecznym efektem jest podniesienie świadomości finansowej użytkownika Web3 oraz ułatwienie kontroli budżetu opartego na wydatkach kartą.</p>
+
+<h1>2. Szczegółowy opis wymagań</h1>
+
+<h2>2.1. Wymagania funkcjonalne</h2>
+
+<p><strong>❖ Obsługa kont użytkowników</strong></p>
+<ul>
+<li>Rejestracja i logowanie za pomocą adresu e-mail i hasła (JWT + sesje odświeżania).</li>
+<li>Opcjonalne logowanie portfelem Web3 (SIWE — Sign-In with Ethereum).</li>
+<li>Profil użytkownika: wyświetlana nazwa, powiązany adres portfela (PortfolioAccount).</li>
+</ul>
+
+<p><strong>❖ Synchronizacja transakcji MetaMask Card</strong></p>
+<ul>
+<li>Rozszerzenie Chrome (Plasmo) pobiera listę transakcji ze stron card.metamask.io / portfolio.metamask.io.</li>
+<li>Parowanie rozszerzenia z kontem użytkownika kodem 6-cyfrowym wygenerowanym w ustawieniach aplikacji web.</li>
+<li>Endpoint REST <code>POST /api/v1/card-transactions/sync</code> — upsert transakcji po <code>externalId</code>.</li>
+<li>Zapisywane pola: merchant, kwota fiat/crypto, status (PENDING, SETTLED, DECLINED, REFUNDED), znacznik czasu.</li>
+</ul>
+
+<p><strong>❖ Zarządzanie transakcjami</strong></p>
+<ul>
+<li>Lista transakcji z filtrowaniem po dacie, kategorii, merchantcie, statusie.</li>
+<li>Ręczna edycja kategorii, podkategorii i notatek dla pojedynczej transakcji.</li>
+<li>Statystyki zbiorcze: sumy wydatków, rozkład po kategoriach (<code>GET /transactions/stats</code>).</li>
+</ul>
+
+<p><strong>❖ Kategorie i podkategorie</strong></p>
+<ul>
+<li>CRUD kategorii użytkownika (nazwa, kolor, ikona).</li>
+<li>Hierarchia parent → subcategory (np. „Jedzenie” → „Restauracje”).</li>
+<li>Kategorie systemowe (seed) oraz domyślne podkategorie.</li>
+<li>Strona „Categorize spendings” — masowa kategoryzacja merchantów.</li>
+</ul>
+
+<p><strong>❖ Automatyczna kategoryzacja (AI + pamięć merchantów)</strong></p>
+<ul>
+<li>Model <code>CardMerchantMemory</code> — zapamiętanie mapowania merchantKey → kategoria po potwierdzeniu użytkownika lub AI.</li>
+<li>Usługa OpenAI przypisuje kategorię nieznanym merchantom (<code>bulk-categorize</code>).</li>
+<li>Śledzenie przebiegu w <code>CardCategorizationRun</code> (status, liczniki dopasowań).</li>
+</ul>
+
+<p><strong>❖ Analityka i wykresy</strong></p>
+<ul>
+<li>Strona Analytics: wykresy wydatków w czasie, rozkład kategorii, porównanie okresów.</li>
+<li>Biblioteki: Recharts, agregacja po stronie API.</li>
+<li>Filtr zakresu dat (DateRangePicker).</li>
+</ul>
+
+<p><strong>❖ Dashboard</strong></p>
+<ul>
+<li>Podsumowanie ostatnich transakcji, saldo karty (snapshot z rozszerzenia), szybki wgląd w wydatki.</li>
+</ul>
+
+<h2>2.2. Wymagania niefunkcjonalne</h2>
+
+<p><strong>❖ Łatwość użycia</strong></p>
+<ul>
+<li>Responsywny interfejs (Next.js 15, React 19, Tailwind CSS, shadcn/ui).</li>
+<li>Sidebar nawigacyjny: Dashboard, Transactions, Categories, Settings; widok mobilny z menu.</li>
+<li>Tryb jasny/ciemny (ThemeSwitcher).</li>
+</ul>
+
+<p><strong>❖ Niezawodność</strong></p>
+<ul>
+<li>Monorepo (pnpm, Turbo): spójne typy w pakiecie <code>@crypto-tracker/shared</code>.</li>
+<li>Walidacja DTO (class-validator) i obsługa błędów HTTP w NestJS.</li>
+<li>Testy jednostkowe usług API (Jest).</li>
+</ul>
+
+<p><strong>❖ Wydajność</strong></p>
+<ul>
+<li>PostgreSQL z indeksami na <code>userId</code>, <code>timestamp</code>, <code>categoryId</code>.</li>
+<li>Paginacja list transakcji; agregacje statystyk po stronie serwera.</li>
+</ul>
+
+<p><strong>❖ Bezpieczeństwo</strong></p>
+<ul>
+<li>Hasła hashowane (bcrypt); tokeny JWT krótkotrwałe + refresh w bazie (hash).</li>
+<li>Tokeny rozszerzenia przechowywane jako hash (<code>ExtensionToken</code>).</li>
+<li>CORS i guardy autoryzacji na endpointach chronionych.</li>
+<li>TLS w środowisku produkcyjnym (HTTPS).</li>
+</ul>
+
+<h1>3. Ograniczenia</h1>
+<h2>3.1. Ograniczenia technologiczne</h2>
+<ul>
+<li>Wymagane połączenie sieciowe do synchronizacji z API oraz (przy kategoryzacji AI) do OpenAI.</li>
+<li>Rozszerzenie działa tylko w przeglądarce Chrome/Chromium z uprawnieniami do domen MetaMask.</li>
+<li>Źródło danych ograniczone do transakcji MetaMask Card (nie pełna historia on-chain wszystkich sieci).</li>
+</ul>
+<h2>3.2. Ograniczenia zakresu</h2>
+<ul>
+<li>Brak wieloużytkownikowych zespołów i ról menedżerskich (aplikacja single-user per konto).</li>
+<li>Brak integracji z systemami płatności fiat poza danymi z karty MetaMask.</li>
+</ul>
+<h2>3.3. Ograniczenia czasowe</h2>
+<ul>
+<li>Projekt realizowany w ramach roku akademickiego 2025/2026.</li>
+</ul>
+
+<h1>4. Użytkownicy</h1>
+<h2>4.1. Kluczowy użytkownik</h2>
+<p><strong>❖ Użytkownik karty MetaMask (właściciel konta)</strong> — rejestruje się, paruje rozszerzenie, synchronizuje transakcje, zarządza kategoriami, przegląda analitykę i edytuje przypisania.</p>
+<h2>4.2. Użytkownicy techniczni</h2>
+<p><strong>❖ Administrator wdrożenia</strong> — utrzymuje PostgreSQL, zmienne środowiskowe (DATABASE_URL, JWT_SECRET, OPENAI_API_KEY), deployment Docker.</p>
+
+<h1>5. Nazewnictwo i definicje</h1>
+<ol type="a">
+<li><strong>Użytkownik</strong> — osoba posiadająca konto w systemie CryptoTrack.</li>
+<li><strong>Transakcja karty</strong> — operacja zarejestrowana na koncie MetaMask Card (merchant, kwota, status).</li>
+<li><strong>Merchant</strong> — nazwa punktu handlowego (znormalizowany klucz <code>merchantKey</code>).</li>
+<li><strong>Kategoria / podkategoria</strong> — etykieta klasyfikacji wydatku (hierarchia drzewiasta).</li>
+<li><strong>Pamięć merchantów (CardMerchantMemory)</strong> — trwałe mapowanie merchant → kategoria.</li>
+<li><strong>Rozszerzenie Chrome</strong> — moduł Plasmo scrapujący HTML listy transakcji MetaMask.</li>
+<li><strong>SIWE</strong> — Sign-In with Ethereum; logowanie podpisem portfela.</li>
+<li><strong>JWT</strong> — JSON Web Token używany do autoryzacji żądań API.</li>
+</ol>
+
+<h1>6. Diagram przypadków użycia (UML)</h1>
+<div class="placeholder">[WSTAW SCREENSHOT]<br/>Eksport PNG z pliku:<br/><code>docs/University/diagrams/cryptotrack-use-case.drawio</code><br/>Otwórz w https://app.diagrams.net → File → Export as → PNG</div>
+<p>Diagram obejmuje aktorów: Użytkownik, Rozszerzenie Chrome oraz przypadki: rejestracja, SIWE, synchronizacja, przeglądanie transakcji, kategorie, kategoryzacja AI, analityka, parowanie rozszerzenia.</p>
+
+<h1>7. Scenariusze przypadków użycia</h1>
+
+<h2>7.1. Rejestracja nowego użytkownika</h2>
+<table>
+<tr><th>Pole</th><th>Wartość</th></tr>
+<tr><td>Nazwa przypadku użycia</td><td>Rejestracja nowego użytkownika</td></tr>
+<tr><td>Cel</td><td>Utworzenie konta w systemie CryptoTrack</td></tr>
+<tr><td>Warunki wstępne</td><td>Użytkownik nie jest zalogowany; e-mail nie jest zajęty</td></tr>
+<tr><td>Warunek pomyślnego zakończenia</td><td>Konto utworzone, możliwe logowanie</td></tr>
+<tr><td>Stan końcowy — niepowodzenie</td><td>Komunikat błędu (np. zajęty e-mail, słabe hasło)</td></tr>
+<tr><td>Główni aktorzy</td><td>Użytkownik</td></tr>
+<tr><td>Wywołanie</td><td>Wejście na /auth/login → „Zarejestruj się”</td></tr>
+</table>
+<p><strong>Główny przepływ:</strong></p>
+<ol>
+<li>Użytkownik otwiera formularz rejestracji.</li>
+<li>Wprowadza e-mail, hasło, opcjonalnie nazwę wyświetlaną.</li>
+<li>System waliduje dane i zapisuje użytkownika w tabeli <code>users</code>.</li>
+<li>Użytkownik zostaje przekierowany do logowania lub automatycznie otrzymuje tokeny.</li>
+</ol>
+
+<h2>7.2. Parowanie rozszerzenia Chrome</h2>
+<table>
+<tr><th>Pole</th><th>Wartość</th></tr>
+<tr><td>Nazwa przypadku użycia</td><td>Parowanie rozszerzenia</td></tr>
+<tr><td>Cel</td><td>Powiązanie rozszerzenia z kontem użytkownika</td></tr>
+<tr><td>Warunki wstępne</td><td>Użytkownik zalogowany w aplikacji web</td></tr>
+<tr><td>Warunek pomyślnego zakończenia</td><td>Token rozszerzenia zapisany w chrome.storage</td></tr>
+</table>
+<p><strong>Główny przepływ:</strong></p>
+<ol>
+<li>W Settings użytkownik generuje 6-cyfrowy kod parowania.</li>
+<li>W popup rozszerzenia wpisuje kod i klika Connect.</li>
+<li>API weryfikuje kod (<code>POST /auth/extension/pair</code>) i zwraca bearer token.</li>
+</ol>
+
+<h2>7.3. Synchronizacja transakcji</h2>
+<table>
+<tr><th>Pole</th><th>Wartość</th></tr>
+<tr><td>Nazwa przypadku użycia</td><td>Synchronizacja transakcji karty</td></tr>
+<tr><td>Warunki wstępne</td><td>Rozszerzenie sparowane; otwarta karta MetaMask w przeglądarce</td></tr>
+<tr><td>Warunek pomyślnego zakończenia</td><td>Transakcje widoczne w /transactions</td></tr>
+</table>
+<ol>
+<li>Użytkownik otwiera card.metamask.io i klika „Sync now” w rozszerzeniu.</li>
+<li>Content script scrapuje wiersze tabeli transakcji.</li>
+<li>Background normalizuje dane i wysyła POST sync z tokenem.</li>
+<li>API wykonuje upsert w tabeli <code>transactions</code>.</li>
+</ol>
+
+<h2>7.4. Automatyczna kategoryzacja wydatków</h2>
+<ol>
+<li>Użytkownik wchodzi w Categories → Categorize spendings.</li>
+<li>System skanuje nieprzypisane merchanty; najpierw dopasowuje z CardMerchantMemory.</li>
+<li>Pozostałe merchanty kierowane do OpenAI; wynik zapisywany i uczy pamięci.</li>
+<li>Użytkownik widzi postęp w CardCategorizationRun.</li>
+</ol>
+
+<h2>7.5. Przeglądanie analityki</h2>
+<ol>
+<li>Użytkownik otwiera /analytics.</li>
+<li>Wybiera zakres dat.</li>
+<li>API zwraca agregaty; frontend renderuje wykresy (Recharts).</li>
+</ol>
+
+<h1>8. Diagramy czynności (UML)</h1>
+<div class="placeholder">[WSTAW SCREENSHOT 8.1]<br/>Diagram czynności: Rejestracja użytkownika<br/>(narysuj w draw.io: Start → Formularz → Walidacja → [błąd|zapis DB] → Koniec)</div>
+<div class="placeholder">[WSTAW SCREENSHOT 8.2]<br/>Diagram czynności: Parowanie rozszerzenia</div>
+<div class="placeholder">[WSTAW SCREENSHOT 8.3]<br/>Diagram czynności: Synchronizacja transakcji</div>
+<div class="placeholder">[WSTAW SCREENSHOT 8.4]<br/>Diagram czynności: Automatyczna kategoryzacja (AI)</div>
+
+<h1>9. Diagram ERD</h1>
+<div class="placeholder">[WSTAW SCREENSHOT]<br/>Eksport z: <code>docs/University/diagrams/cryptotrack-erd.drawio</code></div>
+
+<h1>10. Diagram klas (UML)</h1>
+<div class="placeholder">[WSTAW SCREENSHOT]<br/>Klasy domenowe: User, Transaction, Category, CardMerchantMemory, CardCategorizationRun, ExtensionToken, PortfolioAccount — powiązania 1:N i FK jak w Prisma schema</div>
+
+<h1>11. Diagram sekwencji (UML)</h1>
+<div class="placeholder">[WSTAW SCREENSHOT]<br/>Sekwencja: Użytkownik → Rozszerzenie → API → PostgreSQL przy synchronizacji (Sync now)</div>
+
+<h1>12. Diagram stanów (UML)</h1>
+<div class="placeholder">[WSTAW SCREENSHOT]<br/>Stany transakcji karty: PENDING → SETTLED | DECLINED | REFUNDED</div>
+<div class="placeholder">[WSTAW SCREENSHOT]<br/>Stany CardCategorizationRun: QUEUED → RUNNING → COMPLETED | FAILED | PARTIAL</div>
+
+<h1>13. Diagram komponentów i wdrożenia (UML)</h1>
+<div class="placeholder">[WSTAW SCREENSHOT]<br/>Eksport z: <code>docs/University/diagrams/cryptotrack-deployment.drawio</code></div>
+
+<h1>14. Plan procesu testowania</h1>
+<h2>14.1. Testy automatyczne</h2>
+<ul>
+<li><strong>Testy jednostkowe</strong> — Jest: <code>card-transactions.service.spec.ts</code>, <code>card-merchant-auto-categorize.spec.ts</code>.</li>
+<li><strong>Testy integracyjne</strong> — (planowane) endpointy auth i sync z testową bazą.</li>
+</ul>
+<h2>14.2. Testy manualne</h2>
+<p>Scenariusze opisane w rozdziale 19 — wykonywane przez testera na środowisku dev (web + API + rozszerzenie).</p>
+<h2>14.3. Utrzymanie</h2>
+<p>Po wdrożeniu: raportowanie błędów, poprawki w kolejnych wersjach, migracje Prisma.</p>
+
+<h1>15. Raport z analizy rynku</h1>
+<h2>15.1. Funkcje kluczowe CryptoTrack</h2>
+<ul>
+<li>Specjalizacja w MetaMask Card (nie ogólny eksplorator blockchain).</li>
+<li>Kategoryzacja wydatków z AI i pamięcią merchantów.</li>
+<li>Rozszerzenie do synchronizacji bez ręcznego importu CSV.</li>
+</ul>
+<h2>15.2. Porównanie z konkurencją</h2>
+<p><strong>❖ Koinly / CoinTracker</strong></p>
+<ul>
+<li>Zalety: szerokie wsparcie podatków i wielu giełd.</li>
+<li>Wady: mniej nastawione na codzienne wydatki kartą DeFi; wyższy próg wejścia.</li>
+</ul>
+<p><strong>❖ Rotki</strong></p>
+<ul>
+<li>Zalety: open source, lokalna kontrola danych.</li>
+<li>Wady: wymaga ręcznej konfiguracji; brak dedykowanego flow MetaMask Card.</li>
+</ul>
+<p><strong>❖ Aplikacje bankowe tradycyjne</strong></p>
+<ul>
+<li>Zalety: gotowa kategoryzacja i UX.</li>
+<li>Wady: nie obejmują wydatków kartą krypto MetaMask.</li>
+</ul>
+<h2>15.3. Podsumowanie</h2>
+<p>CryptoTrack wypełnia niszę „expense tracker dla MetaMask Card”. Wybór narzędzia zależy od tego, czy użytkownik potrzebuje raportów podatkowych on-chain, czy przejrzystego budżetu kartowej.</p>
+
+<h1>16. Struktura bazy danych</h1>
+<h2>16.1. Model koncepcyjny</h2>
+<div class="placeholder">[WSTAW SCREENSHOT]<br/>Ten sam co diagram ERD (rozdz. 9) lub uproszczony model koncepcyjny bez typów SQL</div>
+<h2>16.2. Model logiczny</h2>
+<p>Encje: User (1) — (N) Transaction, Category, Session, ExtensionToken, CardMerchantMemory, CardCategorizationRun; User (1) — (1) PortfolioAccount; Category (1) — (N) SubCategory (self-reference parentId).</p>
+<h2>16.3. Model fizyczny</h2>
+<p>PostgreSQL; ORM Prisma; tabele: users, sessions, transactions, categories, card_merchant_memory, card_categorization_runs, extension_tokens, portfolio_accounts.</p>
+
+<h1>17. Dokumentacja bezpieczeństwa</h1>
+<h2>17.1. Szyfrowanie w tranzycie</h2>
+<p>HTTPS (TLS 1.2+) między przeglądarką a API w produkcji.</p>
+<h2>17.2. Szyfrowanie w spoczynku</h2>
+<p>Hasła: bcrypt hash. Tokeny rozszerzenia i refresh: przechowywane jako hash w bazie. Szyfrowanie dysku — zależne od dostawcy hostingu PostgreSQL.</p>
+<h2>17.3. Uwierzytelnianie</h2>
+<p>JWT access + refresh token w tabeli sessions; opcjonalnie SIWE dla portfela Ethereum.</p>
+<h2>17.4. Ochrona przed atakami</h2>
+<ul>
+<li>Walidacja wejścia (DTO, class-validator) — ochrona przed injection.</li>
+<li>Prisma parameterized queries — ochrona przed SQL injection.</li>
+<li>Rate limiting (planowane na produkcji).</li>
+</ul>
+<h2>17.5. Uprawnienia</h2>
+<p>Model single-tenant: każdy użytkownik widzi wyłącznie swoje transakcje (<code>userId</code> w każdym zapytaniu).</p>
+
+<h1>18. Kod SQL (PostgreSQL)</h1>
+<p>Poniżej fragment schematu wygenerowanego przez Prisma Migrate (dialekt PostgreSQL).</p>
+<pre>
+CREATE TABLE "users" (
+    "id" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "passwordHash" TEXT,
+    "displayName" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    CONSTRAINT "users_pkey" PRIMARY KEY ("id")
+);
+CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
+
+CREATE TABLE "transactions" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "source" "TransactionSource" NOT NULL DEFAULT 'CARD',
+    "externalId" TEXT NOT NULL,
+    "timestamp" TIMESTAMP(3) NOT NULL,
+    "merchantName" TEXT,
+    "fiatAmount" DECIMAL(18,2),
+    "categoryId" TEXT,
+    "subcategoryId" TEXT,
+    CONSTRAINT "transactions_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "transactions_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE
+);
+CREATE UNIQUE INDEX "transactions_userId_source_externalId_key"
+  ON "transactions"("userId", "source", "externalId");
+</pre>
+<p>Pełny schemat: <code>packages/db/prisma/schema.prisma</code> oraz katalog <code>prisma/migrations/</code>.</p>
+
+<h2>18.2. Widok przykładowy (PostgreSQL)</h2>
+<pre>
+CREATE VIEW v_user_spending_by_category AS
+SELECT
+  t."userId",
+  c.name AS category_name,
+  DATE_TRUNC('month', t."timestamp") AS month,
+  SUM(t."fiatAmount") AS total_fiat
+FROM transactions t
+LEFT JOIN categories c ON c.id = t."categoryId"
+WHERE t."fiatAmount" IS NOT NULL
+GROUP BY t."userId", c.name, DATE_TRUNC('month', t."timestamp");
+</pre>
+
+<h1>19. Przypadki testowe</h1>
+<h2>19.1. Rejestracja — niespójne hasło</h2>
+<table>
+<tr><th>Nr</th><th>Krok</th><th>Rezultat</th></tr>
+<tr><td>1</td><td>Otwórz /auth/login → rejestracja</td><td>Formularz rejestracji</td></tr>
+<tr><td>2</td><td>Wpisz różne hasła w polach Hasło i Powtórz</td><td>—</td></tr>
+<tr><td>3</td><td>Kliknij Zarejestruj</td><td>Komunikat błędu walidacji; brak konta</td></tr>
+</table>
+<h2>19.2. Rejestracja — pomyślna</h2>
+<table>
+<tr><th>Nr</th><th>Krok</th><th>Rezultat</th></tr>
+<tr><td>1–2</td><td>Poprawne dane, unikalny e-mail</td><td>—</td></tr>
+<tr><td>3</td><td>Zarejestruj</td><td>Przekierowanie / możliwość logowania</td></tr>
+</table>
+<h2>19.3. Synchronizacja bez parowania</h2>
+<table>
+<tr><th>Nr</th><th>Krok</th><th>Rezultat</th></tr>
+<tr><td>1</td><td>Sync now bez tokenu</td><td>Komunikat błędu w popup rozszerzenia</td></tr>
+</table>
+
+<h1>20. Testy jednostkowe</h1>
+<div class="placeholder">[WSTAW SCREENSHOT]<br/>Wynik: <code>pnpm --filter @crypto-tracker/api test</code> — zielone testy Jest</div>
+<p>Testy obejmują m.in. normalizację merchantów i logikę auto-kategoryzacji (<code>card-merchant-auto-categorize.spec.ts</code>).</p>
+
+<h1>21. Podręcznik użytkownika</h1>
+<p><strong>Spis treści:</strong> 1. Rejestracja. 2. Logowanie. 3. Parowanie rozszerzenia. 4. Synchronizacja. 5. Transakcje. 6. Kategorie. 7. Kategoryzacja AI. 8. Analityka. 9. Ustawienia.</p>
+
+<h2>21.1. Rejestracja i logowanie</h2>
+<div class="placeholder">[WSTAW SCREENSHOT]<br/>Strona: <code>/auth/login</code> — formularz logowania i link rejestracji</div>
+
+<h2>21.2. Dashboard</h2>
+<div class="placeholder">[WSTAW SCREENSHOT]<br/>Strona: <code>/dashboard</code> — podsumowanie, ostatnie transakcje, saldo karty</div>
+
+<h2>21.3. Parowanie rozszerzenia</h2>
+<div class="placeholder">[WSTAW SCREENSHOT 1]<br/>Web: <code>/settings</code> — sekcja Extension pairing, wygenerowany kod 6-cyfrowy</div>
+<div class="placeholder">[WSTAW SCREENSHOT 2]<br/>Chrome: popup rozszerzenia CryptoTrack — pole kodu, przycisk Connect</div>
+
+<h2>21.4. Synchronizacja transakcji</h2>
+<div class="placeholder">[WSTAW SCREENSHOT 1]<br/>Karta: card.metamask.io — lista transakcji (zakładka Card)</div>
+<div class="placeholder">[WSTAW SCREENSHOT 2]<br/>Popup rozszerzenia — przycisk „Sync now”, komunikat sukcesu</div>
+
+<h2>21.5. Lista transakcji</h2>
+<div class="placeholder">[WSTAW SCREENSHOT]<br/>Strona: <code>/transactions</code> — tabela z merchantami, kwotami, badge kategorii, filtry dat</div>
+
+<h2>21.6. Zarządzanie kategoriami</h2>
+<div class="placeholder">[WSTAW SCREENSHOT]<br/>Strona: <code>/categories</code> — drzewo kategorii, dodawanie/edycja, kolory</div>
+
+<h2>21.7. Masowa kategoryzacja</h2>
+<div class="placeholder">[WSTAW SCREENSHOT]<br/>Strona: <code>/categories/categorize</code> — lista merchantów, przycisk auto-categorize, postęp</div>
+
+<h2>21.8. Analityka</h2>
+<div class="placeholder">[WSTAW SCREENSHOT]<br/>Strona: <code>/analytics</code> — wykresy wydatków, porównanie okresów, wybór zakresu dat</div>
+
+<h2>21.9. Edycja transakcji (kategoria)</h2>
+<div class="placeholder">[WSTAW SCREENSHOT]<br/>Strona: <code>/transactions</code> — otwarty dialog/sheet edycji pojedynczej transakcji z wyborem kategorii</div>
+
+<h1>Stos technologiczny (podsumowanie)</h1>
+<p>TypeScript, React 19, Next.js 15, Tailwind CSS, NestJS, Fastify, PostgreSQL, Prisma, JWT, SIWE, REST API, rozszerzenie Chrome (Plasmo), OpenAI API, Docker, pnpm, Turbo.</p>
+
+<h1>Repozytorium</h1>
+<p>GitHub: [wstaw link do repozytorium]</p>
+
+</body>
+</html>

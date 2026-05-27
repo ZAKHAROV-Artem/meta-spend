@@ -12,6 +12,7 @@
     "db:migrate": "pnpm --filter @crypto-tracker/db run db:migrate",
     "db:studio": "pnpm --filter @crypto-tracker/db run studio",
     "db:seed": "pnpm --filter @crypto-tracker/db run db:seed",
+    "db:reset": "pnpm --filter @crypto-tracker/db run db:reset",
     "format": "prettier --write \"**/*.{ts,tsx,json,md,css}\" --ignore-path .gitignore"
   },
   "devDependencies": {

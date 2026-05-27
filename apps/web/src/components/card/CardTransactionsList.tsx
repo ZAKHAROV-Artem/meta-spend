@@ -39,6 +39,25 @@ function formatCurrency(value: string, currency: string) {
   return formatMoney(Number(value), currency || 'USD');
 }
 
+function formatTokenAmount(value: string | number, symbol: string) {
+  const n = Number(value);
+  const amount = Number.isFinite(n)
+    ? n.toLocaleString(undefined, {
+        maximumFractionDigits: Math.abs(n) < 1 ? 8 : 4,
+      })
+    : String(value);
+  return `${amount} ${symbol}`;
+}
+
+function exchangeRateLabel(rate: string | number | null, fiatCurrency: string | null, cryptoSymbol: string | null) {
+  if (!rate || !fiatCurrency || !cryptoSymbol) return null;
+  const n = Number(rate);
+  const value = Number.isFinite(n)
+    ? n.toLocaleString(undefined, { maximumFractionDigits: 4 })
+    : String(rate);
+  return `${value} ${fiatCurrency.toUpperCase()}/${cryptoSymbol}`;
+}
+
 function groupByDay(items: Transaction[]) {
   return items.reduce<Record<string, Transaction[]>>((groups, item) => {
     const key = format(new Date(item.occurredAt), 'yyyy-MM-dd');
@@ -72,10 +91,14 @@ function statusVariant(status: CardTxStatus | null) {
   return 'success';
 }
 
-function categoryFilterLabel(selectedCount: number) {
-  if (selectedCount === 0) return 'All categories';
-  if (selectedCount === 1) return '1 category';
-  return `${selectedCount} categories`;
+function categoryFilterLabel(categoryCount: number, subcategoryCount: number) {
+  const total = categoryCount + subcategoryCount;
+  if (total === 0) return 'All categories';
+  if (categoryCount > 0 && subcategoryCount === 0) return categoryCount === 1 ? '1 category' : `${categoryCount} categories`;
+  if (subcategoryCount > 0 && categoryCount === 0) {
+    return subcategoryCount === 1 ? '1 subcategory' : `${subcategoryCount} subcategories`;
+  }
+  return total === 1 ? '1 filter' : `${total} filters`;
 }
 
 export function CardTransactionsList({ initialFilters }: { initialFilters?: TransactionFilters }) {
@@ -85,7 +108,7 @@ export function CardTransactionsList({ initialFilters }: { initialFilters?: Tran
   const { data, isPending, isFetching, isPlaceholderData } = useTransactions(filters, page, PAGE_SIZE);
   const { data: stats, isFetching: statsFetching } = useTransactionStats(filters);
 
-  const items = data?.items ?? [];
+  const items = useMemo(() => data?.items ?? [], [data?.items]);
   const total = data?.total ?? 0;
   const totalPages = data?.totalPages ?? 1;
   const grouped = useMemo(() => groupByDay(items), [items]);
@@ -96,9 +119,44 @@ export function CardTransactionsList({ initialFilters }: { initialFilters?: Tran
     };
   }, [filters.from, filters.to]);
   const hasActiveFilters = Boolean(
-    filters.search || filters.status || filters.from || filters.to || (filters.categoryId?.length ?? 0) > 0,
+    filters.search ||
+      filters.status ||
+      filters.from ||
+      filters.to ||
+      (filters.categoryId?.length ?? 0) > 0 ||
+      (filters.subcategoryId?.length ?? 0) > 0,
   );
   const selectedCategoryIds = filters.categoryId ?? [];
+  const selectedSubcategoryIds = filters.subcategoryId ?? [];
+  const averageExchangeRate = useMemo(() => {
+    const points = stats?.exchangeRateTrend ?? [];
+    if (points.length === 0) return null;
+    const aggregate = points.reduce(
+      (acc, point) => {
+        const weight = point.txCount > 0 ? point.txCount : 1;
+        return {
+          weightedTotal: acc.weightedTotal + point.rate * weight,
+          weightSum: acc.weightSum + weight,
+        };
+      },
+      { weightedTotal: 0, weightSum: 0 },
+    );
+    if (aggregate.weightSum <= 0) return null;
+    const fiatSet = new Set(points.map((point) => point.fiatCurrency.toUpperCase()));
+    const cryptoSet = new Set(points.map((point) => point.cryptoSymbol.toUpperCase()));
+    const pairLabel =
+      fiatSet.size === 1 && cryptoSet.size === 1
+        ? `${Array.from(fiatSet)[0]}/${Array.from(cryptoSet)[0]}`
+        : 'mixed pairs';
+    return {
+      value: aggregate.weightedTotal / aggregate.weightSum,
+      pairLabel,
+    };
+  }, [stats?.exchangeRateTrend]);
+  const averageTransactionAmount = useMemo(() => {
+    if (!stats?.displayCurrency || stats.txCount <= 0) return null;
+    return formatCurrency(String(stats.totalSpent / stats.txCount), stats.displayCurrency);
+  }, [stats?.displayCurrency, stats?.totalSpent, stats?.txCount]);
 
   const setFilter = <K extends keyof TransactionFilters>(key: K, value: TransactionFilters[K]) => {
     setPage(1);
@@ -166,11 +224,13 @@ export function CardTransactionsList({ initialFilters }: { initialFilters?: Tran
                 <Button variant="outline" className="h-9 w-full justify-between px-3 font-normal">
                   <span className="flex min-w-0 items-center gap-2">
                     <SlidersHorizontal className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    <span className="truncate">{categoryFilterLabel(selectedCategoryIds.length)}</span>
+                    <span className="truncate">
+                      {categoryFilterLabel(selectedCategoryIds.length, selectedSubcategoryIds.length)}
+                    </span>
                   </span>
-                  {selectedCategoryIds.length > 0 ? (
+                  {selectedCategoryIds.length + selectedSubcategoryIds.length > 0 ? (
                     <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-[10px]">
-                      {selectedCategoryIds.length}
+                      {selectedCategoryIds.length + selectedSubcategoryIds.length}
                     </Badge>
                   ) : null}
                 </Button>
@@ -182,43 +242,67 @@ export function CardTransactionsList({ initialFilters }: { initialFilters?: Tran
                   <div className="px-3 py-2 text-sm text-muted-foreground">No categories yet</div>
                 ) : (
                   categories.map((category) => {
-                    const checked = selectedCategoryIds.includes(category.id);
+                    const parentChecked = selectedCategoryIds.includes(category.id);
+                    const toggleId = (
+                      key: 'categoryId' | 'subcategoryId',
+                      id: string,
+                      nextChecked: boolean,
+                    ) => {
+                      setPage(1);
+                      setFilters((current) => {
+                        const currentIds = current[key] ?? [];
+                        const nextIds = nextChecked
+                          ? [...currentIds, id]
+                          : currentIds.filter((x) => x !== id);
+                        return { ...current, [key]: nextIds.length ? nextIds : undefined };
+                      });
+                    };
                     return (
-                      <DropdownMenuCheckboxItem
-                        key={category.id}
-                        checked={checked}
-                        onCheckedChange={(nextChecked) => {
-                          setPage(1);
-                          setFilters((current) => {
-                            const currentIds = current.categoryId ?? [];
-                            const nextIds = nextChecked === true
-                              ? [...currentIds, category.id]
-                              : currentIds.filter((id) => id !== category.id);
-                            return {
-                              ...current,
-                              categoryId: nextIds.length ? nextIds : undefined,
-                            };
-                          });
-                        }}
-                      >
-                        <span className="flex items-center gap-2">
-                          <span
-                            className="h-2.5 w-2.5 shrink-0 rounded-full"
-                            style={{ backgroundColor: category.color }}
-                          />
-                          <span className="truncate">{category.name}</span>
-                        </span>
-                      </DropdownMenuCheckboxItem>
+                      <div key={category.id}>
+                        <DropdownMenuCheckboxItem
+                          checked={parentChecked}
+                          onCheckedChange={(nextChecked) => toggleId('categoryId', category.id, nextChecked === true)}
+                        >
+                          <span className="flex items-center gap-2">
+                            <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: category.color }} />
+                            <span className="truncate font-medium">{category.name}</span>
+                            {(category.subCategories?.length ?? 0) > 0 && (
+                              <span className="ml-auto text-[10px] text-muted-foreground">
+                                {category.subCategories!.length}
+                              </span>
+                            )}
+                          </span>
+                        </DropdownMenuCheckboxItem>
+                        {(category.subCategories ?? []).map((sub) => {
+                          const subChecked = selectedSubcategoryIds.includes(sub.id);
+                          return (
+                            <DropdownMenuCheckboxItem
+                              key={sub.id}
+                              checked={subChecked}
+                              className="pl-8"
+                              onCheckedChange={(nextChecked) => toggleId('subcategoryId', sub.id, nextChecked === true)}
+                            >
+                              <span className="flex items-center gap-2">
+                                <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: sub.color }} />
+                                <span className="truncate text-muted-foreground">{sub.name}</span>
+                              </span>
+                            </DropdownMenuCheckboxItem>
+                          );
+                        })}
+                      </div>
                     );
                   })
                 )}
-                {selectedCategoryIds.length > 0 ? (
+                {selectedCategoryIds.length + selectedSubcategoryIds.length > 0 ? (
                   <>
                     <DropdownMenuSeparator />
                     <button
                       type="button"
                       className="w-full rounded-sm px-3 py-2 text-left text-sm text-muted-foreground hover:bg-accent"
-                      onClick={() => setFilter('categoryId', undefined)}
+                      onClick={() => {
+                        setPage(1);
+                        setFilters((current) => ({ ...current, categoryId: undefined, subcategoryId: undefined }));
+                      }}
                     >
                       Clear category filter
                     </button>
@@ -245,48 +329,24 @@ export function CardTransactionsList({ initialFilters }: { initialFilters?: Tran
         ) : null}
       </div>
 
-      <div className="rounded-lg border border-border/70 bg-card/72 p-4 sm:p-5">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0 space-y-1">
-            <p className="text-sm font-semibold text-foreground">
-              Total:{' '}
-              <span className="tabular-nums">{total}</span>{' '}
-              {total === 1 ? 'transaction' : 'transactions'}
-              {hasActiveFilters ? <span className="font-semibold">&nbsp;(matching filters)</span> : null}
-            </p>
-            {statsFetching ? (
-              <p className="text-xs text-muted-foreground">Refreshing spend totals…</p>
-            ) : stats?.mixedCurrencyNotice ? (
-              <p className="max-w-xl text-xs text-muted-foreground">
-                Filtered rows use more than one fiat currency; spending totals are summed per breakdown in Analytics.
-              </p>
-            ) : stats?.displayCurrency ? (
-              <p className="text-xs text-muted-foreground">
-                Settled + pending spend in this filtered set:{' '}
-                <span className="font-semibold tabular-nums text-foreground">
-                  {formatCurrency(String(stats.totalSpent), stats.displayCurrency)}
-                </span>
-                {stats.totalReceived > 0 ? (
-                  <span className="text-muted-foreground">
-                    {' '}
-                    · refunds {formatCurrency(String(stats.totalReceived), stats.displayCurrency)}
-                  </span>
-                ) : null}
-              </p>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                {(isFetching && isPlaceholderData) || statsFetching
-                  ? 'Updating totals…'
-                  : hasActiveFilters
-                    ? 'Totals reflect the filters above.'
-                    : 'Separate display, same portfolio context.'}
-              </p>
-            )}
-          </div>
-          <Badge className="w-fit shrink-0" variant="secondary">
-            Card only
-          </Badge>
-        </div>
+      <div className="flex flex-wrap gap-2">
+        <Badge variant="outline" className="h-auto px-3 py-1.5 text-xs font-medium">
+          Total transactions: <span className="ml-1 tabular-nums">{total}</span>
+        </Badge>
+        <Badge variant="outline" className="h-auto px-3 py-1.5 text-xs font-medium">
+          Average exchange rate:{' '}
+          <span className="ml-1 tabular-nums">
+            {statsFetching
+              ? '…'
+              : averageExchangeRate
+                ? `${averageExchangeRate.value.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${averageExchangeRate.pairLabel}`
+                : '—'}
+          </span>
+        </Badge>
+        <Badge variant="outline" className="h-auto px-3 py-1.5 text-xs font-medium">
+          Average transaction amount:{' '}
+          <span className="ml-1 tabular-nums">{statsFetching ? '…' : averageTransactionAmount ?? '—'}</span>
+        </Badge>
       </div>
 
       {items.length === 0 && settlingEmpty ? (
@@ -353,8 +413,14 @@ export function CardTransactionsList({ initialFilters }: { initialFilters?: Tran
                           <span>{new Date(item.occurredAt).toLocaleTimeString()}</span>
                           {item.cryptoAmount && item.cryptoSymbol ? (
                             <span>
-                              {item.cryptoAmount} {item.cryptoSymbol}
+                              {formatTokenAmount(item.cryptoAmount, item.cryptoSymbol)}
                             </span>
+                          ) : null}
+                          {item.gasFeeAmount && item.gasFeeSymbol ? (
+                            <span>gas {formatTokenAmount(item.gasFeeAmount, item.gasFeeSymbol)}</span>
+                          ) : null}
+                          {exchangeRateLabel(item.exchangeRate, item.fiatCurrency, item.cryptoSymbol) ? (
+                            <span>{exchangeRateLabel(item.exchangeRate, item.fiatCurrency, item.cryptoSymbol)}</span>
                           ) : null}
                         </div>
                       </div>

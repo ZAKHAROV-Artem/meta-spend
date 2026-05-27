@@ -150,6 +150,8 @@ export function scrapedToParsedCardTx(row: ScrapedCardTransaction): ParsedCardWi
 
   const spentRaw = row.funding?.spent ?? row.spent ?? null;
   let cryptoParsed = splitCryptoSpend(spentRaw);
+  const gasFeeRaw = row.funding?.gasFee ?? row.gasFee ?? null;
+  const gasFeeParsed = splitCryptoSpend(gasFeeRaw);
 
   let cryptoAmount: string | null = cryptoParsed?.numeric ?? null;
 
@@ -177,6 +179,10 @@ export function scrapedToParsedCardTx(row: ScrapedCardTransaction): ParsedCardWi
     cryptoAmount,
 
     cryptoSymbol,
+    gasFeeAmount: gasFeeParsed?.numeric ?? null,
+    gasFeeSymbol: gasFeeParsed?.symbol ?? null,
+    gasFeeRaw: gasFeeRaw ?? null,
+    spentRaw: spentRaw ?? null,
     fundingSourceMasked: fundingMasked ?? null,
 
     status: normalizeStatus(row.status),

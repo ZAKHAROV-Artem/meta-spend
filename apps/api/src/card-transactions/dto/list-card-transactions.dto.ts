@@ -8,6 +8,10 @@ export class ListCardTransactionsDto {
   categoryId?: string;
 
   @IsOptional()
+  @IsString()
+  subcategoryId?: string;
+
+  @IsOptional()
   @IsEnum(CardTxStatus)
   status?: CardTxStatus;
 

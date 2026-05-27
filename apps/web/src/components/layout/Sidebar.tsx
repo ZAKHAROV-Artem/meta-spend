@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { PanelLeftClose, WalletCards } from 'lucide-react';
 import { SidebarNav } from './SidebarNav';
+import { SidebarAccountMenu } from './SidebarAccountMenu';
+import { ThemeSwitcher } from './ThemeSwitcher';
 import { useUiStore } from '@/store/ui.store';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
@@ -24,6 +26,10 @@ export function Sidebar() {
               </Link>
             </div>
             <SidebarNav />
+            <div className="mt-auto flex flex-col items-center gap-2 border-t border-sidebar-border pt-3">
+              <ThemeSwitcher variant="sidebar" />
+              <SidebarAccountMenu />
+            </div>
           </div>
         </aside>
 
@@ -51,6 +57,10 @@ export function Sidebar() {
                 </Button>
               </div>
               <SidebarNav mobile onNavigate={closeMobileNav} />
+              <div className="mt-auto flex flex-col gap-3 border-t border-sidebar-border pt-4">
+                <ThemeSwitcher variant="sidebar" className="w-full flex-row justify-center" />
+                <SidebarAccountMenu mobile />
+              </div>
             </aside>
           </div>
         )}

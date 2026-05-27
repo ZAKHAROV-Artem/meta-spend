@@ -13,8 +13,17 @@ import { normalizeMerchantKey } from '@crypto-tracker/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { ListTransactionsDto } from './dto/list-transactions.dto';
 import { StatsQueryDto } from './dto/stats-query.dto';
+import { BulkCategorizeDto } from './dto/bulk-categorize.dto';
 import { UpdateCardMerchantCategoryDto } from './dto/update-card-merchant-category.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
+import { UniqueMerchantsQueryDto } from './dto/unique-merchants-query.dto';
+import {
+  avgTransactionAmountTrend,
+  cardExchangeRate,
+  cardGasFee,
+  cryptoSpendSummaries,
+  exchangeRateTrend,
+} from './card-transaction-metrics';
 
 function parseFromDate(value?: string): Date | undefined {
   if (!value) return undefined;
@@ -34,11 +43,21 @@ function parseToDate(value?: string): Date | undefined {
   return date;
 }
 
+function parseCsvIds(value?: string): string[] {
+  return value
+    ? value
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean)
+    : [];
+}
+
 const SPENDING_STATUSES: CardTxStatus[] = [CardTxStatus.SETTLED, CardTxStatus.PENDING];
 
 type CardRow = Prisma.TransactionGetPayload<{
   include: {
     category: { select: { name: true, color: true } };
+    subcategory: { select: { name: true, color: true } };
   };
 }>;
 
@@ -60,6 +79,7 @@ export class TransactionsService {
         take: limit,
         include: {
           category: { select: { name: true, color: true } },
+          subcategory: { select: { name: true, color: true } },
         },
       }),
       this.prisma.transaction.count({ where }),
@@ -112,6 +132,7 @@ export class TransactionsService {
       },
       include: {
         category: { select: { name: true, color: true } },
+        subcategory: { select: { name: true, color: true } },
       },
     });
 
@@ -129,6 +150,7 @@ export class TransactionsService {
       },
       include: {
         category: { select: { name: true, color: true } },
+        subcategory: { select: { name: true, color: true } },
       },
     });
 
@@ -145,7 +167,6 @@ export class TransactionsService {
         where: {
           userId,
           source: TransactionSource.CARD,
-          merchantName: { not: null },
         },
         orderBy: { timestamp: 'desc' },
         select: {
@@ -233,6 +254,26 @@ export class TransactionsService {
       .sort((left, right) => right.totalFiatSpend - left.totalFiatSpend);
   }
 
+  async uniqueMerchants(userId: string, dto: UniqueMerchantsQueryDto): Promise<UniqueMerchant[]> {
+    if (dto.source && dto.source !== 'CARD' && dto.source !== 'ALL') {
+      return [];
+    }
+
+    return (await this.cardMerchants(userId)).sort((left, right) => {
+      const categorySort = Number(Boolean(left.categoryId)) - Number(Boolean(right.categoryId));
+      if (categorySort !== 0) return categorySort;
+      if (right.count !== left.count) return right.count - left.count;
+      return left.displayName.localeCompare(right.displayName);
+    });
+  }
+
+  async bulkCategorize(userId: string, dto: BulkCategorizeDto): Promise<{ updated: number }> {
+    const result = await this.updateCardMerchantCategory(userId, dto.key, {
+      categoryId: dto.categoryId ?? null,
+    });
+    return { updated: result.updatedCount };
+  }
+
   async updateCardMerchantCategory(
     userId: string,
     key: string,
@@ -252,7 +293,6 @@ export class TransactionsService {
       where: {
         userId,
         source: TransactionSource.CARD,
-        merchantName: { not: null },
       },
       select: { id: true, merchantName: true },
     });
@@ -266,7 +306,7 @@ export class TransactionsService {
 
     const updated = await this.prisma.transaction.updateMany({
       where: { userId, source: TransactionSource.CARD, id: { in: matchingIds } },
-      data: { categoryId },
+      data: { categoryId, subcategoryId: null },
     });
 
     if (categoryId) {
@@ -303,22 +343,30 @@ export class TransactionsService {
 
   private buildCardWhere(
     userId: string,
-    dto: Pick<ListTransactionsDto, 'categoryId' | 'status' | 'from' | 'to' | 'search'>,
+    dto: Pick<ListTransactionsDto, 'categoryId' | 'subcategoryId' | 'status' | 'from' | 'to' | 'search'>,
   ): Prisma.TransactionWhereInput {
     const from = parseFromDate(dto.from);
     const to = parseToDate(dto.to);
     const where: Prisma.TransactionWhereInput = { userId, source: TransactionSource.CARD };
+    const andFilters: Prisma.TransactionWhereInput[] = [];
 
-    if (dto.categoryId) {
-      const categoryIds = dto.categoryId
-        .split(',')
-        .map((value) => value.trim())
-        .filter(Boolean);
-      if (categoryIds.length === 1) {
-        where.categoryId = categoryIds[0];
-      } else if (categoryIds.length > 1) {
-        where.categoryId = { in: categoryIds };
-      }
+    const categoryIds = parseCsvIds(dto.categoryId);
+    const subcategoryIds = parseCsvIds(dto.subcategoryId);
+    if (categoryIds.length > 0 && subcategoryIds.length > 0) {
+      andFilters.push({
+        OR: [
+          { categoryId: categoryIds.length === 1 ? categoryIds[0] : { in: categoryIds } },
+          { subcategoryId: subcategoryIds.length === 1 ? subcategoryIds[0] : { in: subcategoryIds } },
+        ],
+      });
+    } else if (categoryIds.length === 1) {
+      where.categoryId = categoryIds[0];
+    } else if (categoryIds.length > 1) {
+      where.categoryId = { in: categoryIds };
+    } else if (subcategoryIds.length === 1) {
+      where.subcategoryId = subcategoryIds[0];
+    } else if (subcategoryIds.length > 1) {
+      where.subcategoryId = { in: subcategoryIds };
     }
     if (dto.status) {
       where.status = dto.status;
@@ -330,11 +378,16 @@ export class TransactionsService {
       };
     }
     if (dto.search) {
-      where.OR = [
-        { merchantName: { contains: dto.search, mode: 'insensitive' } },
-        { notes: { contains: dto.search, mode: 'insensitive' } },
-        { externalId: { contains: dto.search, mode: 'insensitive' } },
-      ];
+      andFilters.push({
+        OR: [
+          { merchantName: { contains: dto.search, mode: 'insensitive' } },
+          { notes: { contains: dto.search, mode: 'insensitive' } },
+          { externalId: { contains: dto.search, mode: 'insensitive' } },
+        ],
+      });
+    }
+    if (andFilters.length > 0) {
+      where.AND = andFilters;
     }
 
     return where;
@@ -472,6 +525,9 @@ export class TransactionsService {
       categoryBreakdown,
       categoryShares,
       byCurrency,
+      cryptoSpendSummaries: cryptoSpendSummaries(primaryRows),
+      exchangeRateTrend: exchangeRateTrend(primaryRows),
+      avgTransactionAmountTrend: avgTransactionAmountTrend(primaryRows),
       topMerchants,
     };
   }
@@ -541,6 +597,7 @@ export class TransactionsService {
     const merchantName = transaction.merchantName ?? 'Card transaction';
     const fiatAmount = transaction.fiatAmount?.toString() ?? null;
     const fiatCurrency = transaction.fiatCurrency ?? null;
+    const gasFee = cardGasFee(transaction);
 
     return {
       id: transaction.id,
@@ -555,6 +612,9 @@ export class TransactionsService {
       categoryId: transaction.categoryId,
       categoryName: transaction.category?.name ?? null,
       categoryColor: transaction.category?.color ?? null,
+      subcategoryId: transaction.subcategoryId,
+      subcategoryName: transaction.subcategory?.name ?? null,
+      subcategoryColor: transaction.subcategory?.color ?? null,
       notes: transaction.notes,
       externalId: transaction.externalId ?? null,
       merchantName,
@@ -564,6 +624,9 @@ export class TransactionsService {
       fiatCurrency,
       cryptoAmount: transaction.cryptoAmount?.toString() ?? null,
       cryptoSymbol: transaction.cryptoSymbol ?? null,
+      gasFeeAmount: gasFee?.amount ?? null,
+      gasFeeSymbol: gasFee?.symbol ?? null,
+      exchangeRate: cardExchangeRate(transaction),
       parserVersion: transaction.parserVersion ?? null,
       rawHtml: transaction.rawHtml ?? null,
     };

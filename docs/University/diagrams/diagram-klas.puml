@@ -1,0 +1,136 @@
+@startuml
+left to right direction
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 55
+
+title Diagram klas - CryptoTrack
+
+class User {
+  - id: string
+  - email: string
+  - passwordHash: string?
+  - displayName: string?
+  - createdAt: DateTime
+  - updatedAt: DateTime
+}
+
+class Session {
+  - id: string
+  - userId: string
+  - refreshTokenHash: string
+  - expiresAt: DateTime
+}
+
+class PortfolioAccount {
+  - id: string
+  - userId: string
+  - address: string
+  - cardBalanceAmount: Decimal?
+  - cardBalanceCurrency: string?
+  - lastSuccessfulSyncAt: DateTime?
+}
+
+class Transaction {
+  - id: string
+  - userId: string
+  - source: TransactionSource
+  - externalId: string
+  - timestamp: DateTime
+  - merchantName: string?
+  - fiatAmount: Decimal?
+  - fiatCurrency: string?
+  - cryptoAmount: Decimal?
+  - cryptoSymbol: string?
+  - status: CardTxStatus?
+  - categoryId: string?
+  - subcategoryId: string?
+  - notes: string?
+}
+
+class Category {
+  - id: string
+  - userId: string?
+  - name: string
+  - color: string
+  - icon: string
+  - isSystem: boolean
+  - parentId: string?
+}
+
+class ExtensionToken {
+  - id: string
+  - userId: string
+  - tokenHash: string
+  - label: string?
+  - lastUsedAt: DateTime?
+  - expiresAt: DateTime?
+}
+
+class CardMerchantMemory {
+  - id: string
+  - userId: string
+  - merchantKey: string
+  - categoryId: string
+  - subcategoryId: string?
+  - hitCount: int
+  - learnedSource: string
+}
+
+class CardCategorizationRun {
+  - id: string
+  - userId: string
+  - status: CategorizationRunStatus
+  - trigger: string
+  - scannedTxCount: int
+  - scannedMerchantCount: int
+  - memoryMatchedCount: int
+  - aiUpdatedCount: int
+  - skippedCount: int
+}
+
+enum TransactionSource {
+  CARD
+}
+
+enum CardTxStatus {
+  PENDING
+  SETTLED
+  DECLINED
+  REFUNDED
+}
+
+enum CategorizationRunStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  PARTIAL
+}
+
+Session -[hidden]down- PortfolioAccount
+PortfolioAccount -[hidden]down- ExtensionToken
+Transaction -[hidden]down- Category
+Category -[hidden]down- CardMerchantMemory
+CardMerchantMemory -[hidden]down- CardCategorizationRun
+
+User "1" *-- "0..*" Session
+User "1" *-- "0..1" PortfolioAccount
+User "1" *-- "0..*" ExtensionToken
+User "1" *-- "0..*" Transaction
+User "1" *-- "0..*" Category
+User "1" *-- "0..*" CardMerchantMemory
+User "1" *-- "0..*" CardCategorizationRun
+
+Transaction "0..*" -down-> "0..1" Category : category
+Transaction "0..*" -down-> "0..1" Category : subcategory
+Category "0..*" --> "0..1" Category : parent
+CardMerchantMemory "0..*" -up-> "1" Category : category
+CardMerchantMemory "0..*" -up-> "0..1" Category : subcategory
+Transaction -right-> TransactionSource
+Transaction -right-> CardTxStatus
+CardCategorizationRun -right-> CategorizationRunStatus
+
+@enduml

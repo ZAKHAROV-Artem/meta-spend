@@ -1,0 +1,33 @@
+@startuml
+skinparam shadowing false
+skinparam activity {
+  BackgroundColor White
+  BorderColor Black
+  ArrowColor Black
+}
+
+title Diagram czynności - rejestracja użytkownika
+
+start
+
+:Użytkownik otwiera stronę\nlogowania / rejestracji;
+:Wybiera opcję\n"Zarejestruj konto";
+:Wprowadza adres e-mail,\nhasło i dane profilu;
+
+if (Dane formularza poprawne?) then (tak)
+  :API sprawdza, czy e-mail\nnie istnieje w systemie;
+
+  if (E-mail wolny?) then (tak)
+    :Hashowanie hasła;
+    :Zapis użytkownika\nw tabeli users;
+    :Utworzenie sesji\nlub przekierowanie do logowania;
+    :Wyświetlenie komunikatu\nrejestracja zakończona pomyślnie;
+  else (nie)
+    :Wyświetlenie błędu:\ne-mail jest już zajęty;
+  endif
+else (nie)
+  :Wyświetlenie błędów\nwalidacji formularza;
+endif
+
+stop
+@enduml

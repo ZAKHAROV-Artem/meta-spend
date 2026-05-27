@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-05-15T14:22:52Z",
+  "sourcePath": "/home/zakharov/Documents/projects/crypto-finance-tracker/.skillshare/skills",
+  "skills": [
+    {
+      "name": "frontend-design",
+      "description": "Create distinctive, production-grade frontend interfaces with high design quality. Use this skill when the user asks to build web components, pages, artifacts, posters, or applications (examples include websites, landing pages, dashboards, React components, HTML/CSS layouts, or when styling/beautifying any web UI). Generates creative, polished code and UI design that avoids generic AI aesthetics.",
+      "source": "github.com/anthropics/skills/skills/frontend-design"
+    },
+    {
+      "name": "pandoc",
+      "description": "This skill should be used when converting documents between formats (Markdown, DOCX, PDF, HTML, LaTeX, etc.) using pandoc. Use for format conversion, document generation, and preparing markdown for Google Docs or other word processors.",
+      "source": "pandoc"
+    }
+  ]
+}

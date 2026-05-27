@@ -1,8 +1,5 @@
-import type { Metadata } from 'next';
-import { AnalyticsOverview } from '@/components/analytics/AnalyticsOverview';
-
-export const metadata: Metadata = { title: 'Analytics — MetaSpend' };
+import { redirect } from 'next/navigation';
 
 export default function AnalyticsPage() {
-  return <AnalyticsOverview />;
+  redirect('/dashboard');
 }

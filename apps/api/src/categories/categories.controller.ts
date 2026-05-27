@@ -25,6 +25,18 @@ export class CategoriesController {
     return this.categoriesService.createDefaults(user.id);
   }
 
+  @Post('seed-defaults')
+  @HttpCode(HttpStatus.OK)
+  seedDefaults(@CurrentUser() user: AuthUser) {
+    return this.categoriesService.seedDefaults(user.id);
+  }
+
+  @Post('default-subcategories')
+  @HttpCode(HttpStatus.OK)
+  seedDefaultSubcategories(@CurrentUser() user: AuthUser) {
+    return this.categoriesService.seedDefaultSubcategories(user.id);
+  }
+
   @Patch(':id')
   update(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: Partial<CreateCategoryDto>) {
     return this.categoriesService.update(user.id, id, dto);

@@ -1,20 +1,11 @@
 'use client';
 
-import { useMemo } from 'react';
-import { useAccount, useConnect, useDisconnect } from 'wagmi';
-import { injected } from 'wagmi/connectors';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Link2, RefreshCw, Sparkles, Wallet } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
+
 import { ExtensionConnectCard } from '@/components/settings/ExtensionConnectCard';
-import { usePortfolioOverview } from '@/hooks/api/usePortfolioOverview';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCategorizationRuns } from '@/hooks/api/useCategorizationRuns';
-
-function shortAddress(value: string | null | undefined) {
-  return value ? `${value.slice(0, 10)}...${value.slice(-6)}` : 'Not connected';
-}
-
 
 function AutoCategorizationLog() {
   const { data: runs = [], isLoading } = useCategorizationRuns();
@@ -26,9 +17,9 @@ function AutoCategorizationLog() {
           <Sparkles className="h-4 w-4 text-primary" />
           Auto categorization
         </CardTitle>
-        <p className="mt-1 text-xs text-muted-foreground">
-          After each browser extension sync we match learned merchants then call AI once for unfamiliar titles. Runs in
-          the background — nothing to configure here.
+        <p className="mt-1 text-sm text-muted-foreground">
+          After each browser extension sync we match learned merchants then call AI once for
+          unfamiliar titles. Runs in the background — nothing to configure here.
         </p>
       </CardHeader>
       <CardContent className="space-y-2">
@@ -50,11 +41,13 @@ function AutoCategorizationLog() {
                   Started {r.startedAt ? new Date(r.startedAt).toLocaleString() : 'queued'} · finished{' '}
                   {r.finishedAt ? new Date(r.finishedAt).toLocaleString() : '—'}
                 </p>
-                <p className="mt-2 text-[11px] text-muted-foreground">
-                  scanned {r.scannedTxCount} txs · merchants {r.scannedMerchantCount} · memory {r.memoryMatchedCount} · AI
-                  assigns {r.aiUpdatedCount} · skipped {r.skippedCount}
+                <p className="mt-2 text-xs text-muted-foreground">
+                  scanned {r.scannedTxCount} txs · merchants {r.scannedMerchantCount} · memory{' '}
+                  {r.memoryMatchedCount} · AI assigns {r.aiUpdatedCount} · skipped {r.skippedCount}
                 </p>
-                {r.errorMessage ? <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">{r.errorMessage}</p> : null}
+                {r.errorMessage ? (
+                  <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">{r.errorMessage}</p>
+                ) : null}
               </div>
             ))}
           </div>
@@ -64,86 +57,18 @@ function AutoCategorizationLog() {
   );
 }
 
-export function SettingsPanel({ email }: { email: string }) {
-  const { data: overview, isLoading } = usePortfolioOverview();
-  const { address, isConnected } = useAccount();
-  const { connect, isPending: isConnecting } = useConnect();
-  const { disconnect } = useDisconnect();
-
-  const isSiweUser = email.endsWith('@wallet.siwe');
-  const primaryAddress = overview?.address?.toLowerCase() ?? null;
-  const connectedAddress = address?.toLowerCase() ?? null;
-  const walletMatchesPortfolio = !!connectedAddress && connectedAddress === primaryAddress;
-
-  const portfolioStatus = useMemo(() => {
-    if (isLoading) return 'Checking...';
-    if (!primaryAddress) return 'No primary signing address linked';
-    if (walletMatchesPortfolio) return 'Connected';
-    return 'Linked';
-  }, [isLoading, primaryAddress, walletMatchesPortfolio]);
-
+export function SettingsPanel() {
   return (
-    <div className="mx-auto max-w-3xl space-y-4">
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Account</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background px-4 py-3">
-            <div className="min-w-0">
-              <p className="text-xs text-muted-foreground">Signed in as</p>
-              <p className="truncate text-sm font-medium">{isSiweUser ? 'Wallet account' : email}</p>
-            </div>
-            {isSiweUser ? <Badge variant="secondary">SIWE</Badge> : null}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Wallet className="h-4 w-4 text-primary" />
-            Wallet
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-lg border border-border bg-background px-4 py-3">
-              <p className="text-xs text-muted-foreground">Primary address (SIWE)</p>
-              <p className="mt-1 font-mono text-sm font-medium">{shortAddress(primaryAddress)}</p>
-            </div>
-            <div className="rounded-lg border border-border bg-background px-4 py-3">
-              <p className="text-xs text-muted-foreground">Browser wallet</p>
-              <p className="mt-1 font-mono text-sm font-medium">{shortAddress(connectedAddress)}</p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-background px-4 py-3">
-            <div>
-              <p className="text-sm font-medium">{portfolioStatus}</p>
-            </div>
-            <Badge variant="secondary" className="gap-1.5">
-              <RefreshCw className="h-3 w-3" />
-              IDLE
-            </Badge>
-          </div>
-
-          {isConnected ? (
-            <Button type="button" variant="outline" onClick={() => disconnect()}>
-              Disconnect MetaMask
-            </Button>
-          ) : (
-            <Button type="button" className="gap-2" disabled={isConnecting} onClick={() => connect({ connector: injected() })}>
-              <Link2 className="h-4 w-4" />
-              {isConnecting ? 'Connecting...' : 'Connect MetaMask'}
-            </Button>
-          )}
-        </CardContent>
-      </Card>
-
-      <AutoCategorizationLog />
+    <div className="space-y-6">
+      <header>
+        <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Connect the browser extension and review automatic categorization.
+        </p>
+      </header>
 
       <ExtensionConnectCard />
+      <AutoCategorizationLog />
     </div>
   );
 }

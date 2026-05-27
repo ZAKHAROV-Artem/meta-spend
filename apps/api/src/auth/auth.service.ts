@@ -90,6 +90,31 @@ export class AuthService {
     return { code, expiresAt: new Date(expiresAt).toISOString() };
   }
 
+  async getExtensionStatus(userId: string) {
+    const now = new Date();
+    const rows = await this.extensionTokenService.listForUser(userId);
+    const active = rows.filter((row) => !row.expiresAt || row.expiresAt >= now);
+    return {
+      connected: active.length > 0,
+      connections: active.map((row) => ({
+        id: row.id,
+        label: row.label,
+        lastUsedAt: row.lastUsedAt?.toISOString() ?? null,
+        createdAt: row.createdAt.toISOString(),
+      })),
+    };
+  }
+
+  async disconnectExtension(userId: string): Promise<{ revoked: number }> {
+    const revoked = await this.extensionTokenService.revokeAllForUser(userId);
+    return { revoked };
+  }
+
+  async disconnectCurrentExtension(rawToken: string): Promise<{ revoked: number }> {
+    const revoked = await this.extensionTokenService.revokeByRawToken(rawToken);
+    return { revoked: revoked ? 1 : 0 };
+  }
+
   async pairExtension(code: string): Promise<{ token: string }> {
     const normalized = code.trim();
     if (!/^\d{6}$/.test(normalized)) {

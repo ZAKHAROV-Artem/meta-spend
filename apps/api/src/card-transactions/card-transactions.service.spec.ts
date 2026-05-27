@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { CardTxStatus, Prisma, TransactionSource } from '@crypto-tracker/db';
+import { ConflictException } from '@nestjs/common';
 import { CategoriesService } from '../categories/categories.service';
 import { TransactionsService } from '../transactions/transactions.service';
 import { CardTransactionsService } from './card-transactions.service';
@@ -35,6 +36,20 @@ function makeTransactionStore() {
               : null;
         if (!row || !args.select) return row;
         return Object.fromEntries(Object.keys(args.select).map((key) => [key, row[key]]));
+      },
+      findMany: async (args: {
+        where?: { userId?: string; source?: TransactionSource; externalId?: { in: string[] } };
+        select?: Record<string, boolean>;
+      }) => {
+        const externalIds = args.where?.externalId?.in;
+        return [...rows.values()]
+          .filter((row) => {
+            if (args.where?.userId && row.userId !== args.where.userId) return false;
+            if (args.where?.source && row.source !== args.where.source) return false;
+            if (externalIds && !externalIds.includes(String(row.externalId))) return false;
+            return true;
+          })
+          .map((row) => (args.select ? Object.fromEntries(Object.keys(args.select).map((key) => [key, row[key]])) : row));
       },
       upsert: async (args: {
         where: { userId_source_externalId: { userId: string; source: TransactionSource; externalId: string } };
@@ -147,41 +162,130 @@ describe('CardTransactionsService', () => {
 });
 
 describe('CategoriesService', () => {
-  it('returns only user-owned categories and creates missing defaults idempotently', async () => {
-    const categories: Array<Record<string, unknown>> = [
-      { id: 'system_1', userId: null, name: 'Transfer Out', isSystem: true },
-      { id: 'user_1', userId: 'user_1', name: 'Groceries', isSystem: false },
-    ];
+  function makeCategoryPrisma(seed: Array<Record<string, unknown>> = []) {
+    const categories: Array<Record<string, unknown>> = [...seed];
+    let nextId = 1;
+
+    const matchesWhere = (category: Record<string, unknown>, where?: Record<string, unknown>) => {
+      if (!where) return true;
+      if ('userId' in where && category.userId !== where.userId) return false;
+      if ('parentId' in where && category.parentId !== where.parentId) return false;
+      if ('id' in where) {
+        const id = where.id as string | { not?: string };
+        if (typeof id === 'string' && category.id !== id) return false;
+        if (typeof id === 'object' && id.not && category.id === id.not) return false;
+      }
+      if ('name' in where) {
+        const name = where.name as string | { in?: string[] };
+        if (typeof name === 'string' && category.name !== name) return false;
+        if (typeof name === 'object' && name.in && !name.in.includes(String(category.name))) return false;
+      }
+      return true;
+    };
+
+    const applySelect = (category: Record<string, unknown>, select?: Record<string, boolean>) => {
+      if (!select) return category;
+      return Object.fromEntries(Object.keys(select).map((key) => [key, category[key]]));
+    };
+
     const prisma = {
       category: {
-        findMany: async (args: { where?: { userId?: string; name?: { in: string[] } }; select?: Record<string, boolean> }) => {
-          const names = args.where?.name?.in;
-          if (names) {
-            return categories
-              .filter((category) => category.userId === args.where?.userId && names.includes(String(category.name)))
-              .map((category) => (args.select ? { name: category.name } : category));
-          }
-          return categories.filter((category) => category.userId === args.where?.userId);
+        findMany: async (args: {
+          where?: Record<string, unknown>;
+          select?: Record<string, boolean>;
+          include?: { subCategories?: boolean | Record<string, unknown> };
+        } = {}) => {
+          return categories.filter((category) => matchesWhere(category, args.where)).map((category) => {
+            if (args.include?.subCategories) {
+              return {
+                ...category,
+                subCategories: categories.filter((sub) => sub.parentId === category.id),
+              };
+            }
+            return applySelect(category, args.select);
+          });
+        },
+        findFirst: async (args: { where?: Record<string, unknown> }) =>
+          categories.find((category) => matchesWhere(category, args.where)) ?? null,
+        findUnique: async (args: { where: { id: string } }) =>
+          categories.find((category) => category.id === args.where.id) ?? null,
+        create: async (args: { data: Record<string, unknown> }) => {
+          const row = {
+            id: `cat_${nextId++}`,
+            isSystem: false,
+            parentId: null,
+            ...args.data,
+          };
+          categories.push(row);
+          return row;
         },
         createMany: async (args: { data: Array<Record<string, unknown>> }) => {
           for (const item of args.data) {
-            categories.push({ id: `cat_${categories.length + 1}`, isSystem: false, ...item });
+            categories.push({ id: `cat_${nextId++}`, isSystem: false, parentId: null, ...item });
           }
+        },
+        update: async (args: { where: { id: string }; data: Record<string, unknown> }) => {
+          const row = categories.find((category) => category.id === args.where.id);
+          assert.ok(row);
+          Object.assign(row, args.data);
+          return row;
         },
       },
     };
+    return { prisma, categories };
+  }
+
+  it('returns only user-owned categories and creates fresh defaults with subcategories idempotently', async () => {
+    const { prisma, categories } = makeCategoryPrisma([
+      { id: 'system_1', userId: null, name: 'Transfer Out', isSystem: true, parentId: null },
+      { id: 'user_1', userId: 'user_1', name: 'Groceries', isSystem: false, parentId: null },
+    ]);
     const service = new CategoriesService(prisma as never);
 
     assert.deepEqual(await service.findAll('user_1'), [
-      { id: 'user_1', userId: 'user_1', name: 'Groceries', isSystem: false },
+      { id: 'user_1', userId: 'user_1', name: 'Groceries', isSystem: false, parentId: null, subCategories: [] },
     ]);
 
-    const withDefaults = await service.createDefaults('user_1');
-    assert.equal(withDefaults.length, 25);
+    const withDefaults = await service.seedDefaults('user_1');
+    assert.equal(withDefaults.length, 10);
     assert.equal(categories.filter((category) => category.name === 'Groceries').length, 1);
+    assert.ok(categories.some((category) => category.name === 'Fuel & charging' && category.parentId));
+    assert.ok(categories.some((category) => category.name === 'Restaurants' && category.parentId));
 
-    await service.createDefaults('user_1');
-    assert.equal(categories.filter((category) => category.userId === 'user_1').length, 25);
+    const countAfterFirstRun = categories.filter((category) => category.userId === 'user_1').length;
+    await service.seedDefaults('user_1');
+    assert.equal(categories.filter((category) => category.userId === 'user_1').length, countAfterFirstRun);
+  });
+
+  it('adds default subcategories only to matching existing parent categories', async () => {
+    const { prisma, categories } = makeCategoryPrisma([
+      { id: 'transport', userId: 'user_1', name: 'Transport', color: '#3b82f6', icon: 'car', isSystem: false, parentId: null },
+      { id: 'custom', userId: 'user_1', name: 'Custom', color: '#111111', icon: 'tag', isSystem: false, parentId: null },
+    ]);
+    const service = new CategoriesService(prisma as never);
+
+    await service.seedDefaultSubcategories('user_1');
+
+    assert.ok(categories.some((category) => category.name === 'Taxi & rideshare' && category.parentId === 'transport'));
+    assert.equal(categories.some((category) => category.name === 'Groceries'), false);
+    const countAfterFirstRun = categories.length;
+    await service.seedDefaultSubcategories('user_1');
+    assert.equal(categories.length, countAfterFirstRun);
+  });
+
+  it('rejects duplicate names only among sibling categories', async () => {
+    const { prisma } = makeCategoryPrisma([
+      { id: 'transport', userId: 'user_1', name: 'Transport', color: '#3b82f6', icon: 'car', isSystem: false, parentId: null },
+      { id: 'shopping', userId: 'user_1', name: 'Shopping', color: '#ec4899', icon: 'shopping-bag', isSystem: false, parentId: null },
+      { id: 'parking', userId: 'user_1', name: 'Parking', color: '#60a5fa', icon: 'square-parking', isSystem: false, parentId: 'transport' },
+    ]);
+    const service = new CategoriesService(prisma as never);
+
+    await service.create('user_1', { name: 'Parking', color: '#ec4899', icon: 'square-parking', parentId: 'shopping' });
+    await assert.rejects(
+      service.create('user_1', { name: 'Parking', color: '#60a5fa', icon: 'square-parking', parentId: 'transport' }),
+      ConflictException,
+    );
   });
 });
 
@@ -214,6 +318,61 @@ describe('TransactionsService (card)', () => {
     assert.equal(stats.displayCurrency, 'PLN');
     assert.equal(stats.totalSpent, 30.16);
     assert.equal(stats.monthly[4]!.spent, 30.16);
+  });
+
+  it('filters transactions and stats by parent categories and subcategories independently', async () => {
+    const capturedWhere: unknown[] = [];
+    const prisma = {
+      transaction: {
+        findMany: async (args: { where: unknown }) => {
+          capturedWhere.push(args.where);
+          return [];
+        },
+        count: async (args: { where: unknown }) => {
+          capturedWhere.push(args.where);
+          return 0;
+        },
+      },
+      category: { findMany: async () => [] },
+    };
+    const service = new TransactionsService(prisma as never);
+
+    await service.list('user_1', {
+      categoryId: 'cat_transport,cat_travel',
+      subcategoryId: 'sub_fuel',
+      page: 1,
+      limit: 20,
+    });
+    await service.stats('user_1', {
+      categoryId: 'cat_transport',
+      subcategoryId: 'sub_fuel,sub_parking',
+      year: 2026,
+    });
+
+    assert.deepEqual(capturedWhere[0], {
+      userId: 'user_1',
+      source: TransactionSource.CARD,
+      AND: [
+        {
+          OR: [
+            { categoryId: { in: ['cat_transport', 'cat_travel'] } },
+            { subcategoryId: 'sub_fuel' },
+          ],
+        },
+      ],
+    });
+    assert.deepEqual(capturedWhere[2], {
+      userId: 'user_1',
+      source: TransactionSource.CARD,
+      AND: [
+        {
+          OR: [
+            { categoryId: 'cat_transport' },
+            { subcategoryId: { in: ['sub_fuel', 'sub_parking'] } },
+          ],
+        },
+      ],
+    });
   });
 
   it('groups card merchants and updates all matching rows + merchant memory', async () => {

@@ -5,6 +5,8 @@ export interface Category {
   color: string;
   icon: string;
   isSystem: boolean;
+  parentId: string | null;
+  subCategories?: Category[];
   createdAt: string;
 }
 

@@ -1,32 +1,16 @@
 'use client';
 
-import Link from 'next/link';
 import { format } from 'date-fns';
-import { useMemo } from 'react';
-import { Pie, PieChart, Cell } from 'recharts';
+import Link from 'next/link';
 
+import { AnalyticsOverview } from '@/components/analytics/AnalyticsOverview';
 import { MetaMaskCardWidget } from '@/components/dashboard/MetaMaskCardWidget';
 import { RecentTransactions } from '@/components/dashboard/RecentTransactions';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from '@/components/ui/chart';
 import { usePortfolioOverview } from '@/hooks/api/usePortfolioOverview';
 import { useTransactionStats } from '@/hooks/api/useTransactionStats';
 import { formatMoney } from '@/lib/format';
-
-const DONUT_COLORS = [
-  'var(--chart-1)',
-  'var(--chart-2)',
-  'var(--chart-3)',
-  'var(--chart-4)',
-  'var(--chart-5)',
-];
+import { cn } from '@/lib/utils';
 
 function monthLabel(year: number, month: number) {
   return format(new Date(Date.UTC(year, month - 1, 1)), 'MMM yyyy');
@@ -36,19 +20,24 @@ function StatTile({
   label,
   value,
   sub,
+  className,
 }: {
   label: string;
   value: string;
   sub?: string;
+  className?: string;
 }) {
   return (
-    <Card>
-      <CardContent className="px-4 py-3">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="mt-1 text-lg font-bold tabular-nums tracking-tight sm:text-xl">{value}</p>
-        {sub ? <p className="mt-0.5 text-[11px] text-muted-foreground">{sub}</p> : null}
-      </CardContent>
-    </Card>
+    <div
+      className={cn(
+        'rounded-xl border border-border/70 bg-card/80 px-4 py-3 backdrop-blur-sm',
+        className,
+      )}
+    >
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+      <p className="mt-1 text-xl font-bold tabular-nums tracking-tight sm:text-2xl">{value}</p>
+      {sub ? <p className="mt-0.5 text-[11px] text-muted-foreground">{sub}</p> : null}
+    </div>
   );
 }
 
@@ -64,50 +53,29 @@ export function DashboardView() {
     (m) => m.year === now.getUTCFullYear() && m.month === now.getUTCMonth() + 1,
   );
 
-  const avgPerTx =
-    stats && stats.txCount > 0 ? stats.totalSpent / stats.txCount : 0;
-
-  const donutData = useMemo(() => {
-    return (stats?.categoryShares ?? []).slice(0, 5).map((item, i) => ({
-      name: item.categoryName ?? 'Uncategorized',
-      value: item.total,
-      fill: item.categoryColor ?? DONUT_COLORS[i % DONUT_COLORS.length],
-      categoryId: item.categoryId,
-    }));
-  }, [stats?.categoryShares]);
-
-  const donutConfig: ChartConfig = useMemo(
-    () =>
-      Object.fromEntries(
-        donutData.map((item, i) => [
-          item.name,
-          { label: item.name, color: item.fill ?? DONUT_COLORS[i % DONUT_COLORS.length] },
-        ]),
-      ),
-    [donutData],
-  );
+  const avgPerTx = stats && stats.txCount > 0 ? stats.totalSpent / stats.txCount : 0;
 
   const loading = (portfolioLoading && !portfolio) || (statsLoading && !stats);
   const hasNoTransactions = !loading && (stats?.txCount ?? 0) === 0;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">Dashboard</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">
-          Card balance matches MetaMask Portfolio after each extension sync.
+    <div className="space-y-10">
+      <header className="flex flex-col gap-1">
+        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+        <p className="max-w-2xl text-sm text-muted-foreground">
+          Card balance, recent activity, and spending trends from your synced MetaMask Card
+          transactions.
         </p>
-      </div>
+      </header>
 
-      {hasNoTransactions && (
-        <div className="rounded-xl border-l-4 border-primary bg-card p-5 shadow-sm">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
-              <p className="text-base font-semibold text-foreground">
-                🦊 Connect the MetaSpend extension
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Install the Chrome extension and open MetaMask Portfolio to sync your first transactions.
+      {hasNoTransactions ? (
+        <div className="rounded-2xl border border-primary/30 bg-linear-to-br from-primary/10 via-card to-card p-6 sm:p-8">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="min-w-0 space-y-2">
+              <p className="text-lg font-semibold text-foreground">Connect the MetaSpend extension</p>
+              <p className="max-w-xl text-sm text-muted-foreground">
+                Install the Chrome extension and open MetaMask Portfolio to sync your first
+                transactions. Analytics and category breakdowns appear here once data is in.
               </p>
             </div>
             <div className="flex shrink-0 flex-wrap gap-2">
@@ -115,25 +83,25 @@ export function DashboardView() {
                 href="https://chrome.google.com/webstore"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+                className="inline-flex items-center rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
               >
-                Install extension →
+                Install extension
               </a>
               <Link
                 href="/settings"
-                className="inline-flex items-center rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+                className="inline-flex items-center rounded-lg border border-border bg-background/80 px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
               >
-                Go to Settings
+                Settings
               </Link>
             </div>
           </div>
         </div>
-      )}
+      ) : null}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,20rem)_1fr]">
-        <div>
+      <section className="grid gap-5 xl:grid-cols-12 xl:items-stretch">
+        <div className="flex min-h-80 items-center justify-center rounded-3xl border border-border/70 bg-card/50 p-4 backdrop-blur-sm sm:p-6 xl:col-span-5 xl:h-full">
           {loading ? (
-            <Skeleton className="aspect-[343/215] w-full max-w-[22rem] rounded-2xl" />
+            <Skeleton className="aspect-343/215 w-full max-w-120 rounded-2xl" />
           ) : (
             <MetaMaskCardWidget
               balanceAmount={portfolio?.cardBalance?.amount ?? null}
@@ -143,12 +111,12 @@ export function DashboardView() {
           )}
         </div>
 
-        <div className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="space-y-5 xl:col-span-7">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {loading ? (
               <>
                 {[0, 1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-24 rounded-xl" />
+                  <Skeleton key={i} className="h-22 rounded-xl" />
                 ))}
               </>
             ) : (
@@ -166,84 +134,22 @@ export function DashboardView() {
                 <StatTile
                   label="Avg / transaction"
                   value={formatMoney(avgPerTx, ccy)}
-                  sub={`${stats?.txCount ?? 0} tx`}
+                  sub={`${stats?.txCount ?? 0} transactions`}
                 />
-                <StatTile label="Transactions" value={String(stats?.txCount ?? 0)} />
+                <StatTile label="All time tx" value={String(stats?.txCount ?? 0)} />
               </>
             )}
           </div>
 
           <RecentTransactions />
-
-          <Card className="overflow-hidden">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4 px-5">
-              <div>
-                <CardTitle className="text-base font-semibold">Top categories</CardTitle>
-                <p className="text-xs text-muted-foreground">Share of spend · tap chart for analytics</p>
-              </div>
-              <Button variant="outline" size="sm" asChild>
-                <Link href="/analytics">Open analytics</Link>
-              </Button>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center gap-4 px-5 pb-6 sm:flex-row sm:items-start">
-              {loading ? (
-                <Skeleton className="h-[160px] w-[160px] rounded-full" />
-              ) : donutData.length === 0 ? (
-                <p className="py-8 text-sm text-muted-foreground">No categorized spend yet.</p>
-              ) : (
-                <>
-                  <Link href="/analytics" className="block shrink-0 transition-opacity hover:opacity-90">
-                    <ChartContainer config={donutConfig} className="mx-auto h-[160px] w-[160px]">
-                      <PieChart>
-                        <ChartTooltip
-                          content={
-                            <ChartTooltipContent
-                              nameKey="name"
-                              formatter={(value) => (
-                                <span className="font-mono font-medium">
-                                  {formatMoney(Number(value), ccy)}
-                                </span>
-                              )}
-                            />
-                          }
-                        />
-                        <Pie
-                          data={donutData}
-                          dataKey="value"
-                          nameKey="name"
-                          innerRadius="58%"
-                          outerRadius="88%"
-                          paddingAngle={2}
-                        >
-                          {donutData.map((entry) => (
-                            <Cell key={entry.name} fill={entry.fill} />
-                          ))}
-                        </Pie>
-                      </PieChart>
-                    </ChartContainer>
-                  </Link>
-                  <ul className="w-full flex-1 space-y-1.5 text-sm">
-                    {donutData.map((row, i) => (
-                      <li key={row.name} className="flex items-center gap-2">
-                        <span
-                          className="h-2.5 w-2.5 shrink-0 rounded-sm"
-                          style={{
-                            backgroundColor: row.fill ?? DONUT_COLORS[i % DONUT_COLORS.length],
-                          }}
-                        />
-                        <span className="min-w-0 flex-1 truncate">{row.name}</span>
-                        <span className="shrink-0 tabular-nums text-muted-foreground">
-                          {formatMoney(row.value, ccy)}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              )}
-            </CardContent>
-          </Card>
         </div>
-      </div>
+      </section>
+
+      {!hasNoTransactions ? (
+        <section aria-label="Spend analytics" className="space-y-5">
+          <AnalyticsOverview embedded />
+        </section>
+      ) : null}
     </div>
   );
 }

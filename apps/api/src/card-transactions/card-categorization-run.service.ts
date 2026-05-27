@@ -98,10 +98,10 @@ export class CardCategorizationRunService {
   async applyMerchantMemoryMatches(userId: string): Promise<number> {
     const memories = await this.prisma.cardMerchantMemory.findMany({
       where: { userId },
-      select: { merchantKey: true, categoryId: true },
+      select: { merchantKey: true, categoryId: true, subcategoryId: true },
     });
-    const categoryByKey = new Map(memories.map((m) => [m.merchantKey, m.categoryId]));
-    if (categoryByKey.size === 0) return 0;
+    const memoryByKey = new Map(memories.map((m) => [m.merchantKey, { categoryId: m.categoryId, subcategoryId: m.subcategoryId }]));
+    if (memoryByKey.size === 0) return 0;
 
     const rows = await this.prisma.transaction.findMany({
       where: this.uncategorizedEligibleWhere(userId),
@@ -112,7 +112,7 @@ export class CardCategorizationRunService {
     for (const row of rows) {
       const key = normalizeMerchantKey(row.merchantName);
       if (!key) continue;
-      if (!categoryByKey.has(key)) continue;
+      if (!memoryByKey.has(key)) continue;
       const list = idsByMerchantKey.get(key) ?? [];
       list.push(row.id);
       idsByMerchantKey.set(key, list);
@@ -120,8 +120,8 @@ export class CardCategorizationRunService {
 
     let updated = 0;
     for (const [merchantKey, ids] of idsByMerchantKey) {
-      const categoryId = categoryByKey.get(merchantKey);
-      if (!categoryId) continue;
+      const entry = memoryByKey.get(merchantKey);
+      if (!entry?.categoryId) continue;
       const res = await this.prisma.transaction.updateMany({
         where: {
           userId,
@@ -129,7 +129,7 @@ export class CardCategorizationRunService {
           categoryId: null,
           id: { in: ids },
         },
-        data: { categoryId },
+        data: { categoryId: entry.categoryId, subcategoryId: entry.subcategoryId },
       });
       updated += res.count;
       if (res.count > 0) {
@@ -153,8 +153,8 @@ export class CardCategorizationRunService {
     errors: string[];
   }> {
     const categories = await this.prisma.category.findMany({
-      where: { userId },
-      select: { id: true, name: true },
+      where: { userId, parentId: null },
+      select: { id: true, name: true, subCategories: { select: { id: true, name: true } } },
     });
     if (categories.length === 0) {
       return {
@@ -203,11 +203,12 @@ export class CardCategorizationRunService {
     }));
 
     const CHUNK = 40;
-    const categoryPayload = categories.map((c) => ({ id: c.id, name: c.name }));
+    const categoryPayload = categories.map((c) => ({ id: c.id, name: c.name, subCategories: c.subCategories }));
 
     type AssignmentRow = {
       merchantKey: string;
       categoryId: string | null;
+      subcategoryId: string | null;
       confidence?: number;
       reason?: string;
     };
@@ -250,7 +251,7 @@ export class CardCategorizationRunService {
           categoryId: null,
           id: { in: ids },
         },
-        data: { categoryId: assignment.categoryId },
+        data: { categoryId: assignment.categoryId, subcategoryId: assignment.subcategoryId ?? null },
       });
 
       updatedTransactionCount += res.count;
@@ -264,11 +265,13 @@ export class CardCategorizationRunService {
           userId,
           merchantKey: assignment.merchantKey,
           categoryId: assignment.categoryId,
+          subcategoryId: assignment.subcategoryId ?? null,
           hitCount: res.count,
           learnedSource: 'ai',
         },
         update: {
           categoryId: assignment.categoryId,
+          subcategoryId: assignment.subcategoryId ?? null,
           hitCount: { increment: res.count },
           learnedSource: 'ai',
         },

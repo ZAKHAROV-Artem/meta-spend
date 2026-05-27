@@ -1,0 +1,31 @@
+@startuml
+skinparam shadowing false
+skinparam state {
+  BackgroundColor White
+  BorderColor Black
+  ArrowColor Black
+}
+
+title Diagram stanów - transakcja MetaMask Card
+
+[*] --> PENDING : transakcja widoczna\nw MetaMask Card
+
+PENDING --> SETTLED : rozliczenie płatności
+PENDING --> DECLINED : odrzucenie płatności
+SETTLED --> REFUNDED : zwrot środków
+
+SETTLED --> [*]
+DECLINED --> [*]
+REFUNDED --> [*]
+
+note right of PENDING
+  Status początkowy dla transakcji,
+  która jeszcze nie została rozliczona.
+end note
+
+note right of SETTLED
+  Transakcja zakończona
+  i uwzględniana w analityce.
+end note
+
+@enduml

@@ -1,0 +1,49 @@
+@startuml
+skinparam shadowing false
+skinparam activity {
+  BackgroundColor White
+  BorderColor Black
+  ArrowColor Black
+}
+
+title Diagram czynności - automatyczna kategoryzacja AI
+
+start
+
+:Użytkownik otwiera stronę\nkategoryzacji wydatków;
+:System pobiera transakcje\nbez kategorii;
+:System grupuje transakcje\nwedług merchantKey;
+
+if (Istnieją merchanty do analizy?) then (tak)
+  :Utworzenie rekordu\nCardCategorizationRun;
+  :Status RUNNING;
+
+  repeat
+    :Pobranie kolejnego merchanta;
+
+    if (Istnieje wpis\nCardMerchantMemory?) then (tak)
+      :Przypisanie zapamiętanej\nkategorii i podkategorii;
+      :Zwiększenie hitCount;
+    else (nie)
+      :Przygotowanie listy\nkategorii i kontekstu;
+      :Wysłanie zapytania\ndo OpenAI API;
+
+      if (AI zwróciła poprawną kategorię?) then (tak)
+        :Aktualizacja transakcji;
+        :Zapis mapowania\nw CardMerchantMemory;
+      else (nie)
+        :Oznaczenie merchanta\njako pominiętego;
+      endif
+    endif
+
+  repeat while (Pozostały merchanty?) is (tak)
+
+  :Zapis liczników przebiegu;
+  :Status COMPLETED lub PARTIAL;
+  :Wyświetlenie wyników\nużytkownikowi;
+else (nie)
+  :Wyświetlenie komunikatu:\nbrak wydatków do kategoryzacji;
+endif
+
+stop
+@enduml
