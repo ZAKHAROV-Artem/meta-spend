@@ -13,6 +13,7 @@ export interface AuthTokens {
 export interface AuthUser {
   id: string;
   email: string;
+  defaultCurrency: string | null;
 }
 
 export interface AuthResponse extends AuthTokens {
@@ -29,4 +30,8 @@ export interface ExtensionConnectionDto {
 export interface ExtensionStatusResponse {
   connected: boolean;
   connections: ExtensionConnectionDto[];
+}
+
+export interface UpdateUserPreferencesDto {
+  defaultCurrency?: string | null;
 }
