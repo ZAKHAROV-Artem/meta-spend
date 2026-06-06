@@ -116,12 +116,12 @@ export function splitMoneyToken(raw: string | null | undefined): { numeric: stri
   const m2 = NUMBER_SPACE_CURRENCY.exec(normalized);
   if (m2) return { numeric: m2[1]!, currencyRaw: m2[2]!.trim() };
 
-  // 3. Try symbol-prefix format (e.g. "€42.50", "$42.50", "€42,50", "€ 42.50", "-€42.50")
+  // 3. Try symbol-prefix format (e.g. "€42.50", "$42.50", "€42,50", "€ 42.50", "-€42.50", "+€69.91")
   // Keep this char class in sync with the keys of SYMBOL_TO_ISO above.
-  const SYMBOL_PREFIX = /^(-?)\s*([€$£¥₽₴₣])\s*(\d+(?:[.,]\d+)?)$/u;
+  const SYMBOL_PREFIX = /^([+-]?)\s*([€$£¥₽₴₣])\s*(\d+(?:[.,]\d+)?)$/u;
   const m3 = SYMBOL_PREFIX.exec(s);
   if (m3) {
-    const sign = m3[1]!;
+    const sign = m3[1] === '-' ? '-' : '';  // strip '+', it's just positive
     const symbol = m3[2]!;
     const numeric = normalizeDecimalComma(sign + m3[3]!);
     const iso = SYMBOL_TO_ISO[symbol];

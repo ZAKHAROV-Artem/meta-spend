@@ -76,9 +76,12 @@ function groupByDay(items: Transaction[]) {
 }
 
 function dayFiatTotal(items: Transaction[]) {
-  const currency = items.find((item) => item.fiatCurrency)?.fiatCurrency ?? 'USD';
-  const total = items.reduce((sum, item) => sum + Number(item.fiatAmount ?? 0), 0);
-
+  const countable = items.filter((item) => item.status !== 'DECLINED');
+  const currency =
+    countable.find((item) => item.fiatCurrency)?.fiatCurrency ??
+    items.find((item) => item.fiatCurrency)?.fiatCurrency ??
+    'USD';
+  const total = countable.reduce((sum, item) => sum + Number(item.fiatAmount ?? 0), 0);
   return formatCurrency(String(total), currency);
 }
 
