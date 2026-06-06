@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Get,
+  Patch,
   Delete,
   Body,
   UseGuards,
@@ -10,12 +11,13 @@ import {
   Req,
   UnauthorizedException,
 } from '@nestjs/common';
-import type { Request } from 'express';
+import type { FastifyRequest } from 'fastify';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { SiweVerifyDto } from './dto/siwe-verify.dto';
 import { ExtensionPairDto } from './dto/extension-pair.dto';
+import { UpdateUserPreferencesDto } from './dto/update-user-preferences.dto';
 import { LocalAuthGuard } from '../common/guards/local-auth.guard';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { JwtOrExtensionAuthGuard } from '../common/guards/jwt-or-extension-auth.guard';
@@ -50,6 +52,12 @@ export class AuthController {
     return this.authService.me(user.id);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Patch('me')
+  updateMe(@CurrentUser() user: AuthUser, @Body() dto: UpdateUserPreferencesDto) {
+    return this.authService.updatePreferences(user.id, dto);
+  }
+
   @Get('siwe/nonce')
   getSiweNonce() {
     return { nonce: this.authService.generateNonce() };
@@ -77,7 +85,7 @@ export class AuthController {
   @UseGuards(JwtOrExtensionAuthGuard)
   @Delete('extension/disconnect-current')
   @HttpCode(HttpStatus.OK)
-  disconnectCurrentExtension(@Req() req: Request) {
+  disconnectCurrentExtension(@Req() req: FastifyRequest) {
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith('Bearer ')) {
       throw new UnauthorizedException('Missing bearer token');

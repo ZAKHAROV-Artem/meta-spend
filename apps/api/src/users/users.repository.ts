@@ -17,4 +17,8 @@ export class UsersRepository {
   create(data: { email: string; passwordHash?: string | null }): Promise<User> {
     return this.prisma.user.create({ data });
   }
+
+  update(id: string, data: { defaultCurrency?: string | null }): Promise<User> {
+    return this.prisma.user.update({ where: { id }, data });
+  }
 }

@@ -17,4 +17,8 @@ export class UsersService {
   create(data: { email: string; passwordHash?: string | null }): Promise<User> {
     return this.repo.create(data);
   }
+
+  updatePreferences(userId: string, data: { defaultCurrency?: string | null }) {
+    return this.repo.update(userId, data);
+  }
 }

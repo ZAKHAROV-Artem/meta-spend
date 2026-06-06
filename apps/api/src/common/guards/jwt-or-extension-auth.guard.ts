@@ -39,7 +39,7 @@ export class JwtOrExtensionAuthGuard implements CanActivate {
         const payload = this.jwtService.verify<TokenPayload>(token, { secret: jwtSecret });
         const user = await this.usersService.findById(payload.sub);
         if (user) {
-          request.user = { id: user.id, email: user.email };
+          request.user = { id: user.id, email: user.email, defaultCurrency: user.defaultCurrency ?? null };
           return true;
         }
       } catch {

@@ -45,7 +45,7 @@ export class AuthService {
     if (!user || !user.passwordHash) return null;
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) return null;
-    return { id: user.id, email: user.email };
+    return { id: user.id, email: user.email, defaultCurrency: user.defaultCurrency ?? null };
   }
 
   async register(dto: RegisterDto): Promise<AuthTokens & { user: AuthUser }> {
@@ -55,7 +55,7 @@ export class AuthService {
     const user = await this.usersService.create({ email: dto.email, passwordHash });
     const tokens = await this.generateTokens({ sub: user.id, email: user.email });
     await this.createSession(user.id, tokens.refreshToken);
-    return { ...tokens, user: { id: user.id, email: user.email } };
+    return { ...tokens, user: { id: user.id, email: user.email, defaultCurrency: user.defaultCurrency ?? null } };
   }
 
   async login(user: AuthUser): Promise<AuthTokens & { user: AuthUser }> {
@@ -82,7 +82,12 @@ export class AuthService {
   async me(userId: string): Promise<AuthUser> {
     const user = await this.usersService.findById(userId);
     if (!user) throw new UnauthorizedException('User not found');
-    return { id: user.id, email: user.email };
+    return { id: user.id, email: user.email, defaultCurrency: user.defaultCurrency ?? null };
+  }
+
+  async updatePreferences(userId: string, dto: { defaultCurrency?: string | null }): Promise<AuthUser> {
+    const user = await this.usersService.updatePreferences(userId, dto);
+    return { id: user.id, email: user.email, defaultCurrency: user.defaultCurrency ?? null };
   }
 
   createExtensionPairCode(userId: string): { code: string; expiresAt: string } {
@@ -172,7 +177,7 @@ export class AuthService {
 
     const tokens = await this.generateTokens({ sub: user.id, email: user.email });
     await this.createSession(user.id, tokens.refreshToken);
-    return { ...tokens, user: { id: user.id, email: user.email } };
+    return { ...tokens, user: { id: user.id, email: user.email, defaultCurrency: user.defaultCurrency ?? null } };
   }
 
   private async generateTokens(payload: TokenPayload): Promise<AuthTokens> {

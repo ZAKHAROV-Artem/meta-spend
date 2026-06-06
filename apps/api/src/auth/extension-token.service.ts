@@ -63,7 +63,7 @@ export class ExtensionTokenService {
       where: { id: row.id },
       data: { lastUsedAt: new Date() },
     });
-    return { id: row.user.id, email: row.user.email };
+    return { id: row.user.id, email: row.user.email, defaultCurrency: row.user.defaultCurrency ?? null };
   }
 
   private hashToken(token: string): string {
