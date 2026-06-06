@@ -8,6 +8,7 @@ import { CategoriesModule } from './categories/categories.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { CardTransactionsModule } from './card-transactions/card-transactions.module';
 import { PortfolioModule } from './portfolio/portfolio.module';
+import { TripsModule } from './trips/trips.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -20,6 +21,7 @@ import { AppController } from './app.controller';
     TransactionsModule,
     CardTransactionsModule,
     PortfolioModule,
+    TripsModule,
   ],
   controllers: [AppController],
 })

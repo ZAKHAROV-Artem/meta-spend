@@ -3,6 +3,7 @@ export * from './types/transaction';
 export * from './types/card-transaction';
 export * from './types/category';
 export * from './types/portfolio';
+export * from './types/trip';
 export * from './schemas/auth.schema';
 export * from './schemas/category.schema';
 export * from './schemas/card-transaction.schema';

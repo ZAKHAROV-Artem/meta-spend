@@ -23,6 +23,7 @@ model User {
   portfolioAccount        PortfolioAccount?
   cardMerchantMemory      CardMerchantMemory[]
   cardCategorizationRuns  CardCategorizationRun[]
+  trips                   Trip[]
 
   @@map("users")
 }
@@ -85,9 +86,10 @@ model Transaction {
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
 
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category    Category? @relation("TransactionCategory", fields: [categoryId], references: [id], onDelete: SetNull)
-  subcategory Category? @relation("TransactionSubcategory", fields: [subcategoryId], references: [id], onDelete: SetNull)
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category         Category?         @relation("TransactionCategory", fields: [categoryId], references: [id], onDelete: SetNull)
+  subcategory      Category?         @relation("TransactionSubcategory", fields: [subcategoryId], references: [id], onDelete: SetNull)
+  tripTransactions TripTransaction[]
 
   @@unique([userId, source, externalId])
   @@index([userId])
@@ -196,4 +198,31 @@ model CardCategorizationRun {
 
   @@index([userId, startedAt(sort: Desc)])
   @@map("card_categorization_runs")
+}
+
+model Trip {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  startAt   DateTime
+  endAt     DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions TripTransaction[]
+
+  @@index([userId])
+  @@map("trips")
+}
+
+model TripTransaction {
+  tripId        String
+  transactionId String
+
+  trip        Trip        @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  @@id([tripId, transactionId])
+  @@map("trip_transactions")
 }
