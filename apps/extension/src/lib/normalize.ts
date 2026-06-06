@@ -85,15 +85,49 @@ export function ukDateTimeMeridianToIso(raw: string | null | undefined): string 
 
 }
 
+const SYMBOL_TO_ISO: Record<string, string> = {
+  '€': 'EUR',
+  '$': 'USD',
+  '£': 'GBP',
+  '¥': 'JPY',
+  '₽': 'RUB',
+  '₴': 'UAH',
+  '₣': 'CHF',
+};
+
+/** Normalizes a European comma-decimal string like "42,50" to "42.50". */
+function normalizeDecimalComma(s: string): string {
+  return s.replace(/(\d),(\d)/gu, '$1.$2');
+}
+
 export function splitMoneyToken(raw: string | null | undefined): { numeric: string; currencyRaw: string } | null {
 
   const s = raw?.trim()?.replace(/^,/u, '');
   if (!s) return null;
 
-  const m = /^(-?\d+(?:\.\d+)?)\s+(.+)$/u.exec(s);
-  if (!m) return null;
+  const NUMBER_SPACE_CURRENCY = /^(-?\d+(?:\.\d+)?)\s+(.+)$/u;
 
-  return { numeric: m[1]!, currencyRaw: m[2]!.trim() };
+  // 1. Try existing "NUMBER SPACE CURRENCY" format (e.g. "42.50 PLN")
+  const m = NUMBER_SPACE_CURRENCY.exec(s);
+  if (m) return { numeric: m[1]!, currencyRaw: m[2]!.trim() };
+
+  // 2. Normalize comma-decimal and retry (e.g. "42,50 EUR" → "42.50 EUR")
+  const normalized = normalizeDecimalComma(s);
+  const m2 = NUMBER_SPACE_CURRENCY.exec(normalized);
+  if (m2) return { numeric: m2[1]!, currencyRaw: m2[2]!.trim() };
+
+  // 3. Try symbol-prefix format (e.g. "€42.50", "$42.50", "€42,50", "€ 42.50")
+  const SYMBOL_PREFIX = /^(-?[€$£¥₽₴₣])\s*(-?\d+(?:[.,]\d+)?)$/u;
+  const m3 = SYMBOL_PREFIX.exec(s);
+  if (m3) {
+    const symbol = m3[1]!;
+    const numericRaw = normalizeDecimalComma(m3[2]!);
+    const iso = SYMBOL_TO_ISO[symbol];
+    if (!iso) return null;
+    return { numeric: numericRaw, currencyRaw: iso };
+  }
+
+  return null;
 
 }
 
