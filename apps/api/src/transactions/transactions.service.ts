@@ -428,7 +428,7 @@ export class TransactionsService {
 
     const filterPrimary = displayCurrency ? (r: (typeof rows)[0]) => (r.fiatCurrency ?? '').toUpperCase() === displayCurrency : () => true;
 
-    const primaryRows = displayCurrency ? rows.filter(filterPrimary) : rows;
+    const primaryRows = fxRates ? rows : displayCurrency ? rows.filter(filterPrimary) : rows;
 
     const monthly = Array.from({ length: 12 }, (_, index) => ({
       month: index + 1,
