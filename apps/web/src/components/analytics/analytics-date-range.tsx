@@ -17,6 +17,7 @@ import {
 } from '@/components/filters/DateRangePicker';
 import { useTransactionStats } from '@/hooks/api/useTransactionStats';
 import type { TransactionFilters } from '@/hooks/api/useTransactions';
+import { useCurrentUser } from '@/hooks/api/useUserPreferences';
 
 export type AnalyticsChartId =
   | 'monthly'
@@ -90,14 +91,22 @@ export function useAnalyticsDateRanges() {
 
 export function useGlobalTransactionStats() {
   const { globalRange } = useAnalyticsDateRanges();
-  const filters = useMemo(() => rangeToFilters(globalRange), [globalRange]);
+  const { data: currentUser } = useCurrentUser();
+  const filters = useMemo(
+    () => ({ ...rangeToFilters(globalRange), defaultCurrency: currentUser?.defaultCurrency ?? undefined }),
+    [globalRange, currentUser?.defaultCurrency],
+  );
   return useTransactionStats(filters);
 }
 
 export function useChartTransactionStats(chartId: AnalyticsChartId) {
   const { getChartRange } = useAnalyticsDateRanges();
+  const { data: currentUser } = useCurrentUser();
   const range = getChartRange(chartId);
-  const filters = useMemo(() => rangeToFilters(range), [range]);
+  const filters = useMemo(
+    () => ({ ...rangeToFilters(range), defaultCurrency: currentUser?.defaultCurrency ?? undefined }),
+    [range, currentUser?.defaultCurrency],
+  );
   return useTransactionStats(filters);
 }
 

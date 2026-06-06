@@ -16,6 +16,7 @@ export interface TransactionFilters {
   from?: string;
   to?: string;
   search?: string;
+  defaultCurrency?: string;
 }
 
 export function useTransactions(filters?: TransactionFilters, page = 1, limit = 50) {
@@ -43,6 +44,7 @@ export function useTransactionStats(filters?: TransactionFilters) {
   if (filters?.from) params.set('from', filters.from);
   if (filters?.to) params.set('to', filters.to);
   if (filters?.search?.trim()) params.set('search', filters.search.trim());
+  if (filters?.defaultCurrency) params.set('defaultCurrency', filters.defaultCurrency);
 
   const qs = params.toString();
 

@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import type { CardTxStatus, Transaction } from '@crypto-tracker/shared';
 import { useTransactions, useTransactionStats, type TransactionFilters } from '@/hooks/api/useTransactions';
+import { useCurrentUser } from '@/hooks/api/useUserPreferences';
 import { useCategories } from '@/hooks/api/useCategories';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -105,8 +106,12 @@ export function CardTransactionsList({ initialFilters }: { initialFilters?: Tran
   const [filters, setFilters] = useState<TransactionFilters>(initialFilters ?? {});
   const [page, setPage] = useState(1);
   const { data: categories = [] } = useCategories();
+  const { data: currentUser } = useCurrentUser();
   const { data, isPending, isFetching, isPlaceholderData } = useTransactions(filters, page, PAGE_SIZE);
-  const { data: stats, isFetching: statsFetching } = useTransactionStats(filters);
+  const { data: stats, isFetching: statsFetching } = useTransactionStats({
+    ...filters,
+    defaultCurrency: currentUser?.defaultCurrency ?? undefined,
+  });
 
   const items = useMemo(() => data?.items ?? [], [data?.items]);
   const total = data?.total ?? 0;
@@ -328,6 +333,23 @@ export function CardTransactionsList({ initialFilters }: { initialFilters?: Tran
           </div>
         ) : null}
       </div>
+
+      {stats?.byCurrency && (stats.byCurrency.length > 1 || (stats.byCurrency.length === 1 && stats.displayCurrency && stats.displayCurrency !== stats.byCurrency[0]?.currency)) ? (
+        <div className="flex flex-wrap gap-2">
+          {stats.byCurrency.map((slice) => (
+            <span
+              key={slice.currency}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-muted/50 px-3 py-1 text-xs"
+            >
+              <span className="font-semibold">{slice.currency}</span>
+              <span className="tabular-nums text-muted-foreground">
+                {formatMoney(-slice.totalSpent, slice.currency)}
+              </span>
+              <span className="text-muted-foreground/70">{slice.txCount} txs</span>
+            </span>
+          ))}
+        </div>
+      ) : null}
 
       <div className="flex flex-wrap gap-2">
         <Badge variant="outline" className="h-auto px-3 py-1.5 text-xs font-medium">

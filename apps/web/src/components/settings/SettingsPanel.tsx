@@ -1,11 +1,60 @@
 'use client';
 
-import { Sparkles } from 'lucide-react';
+import { Globe, Sparkles } from 'lucide-react';
 
 import { ExtensionConnectCard } from '@/components/settings/ExtensionConnectCard';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCategorizationRuns } from '@/hooks/api/useCategorizationRuns';
+import { useCurrentUser, useUpdateUserPreferences } from '@/hooks/api/useUserPreferences';
+
+const CURRENCY_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: '', label: 'None — show native' },
+  { value: 'EUR', label: 'EUR — Euro' },
+  { value: 'PLN', label: 'PLN — Polish Złoty' },
+  { value: 'USD', label: 'USD — US Dollar' },
+  { value: 'GBP', label: 'GBP — British Pound' },
+  { value: 'CHF', label: 'CHF — Swiss Franc' },
+  { value: 'CZK', label: 'CZK — Czech Koruna' },
+];
+
+function CurrencyPreferenceCard() {
+  const { data: currentUser } = useCurrentUser();
+  const { mutate, isPending } = useUpdateUserPreferences();
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Globe className="h-4 w-4 text-primary" />
+          Default currency
+        </CardTitle>
+        <CardDescription>
+          All analytics and totals will be converted to this currency using live exchange rates.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Select
+          value={currentUser?.defaultCurrency ?? ''}
+          onValueChange={(value) => mutate({ defaultCurrency: value || null })}
+          disabled={isPending}
+        >
+          <SelectTrigger className="w-56">
+            <SelectValue placeholder="Select currency" />
+          </SelectTrigger>
+          <SelectContent>
+            {CURRENCY_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </CardContent>
+    </Card>
+  );
+}
 
 function AutoCategorizationLog() {
   const { data: runs = [], isLoading } = useCategorizationRuns();
@@ -68,6 +117,7 @@ export function SettingsPanel() {
       </header>
 
       <ExtensionConnectCard />
+      <CurrencyPreferenceCard />
       <AutoCategorizationLog />
     </div>
   );
