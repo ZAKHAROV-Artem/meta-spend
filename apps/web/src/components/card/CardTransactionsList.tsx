@@ -19,8 +19,15 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu';
 import { CalendarDays, ChevronLeft, ChevronRight, Search, SlidersHorizontal } from 'lucide-react';
 import { TransactionCategoryBadge } from '@/components/transactions/TransactionCategoryBadge';
+import { TripCreateDialog } from '@/components/trips/TripCreateDialog';
 import { DateRangePicker, type AnalyticsRange } from '@/components/filters/DateRangePicker';
 import { EmptyState } from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
@@ -105,6 +112,9 @@ function categoryFilterLabel(categoryCount: number, subcategoryCount: number) {
 export function CardTransactionsList({ initialFilters }: { initialFilters?: TransactionFilters }) {
   const [filters, setFilters] = useState<TransactionFilters>(initialFilters ?? {});
   const [page, setPage] = useState(1);
+  const [tripStart, setTripStart] = useState<Transaction | null>(null);
+  const [tripDialogOpen, setTripDialogOpen] = useState(false);
+  const [tripEndTx, setTripEndTx] = useState<Transaction | null>(null);
   const { data: categories = [] } = useCategories();
   const { data: currentUser } = useCurrentUser();
   const { data, isPending, isFetching, isPlaceholderData } = useTransactions(filters, page, PAGE_SIZE);
@@ -194,6 +204,31 @@ export function CardTransactionsList({ initialFilters }: { initialFilters?: Tran
 
   return (
     <div className="relative min-w-0 space-y-4">
+      {tripStart ? (
+        <div className="flex items-center justify-between rounded-lg border border-primary/30 bg-primary/5 px-4 py-2.5 text-sm">
+          <span>
+            Trip started from <strong>{tripStart.title}</strong> — right-click another transaction to end the trip.
+          </span>
+          <Button variant="ghost" size="sm" onClick={() => setTripStart(null)}>
+            Cancel
+          </Button>
+        </div>
+      ) : null}
+      {tripStart && tripEndTx ? (
+        <TripCreateDialog
+          open={tripDialogOpen}
+          onOpenChange={(open) => {
+            setTripDialogOpen(open);
+            if (!open) {
+              setTripStart(null);
+              setTripEndTx(null);
+            }
+          }}
+          startTx={tripStart}
+          endTx={tripEndTx}
+          allItems={items}
+        />
+      ) : null}
       <div className="min-w-0 space-y-2">
         <div className="grid min-w-0 gap-3 rounded-lg border border-border/70 bg-card/72 p-4 sm:p-5 xl:grid-cols-12 xl:gap-4">
           <label className="relative min-w-0 xl:col-span-5">
@@ -420,8 +455,9 @@ export function CardTransactionsList({ initialFilters }: { initialFilters?: Tran
                   </div>
 
                   {dayItems.map((item) => (
+                    <ContextMenu key={item.id}>
+                      <ContextMenuTrigger asChild>
                     <div
-                      key={item.id}
                       className="flex flex-col gap-4 border-b border-border/60 px-4 py-5 last:border-b-0 lg:flex-row lg:items-center lg:justify-between"
                     >
                       <div className="min-w-0 flex-1">
@@ -454,6 +490,29 @@ export function CardTransactionsList({ initialFilters }: { initialFilters?: Tran
                         <p className="text-xs text-muted-foreground">{item.direction.toLowerCase()}</p>
                       </div>
                     </div>
+                      </ContextMenuTrigger>
+                      <ContextMenuContent>
+                        {tripStart ? (
+                          <ContextMenuItem
+                            onSelect={() => {
+                              setTripEndTx(item);
+                              setTripDialogOpen(true);
+                            }}
+                          >
+                            End trip here
+                          </ContextMenuItem>
+                        ) : (
+                          <ContextMenuItem onSelect={() => setTripStart(item)}>
+                            Start trip from here
+                          </ContextMenuItem>
+                        )}
+                        {tripStart && (
+                          <ContextMenuItem onSelect={() => setTripStart(null)}>
+                            Cancel trip
+                          </ContextMenuItem>
+                        )}
+                      </ContextMenuContent>
+                    </ContextMenu>
                   ))}
                 </CardContent>
               </Card>

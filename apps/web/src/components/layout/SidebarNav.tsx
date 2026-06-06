@@ -4,11 +4,12 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { CreditCard, LayoutDashboard, Settings, Tag } from 'lucide-react';
+import { CreditCard, LayoutDashboard, Plane, Settings, Tag } from 'lucide-react';
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/transactions', label: 'Transactions', icon: CreditCard },
+  { href: '/trips', label: 'Trips', icon: Plane },
   { href: '/categories', label: 'Categories', icon: Tag },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
