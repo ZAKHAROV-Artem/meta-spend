@@ -9,8 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useCategorizationRuns } from '@/hooks/api/useCategorizationRuns';
 import { useCurrentUser, useUpdateUserPreferences } from '@/hooks/api/useUserPreferences';
 
+const NONE_VALUE = '__none__';
+
 const CURRENCY_OPTIONS: Array<{ value: string; label: string }> = [
-  { value: '', label: 'None — show native' },
+  { value: NONE_VALUE, label: 'None — show native' },
   { value: 'EUR', label: 'EUR — Euro' },
   { value: 'PLN', label: 'PLN — Polish Złoty' },
   { value: 'USD', label: 'USD — US Dollar' },
@@ -36,8 +38,8 @@ function CurrencyPreferenceCard() {
       </CardHeader>
       <CardContent>
         <Select
-          value={currentUser?.defaultCurrency ?? ''}
-          onValueChange={(value) => mutate({ defaultCurrency: value || null })}
+          value={currentUser?.defaultCurrency ?? NONE_VALUE}
+          onValueChange={(value) => mutate({ defaultCurrency: value === NONE_VALUE ? null : value })}
           disabled={isPending}
         >
           <SelectTrigger className="w-56">
