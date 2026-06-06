@@ -32,4 +32,8 @@ export class StatsQueryDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @IsOptional()
+  @IsString()
+  defaultCurrency?: string;
 }

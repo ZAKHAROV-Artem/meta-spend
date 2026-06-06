@@ -11,6 +11,7 @@ import type {
 } from '@crypto-tracker/shared';
 import { normalizeMerchantKey } from '@crypto-tracker/shared';
 import { PrismaService } from '../prisma/prisma.service';
+import { ExchangeRateService } from '../common/exchange-rate/exchange-rate.service';
 import { ListTransactionsDto } from './dto/list-transactions.dto';
 import { StatsQueryDto } from './dto/stats-query.dto';
 import { BulkCategorizeDto } from './dto/bulk-categorize.dto';
@@ -63,7 +64,10 @@ type CardRow = Prisma.TransactionGetPayload<{
 
 @Injectable()
 export class TransactionsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly fxService: ExchangeRateService,
+  ) {}
 
   async list(userId: string, dto: ListTransactionsDto): Promise<PaginatedTransactions> {
     const where = this.buildCardWhere(userId, dto);
@@ -119,8 +123,12 @@ export class TransactionsService {
       }),
     ]);
 
+    const fxRates = dto.defaultCurrency
+      ? await this.fxService.getRates(dto.defaultCurrency)
+      : null;
+
     const categoriesById = new Map(categories.map((c) => [c.id, c]));
-    return this.buildCardAnalytics(rows, monthlyRows, categoriesById, year);
+    return this.buildCardAnalytics(rows, monthlyRows, categoriesById, year, fxRates, dto.defaultCurrency ?? null);
   }
 
   async updateOne(userId: string, txId: string, dto: UpdateTransactionDto) {
@@ -402,13 +410,21 @@ export class TransactionsService {
     monthlyRowsAll: Prisma.TransactionGetPayload<object>[],
     categoriesById: Map<string, { name: string; color: string }>,
     year: number,
+    fxRates: Record<string, number> | null = null,
+    defaultCurrency: string | null = null,
   ): CardTransactionAnalytics {
+    const convert = (amount: number, nativeCurrency: string): number => {
+      if (!fxRates || !nativeCurrency) return amount;
+      const rate = fxRates[nativeCurrency.toUpperCase()];
+      return rate ? amount / rate : amount;
+    };
+
     const spendingRows = rows.filter((r) => SPENDING_STATUSES.includes(r.status as CardTxStatus));
     const fiatAmongSpend = spendingRows.map((r) => (r.fiatCurrency ?? '').toUpperCase()).filter(Boolean);
     const uniqueFiat = [...new Set(fiatAmongSpend)];
-    const displayCurrency = uniqueFiat.length === 1 ? uniqueFiat[0]! : null;
+    const displayCurrency = defaultCurrency ?? (uniqueFiat.length === 1 ? uniqueFiat[0]! : null);
 
-    const mixedCurrencyNotice = uniqueFiat.length > 1;
+    const mixedCurrencyNotice = !defaultCurrency && uniqueFiat.length > 1;
 
     const filterPrimary = displayCurrency ? (r: (typeof rows)[0]) => (r.fiatCurrency ?? '').toUpperCase() === displayCurrency : () => true;
 
@@ -426,7 +442,7 @@ export class TransactionsService {
     const catMap = new Map<string | null, { categoryId: string | null; total: number; count: number }>();
 
     for (const row of primaryRows) {
-      const amount = Math.abs(Number(row.fiatAmount ?? 0));
+      const amount = convert(Math.abs(Number(row.fiatAmount ?? 0)), row.fiatCurrency ?? '');
       if (row.status === CardTxStatus.REFUNDED) {
         totalReceived += amount;
       } else if (row.status && SPENDING_STATUSES.includes(row.status as CardTxStatus)) {
@@ -443,11 +459,11 @@ export class TransactionsService {
     }
 
     for (const row of monthlyRowsAll) {
-      if (displayCurrency && (row.fiatCurrency ?? '').toUpperCase() !== displayCurrency) continue;
+      if (!defaultCurrency && displayCurrency && (row.fiatCurrency ?? '').toUpperCase() !== displayCurrency) continue;
       const txYear = row.timestamp.getUTCFullYear();
       if (txYear !== year) continue;
       const monthIndex = row.timestamp.getUTCMonth();
-      const amount = Math.abs(Number(row.fiatAmount ?? 0));
+      const amount = convert(Math.abs(Number(row.fiatAmount ?? 0)), row.fiatCurrency ?? '');
       if (row.status === CardTxStatus.REFUNDED) {
         monthly[monthIndex]!.received += amount;
       } else if (row.status && SPENDING_STATUSES.includes(row.status as CardTxStatus)) {
