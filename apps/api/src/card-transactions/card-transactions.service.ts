@@ -24,6 +24,8 @@ function mergeCardRawData(
     gasFeeSymbol?: string | null;
     gasFeeRaw?: string | null;
     spentRaw?: string | null;
+    creditedRaw?: string | null;
+    creditDestinationMasked?: string | null;
   },
 ): Prisma.InputJsonValue {
   const base =
@@ -44,6 +46,8 @@ function mergeCardRawData(
       ...(cardScrape.gasFeeSymbol ? { gasFeeSymbol: cardScrape.gasFeeSymbol.toUpperCase() } : {}),
       ...(cardScrape.gasFeeRaw ? { gasFeeRaw: cardScrape.gasFeeRaw } : {}),
       ...(cardScrape.spentRaw ? { spentRaw: cardScrape.spentRaw } : {}),
+      ...(cardScrape.creditedRaw ? { creditedRaw: cardScrape.creditedRaw } : {}),
+      ...(cardScrape.creditDestinationMasked ? { creditDestinationMasked: cardScrape.creditDestinationMasked } : {}),
     },
   } as Prisma.InputJsonValue;
 }
@@ -71,6 +75,13 @@ function parseToDate(value?: string): Date | undefined {
     date.setUTCHours(23, 59, 59, 999);
   }
   return date;
+}
+
+function transactionDirection(row: Pick<CardRowDb, 'status' | 'fiatAmount'>): 'INFLOW' | 'OUTFLOW' | 'NEUTRAL' {
+  const status = row.status ?? CardTxStatus.SETTLED;
+  if (status === CardTxStatus.DECLINED) return 'NEUTRAL';
+  if (status === CardTxStatus.REFUNDED || Number(row.fiatAmount ?? 0) > 0) return 'INFLOW';
+  return 'OUTFLOW';
 }
 
 @Injectable()
@@ -146,6 +157,8 @@ export class CardTransactionsService {
             gasFeeSymbol: item.gasFeeSymbol ?? null,
             gasFeeRaw: item.gasFeeRaw ?? null,
             spentRaw: item.spentRaw ?? null,
+            creditedRaw: item.creditedRaw ?? null,
+            creditDestinationMasked: item.creditDestinationMasked ?? null,
           });
 
           await this.prisma.transaction.upsert({
@@ -340,7 +353,7 @@ export class CardTransactionsService {
       amountPrimary: fiatAmount,
       currency: fiatCurrency?.toUpperCase() ?? null,
       direction:
-        status === CardTxStatus.REFUNDED ? 'INFLOW' : status === CardTxStatus.DECLINED ? 'NEUTRAL' : 'OUTFLOW',
+        transactionDirection(row),
       categoryId: row.categoryId,
       categoryName: row.category?.name ?? null,
       categoryColor: row.category?.color ?? null,

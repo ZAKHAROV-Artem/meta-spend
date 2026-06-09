@@ -17,6 +17,7 @@ import { AuthUser } from '@crypto-tracker/shared';
 import { TripsService } from './trips.service';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { UpdateTripDto } from './dto/update-trip.dto';
+import { TripSelectionDto } from './dto/trip-selection.dto';
 
 @Controller('trips')
 @UseGuards(JwtAuthGuard)
@@ -26,6 +27,11 @@ export class TripsController {
   @Post()
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateTripDto) {
     return this.tripsService.create(user.id, dto);
+  }
+
+  @Post('preview')
+  preview(@CurrentUser() user: AuthUser, @Body() dto: TripSelectionDto) {
+    return this.tripsService.preview(user.id, dto);
   }
 
   @Get()

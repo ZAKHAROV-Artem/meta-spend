@@ -44,10 +44,15 @@ export class ExtensionTokenService {
     return result.count;
   }
 
-  async revokeByRawToken(rawToken: string): Promise<boolean> {
+  async revokeByRawToken(rawToken: string): Promise<{ userId: string } | null> {
     const tokenHash = this.hashToken(rawToken);
-    const result = await this.prisma.extensionToken.deleteMany({ where: { tokenHash } });
-    return result.count > 0;
+    const row = await this.prisma.extensionToken.findUnique({
+      where: { tokenHash },
+      select: { id: true, userId: true },
+    });
+    if (!row) return null;
+    await this.prisma.extensionToken.delete({ where: { id: row.id } });
+    return { userId: row.userId };
   }
 
   async validateAndTouch(rawToken: string): Promise<AuthUser | null> {

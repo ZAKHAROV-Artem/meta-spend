@@ -6,7 +6,7 @@
     "build": "nest build",
     "dev": "pnpm --filter @crypto-tracker/db build && pnpm --filter @crypto-tracker/shared build && nest start --watch",
     "start": "node dist/main",
-    "test": "pnpm --filter @crypto-tracker/db build && pnpm --filter @crypto-tracker/shared build && node --test --require ts-node/register --require tsconfig-paths/register src/card-transactions/card-transactions.service.spec.ts src/transactions/card-merchant-auto-categorize.spec.ts",
+    "test": "pnpm --filter @crypto-tracker/db build && pnpm --filter @crypto-tracker/shared build && node --test --require ts-node/register --require tsconfig-paths/register src/card-transactions/card-transactions.service.spec.ts src/transactions/card-merchant-auto-categorize.spec.ts src/trips/trips.service.spec.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext .ts",
     "db:reset": "pnpm --filter @crypto-tracker/db run db:reset",

@@ -1,6 +1,13 @@
 'use client';
 import { useApiQuery, useApiMutation } from './useApi';
-import type { TripSummary, TripDetail, CreateTripDto, UpdateTripDto } from '@crypto-tracker/shared';
+import type {
+  TripSummary,
+  TripDetail,
+  CreateTripDto,
+  UpdateTripDto,
+  TripPreview,
+  TripSelectionDto,
+} from '@crypto-tracker/shared';
 
 export function useTrips() {
   return useApiQuery<TripSummary[]>('/trips');
@@ -13,6 +20,10 @@ export function useTrip(id: string, defaultCurrency?: string) {
 
 export function useCreateTrip() {
   return useApiMutation<TripSummary, CreateTripDto>('POST', '/trips', ['/trips']);
+}
+
+export function usePreviewTrip() {
+  return useApiMutation<TripPreview, TripSelectionDto>('POST', '/trips/preview');
 }
 
 export function useUpdateTrip(id: string) {

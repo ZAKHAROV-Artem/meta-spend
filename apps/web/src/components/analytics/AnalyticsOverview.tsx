@@ -18,6 +18,7 @@ import {
   useGlobalTransactionStats,
 } from '@/components/analytics/analytics-date-range';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatMoney } from '@/lib/format';
@@ -203,14 +204,16 @@ function AnalyticsOverviewContent({ embedded = false }: { embedded?: boolean }) 
           <span className="text-muted-foreground">
             Multiple currencies detected. Amounts shown in primary currency where possible.
           </span>
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="icon-sm"
             onClick={() => setCurrencyDismissed(true)}
-            className="text-muted-foreground hover:text-foreground shrink-0 transition-colors"
+            className="text-muted-foreground hover:text-foreground shrink-0 rounded-full"
             aria-label="Dismiss"
           >
             <X className="h-4 w-4" />
-          </button>
+          </Button>
         </div>
       ) : null}
 

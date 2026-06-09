@@ -121,6 +121,10 @@ function scrapeFromPage(): CaptureResult {
       spent: fundingValue(row, 'Spent'),
 
       gasFee: fundingValue(row, 'Gas fee'),
+
+      destination: fundingValue(row, 'Destination') ?? detailValue(row, 'Destination'),
+
+      credited: fundingValue(row, 'Credited') ?? detailValue(row, 'Credited'),
     });
 
     const list =

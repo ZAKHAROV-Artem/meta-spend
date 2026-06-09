@@ -28,6 +28,13 @@ function normalizeSymbol(value: unknown): string | null {
   return typeof value === 'string' && value.trim() ? value.trim().toUpperCase().slice(0, 32) : null;
 }
 
+function isSpendRow(row: CardMetricRow): boolean {
+  const status = row.status ? String(row.status) : CardTxStatus.SETTLED;
+  if (!SPENDING_STATUSES.has(status)) return false;
+  const amount = Number(row.fiatAmount ?? 0);
+  return Number.isFinite(amount) ? amount <= 0 : true;
+}
+
 function trimDecimal(value: number, maxFractionDigits = 8): string {
   return value.toLocaleString('en-US', {
     useGrouping: false,
@@ -78,7 +85,7 @@ export function cryptoSpendSummaries(rows: CardMetricRow[]): CryptoSpendSummary[
   >();
 
   for (const row of rows) {
-    if (row.status && !SPENDING_STATUSES.has(String(row.status))) continue;
+    if (!isSpendRow(row)) continue;
     const symbol = normalizeSymbol(row.cryptoSymbol);
     const crypto = absNumber(row.cryptoAmount);
     const fiat = absNumber(row.fiatAmount);
@@ -141,7 +148,7 @@ export function exchangeRateTrend(rows: CardMetricRow[]): ExchangeRateTrendPoint
   >();
 
   for (const row of rows) {
-    if (row.status && !SPENDING_STATUSES.has(String(row.status))) continue;
+    if (!isSpendRow(row)) continue;
     const fiat = absNumber(row.fiatAmount);
     const crypto = absNumber(row.cryptoAmount);
     const fiatCurrency = normalizeSymbol(row.fiatCurrency);
@@ -187,7 +194,7 @@ export function avgTransactionAmountTrend(rows: CardMetricRow[]): AvgTransaction
   >();
 
   for (const row of rows) {
-    if (row.status && !SPENDING_STATUSES.has(String(row.status))) continue;
+    if (!isSpendRow(row)) continue;
     const fiat = absNumber(row.fiatAmount);
     const currency = normalizeSymbol(row.fiatCurrency);
     if (!row.timestamp || !fiat || !currency) continue;

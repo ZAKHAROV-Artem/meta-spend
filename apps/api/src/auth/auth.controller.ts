@@ -4,15 +4,19 @@ import {
   Get,
   Patch,
   Delete,
+  Sse,
   Body,
   UseGuards,
   HttpCode,
   HttpStatus,
   Req,
   UnauthorizedException,
+  type MessageEvent,
 } from '@nestjs/common';
+import type { Observable } from 'rxjs';
 import type { FastifyRequest } from 'fastify';
 import { AuthService } from './auth.service';
+import { ExtensionStatusEvents } from './extension-status-events';
 import { RegisterDto } from './dto/register.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { SiweVerifyDto } from './dto/siwe-verify.dto';
@@ -26,7 +30,10 @@ import { AuthUser } from '@crypto-tracker/shared';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly extensionStatusEvents: ExtensionStatusEvents,
+  ) {}
 
   @Post('register')
   register(@Body() dto: RegisterDto) {
@@ -73,6 +80,12 @@ export class AuthController {
   @Get('extension/status')
   getExtensionStatus(@CurrentUser() user: AuthUser) {
     return this.authService.getExtensionStatus(user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Sse('extension/status/stream')
+  streamExtensionStatus(@CurrentUser() user: AuthUser): Observable<MessageEvent> {
+    return this.extensionStatusEvents.stream(user.id);
   }
 
   @UseGuards(JwtAuthGuard)

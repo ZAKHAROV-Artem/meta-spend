@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { motion, useReducedMotion } from 'motion/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   useCategories,
@@ -30,6 +31,7 @@ interface DialogState {
 }
 
 export function CategoriesManager() {
+  const shouldAnimate = !useReducedMotion();
   const { data: categories = [], isLoading } = useCategories();
   const createCategory = useCreateCategory();
   const seedDefaults = useSeedDefaultCategories();
@@ -144,8 +146,14 @@ export function CategoriesManager() {
             </Card>
           ) : (
             <div className="space-y-2">
-              {userCategories.map((cat) => (
-                <div key={cat.id} className="rounded-lg border border-border/70 bg-background/55 overflow-hidden">
+              {userCategories.map((cat, index) => (
+                <motion.div
+                  key={cat.id}
+                  className="rounded-lg border border-border/70 bg-background/55 overflow-hidden"
+                  initial={shouldAnimate ? { opacity: 0, y: 8 } : {}}
+                  animate={shouldAnimate ? { opacity: 1, y: 0 } : {}}
+                  transition={{ duration: 0.25, ease: 'easeOut', delay: Math.min(index, 6) * 0.04 }}
+                >
                   {/* Parent row */}
                   <div className="flex items-center gap-3 px-4 py-3">
                     <div
@@ -207,7 +215,7 @@ export function CategoriesManager() {
                       ))}
                     </div>
                   )}
-                </div>
+                </motion.div>
               ))}
             </div>
           )}
@@ -223,34 +231,52 @@ export function CategoriesManager() {
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-2">
-            <div className="space-y-1.5">
+            <motion.div
+              className="space-y-1.5"
+              initial={shouldAnimate ? { opacity: 0, y: 8 } : {}}
+              animate={shouldAnimate ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.25, ease: 'easeOut', delay: 0 }}
+            >
               <Label>Name</Label>
               <Input
                 placeholder={dialogState.parentName ? `e.g. Taxi & rideshare, Parking` : 'e.g. Food, Subscriptions'}
                 {...register('name')}
               />
               {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
-            </div>
-            <div className="space-y-1.5">
+            </motion.div>
+            <motion.div
+              className="space-y-1.5"
+              initial={shouldAnimate ? { opacity: 0, y: 8 } : {}}
+              animate={shouldAnimate ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.25, ease: 'easeOut', delay: 0.05 }}
+            >
               <Label>Color</Label>
               <div className="flex flex-wrap items-center gap-2">
                 {PRESET_COLORS.map((color) => (
-                  <button
+                  <Button
                     key={color}
                     type="button"
+                    variant="ghost"
+                    aria-label={`Use color ${color}`}
+                    aria-pressed={selectedColor === color}
                     onClick={() => setValue('color', color)}
-                    className={`h-8 w-8 rounded-full border-2 transition-all ${selectedColor === color ? 'scale-110 border-foreground' : 'border-transparent'}`}
+                    className={`h-8 w-8 rounded-full border-2 p-0 transition-all hover:bg-transparent ${selectedColor === color ? 'scale-110 border-foreground' : 'border-transparent'}`}
                     style={{ backgroundColor: color }}
                   />
                 ))}
                 <Input type="color" className="h-10 w-16 cursor-pointer p-1" {...register('color')} />
               </div>
-            </div>
-            <div className="space-y-1.5">
+            </motion.div>
+            <motion.div
+              className="space-y-1.5"
+              initial={shouldAnimate ? { opacity: 0, y: 8 } : {}}
+              animate={shouldAnimate ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.25, ease: 'easeOut', delay: 0.1 }}
+            >
               <Label>Icon name</Label>
               <Input placeholder="e.g. shopping-cart, coffee" {...register('icon')} />
               <p className="text-xs text-muted-foreground">Lucide icon name</p>
-            </div>
+            </motion.div>
             {createCategory.error && (
               <p className="text-sm text-destructive">{createCategory.error.message}</p>
             )}

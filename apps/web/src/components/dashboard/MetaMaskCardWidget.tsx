@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useState } from 'react';
 import { Copy, Check } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 function truncateEthAddress(addr: string): string {
   const a = addr.trim();
@@ -48,10 +49,12 @@ export function MetaMaskCardWidget({
       {address ? (
         <div className="mb-2 flex items-center justify-end gap-1.5">
           <span className="text-muted-foreground text-xs tabular-nums">{addrDisplay}</span>
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={handleCopyAddress}
-            className="text-muted-foreground hover:bg-muted hover:text-foreground flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs transition-colors"
+            className="text-muted-foreground hover:bg-muted hover:text-foreground h-auto gap-1 rounded-md px-1.5 py-0.5 text-xs"
             aria-label={copied ? 'Copied!' : 'Copy wallet address'}
           >
             {copied ? (
@@ -62,7 +65,7 @@ export function MetaMaskCardWidget({
             ) : (
               <Copy className="h-3 w-3" />
             )}
-          </button>
+          </Button>
         </div>
       ) : null}
       <div className="aspect-343/215 relative w-full">

@@ -14,10 +14,12 @@ export interface ParsedCardTx {
   gasFeeSymbol?: string | null;
   gasFeeRaw?: string | null;
   spentRaw?: string | null;
+  creditedRaw?: string | null;
   status: CardTxStatus;
   parserVersion: number;
   rawHtml?: string | null;
   fundingSourceMasked?: string | null;
+  creditDestinationMasked?: string | null;
 }
 
 export interface CardSyncResult {

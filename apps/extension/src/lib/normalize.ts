@@ -17,6 +17,8 @@ export interface ScrapedCardTransaction {
   source?: string | null;
   spent?: string | null;
   gasFee?: string | null;
+  destination?: string | null;
+  credited?: string | null;
   funding?: {
     source?: string | null;
     spent?: string | null;
@@ -105,16 +107,16 @@ export function splitMoneyToken(raw: string | null | undefined): { numeric: stri
   const s = raw?.trim()?.replace(/^,/u, '');
   if (!s) return null;
 
-  const NUMBER_SPACE_CURRENCY = /^(-?\d+(?:\.\d+)?)\s+(.+)$/u;
+  const NUMBER_SPACE_CURRENCY = /^([+-]?\d+(?:\.\d+)?)\s+(.+)$/u;
 
   // 1. Try existing "NUMBER SPACE CURRENCY" format (e.g. "42.50 PLN")
   const m = NUMBER_SPACE_CURRENCY.exec(s);
-  if (m) return { numeric: m[1]!, currencyRaw: m[2]!.trim() };
+  if (m) return { numeric: m[1]!.replace(/^\+/u, ''), currencyRaw: m[2]!.trim() };
 
   // 2. Normalize comma-decimal and retry (e.g. "42,50 EUR" → "42.50 EUR")
   const normalized = normalizeDecimalComma(s);
   const m2 = NUMBER_SPACE_CURRENCY.exec(normalized);
-  if (m2) return { numeric: m2[1]!, currencyRaw: m2[2]!.trim() };
+  if (m2) return { numeric: m2[1]!.replace(/^\+/u, ''), currencyRaw: m2[2]!.trim() };
 
   // 3. Try symbol-prefix format (e.g. "€42.50", "$42.50", "€42,50", "€ 42.50", "-€42.50", "+€69.91")
   // Keep this char class in sync with the keys of SYMBOL_TO_ISO above.
@@ -180,36 +182,42 @@ export function scrapedToParsedCardTx(row: ScrapedCardTransaction): ParsedCardWi
   if (!occurredAt) return null;
 
   const fiat = splitMoneyToken(row.amount);
-  if (!fiat) return null;
+  const credited = splitMoneyToken(row.credited);
+  if (!fiat && !credited) return null;
 
-  const fiatCurrency = fiat.currencyRaw.slice(0, 8).toUpperCase();
+  const native = fiat ?? credited;
+  if (!native) return null;
+
+  const fiatCurrency = native.currencyRaw.slice(0, 8).toUpperCase();
 
   const spentRaw = row.funding?.spent ?? row.spent ?? null;
   let cryptoParsed = splitCryptoSpend(spentRaw);
+  const creditedParsed = splitCryptoSpend(row.credited);
   const gasFeeRaw = row.funding?.gasFee ?? row.gasFee ?? null;
   const gasFeeParsed = splitCryptoSpend(gasFeeRaw);
 
-  let cryptoAmount: string | null = cryptoParsed?.numeric ?? null;
+  let cryptoAmount: string | null = cryptoParsed?.numeric ?? creditedParsed?.numeric ?? null;
 
-  let cryptoSymbol: string | null = cryptoParsed?.symbol ?? null;
+  let cryptoSymbol: string | null = cryptoParsed?.symbol ?? creditedParsed?.symbol ?? null;
 
   /** Some entries only expose fiat spend */
   if (cryptoAmount === null) {
-    cryptoAmount = fiat.numeric;
+    cryptoAmount = native.numeric;
 
     cryptoSymbol = fiatCurrency;
   }
 
   const fundingMasked = row.funding?.source?.trim() ?? row.source?.trim() ?? null;
+  const creditDestinationMasked = row.destination?.trim() ?? null;
 
   return {
     externalId: ext.slice(0, 512),
     occurredAt,
     merchantName,
-    fiatAmount: fiat.numeric,
+    fiatAmount: native.numeric,
     fiatCurrency,
     merchantRaw:
-      `${row.cardPan ?? ''}|${row.type ?? ''}|${row.gasFee ?? row.funding?.gasFee ?? ''}|${spentRaw ?? ''}`
+      `${row.cardPan ?? ''}|${row.type ?? ''}|${row.gasFee ?? row.funding?.gasFee ?? ''}|${spentRaw ?? ''}|${row.credited ?? ''}`
         .replace(/\|\|+/gu, '|')
         .slice(0, 2048) || undefined,
     cryptoAmount,
@@ -219,7 +227,9 @@ export function scrapedToParsedCardTx(row: ScrapedCardTransaction): ParsedCardWi
     gasFeeSymbol: gasFeeParsed?.symbol ?? null,
     gasFeeRaw: gasFeeRaw ?? null,
     spentRaw: spentRaw ?? null,
+    creditedRaw: row.credited ?? null,
     fundingSourceMasked: fundingMasked ?? null,
+    creditDestinationMasked,
 
     status: normalizeStatus(row.status),
     parserVersion: CARD_PARSER_VERSION,

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Monitor, Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 const THEMES = [
@@ -41,15 +42,16 @@ export function ThemeSwitcher({
         const active = mounted && theme === value;
 
         return (
-          <button
+          <Button
             key={value}
             type="button"
+            variant="ghost"
             aria-label={label}
             aria-pressed={active}
             onClick={() => setTheme(value)}
             className={cn(
-              'flex items-center justify-center rounded-lg transition-all',
-              isSidebar ? 'h-9 w-9' : 'h-9 w-9 rounded-full',
+              'h-9 w-9 rounded-lg p-0 transition-all',
+              isSidebar ? 'rounded-lg' : 'rounded-full',
               isSidebar
                 ? 'text-sidebar-muted-foreground hover:text-sidebar-foreground'
                 : 'text-muted-foreground hover:text-foreground',
@@ -60,7 +62,7 @@ export function ThemeSwitcher({
             )}
           >
             <Icon className="h-4 w-4" />
-          </button>
+          </Button>
         );
       })}
     </div>

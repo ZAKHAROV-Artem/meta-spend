@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { format } from 'date-fns';
+import { endOfDay, format, startOfDay } from 'date-fns';
 import type { CardTxStatus, Transaction } from '@crypto-tracker/shared';
 import { useTransactions, useTransactionStats, type TransactionFilters } from '@/hooks/api/useTransactions';
 import { useCurrentUser } from '@/hooks/api/useUserPreferences';
@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -25,7 +26,16 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
-import { CalendarDays, ChevronLeft, ChevronRight, Search, SlidersHorizontal } from 'lucide-react';
+import {
+  CalendarDays,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Flag,
+  Search,
+  SlidersHorizontal,
+  X,
+} from 'lucide-react';
 import { TransactionCategoryBadge } from '@/components/transactions/TransactionCategoryBadge';
 import { TripCreateDialog } from '@/components/trips/TripCreateDialog';
 import { DateRangePicker, type AnalyticsRange } from '@/components/filters/DateRangePicker';
@@ -75,14 +85,16 @@ function groupByDay(items: Transaction[]) {
   }, {});
 }
 
-function dayFiatTotal(items: Transaction[]) {
+function dayFiatTotals(items: Transaction[]): Array<{ currency: string; total: number }> {
   const countable = items.filter((item) => item.status !== 'DECLINED');
-  const currency =
-    countable.find((item) => item.fiatCurrency)?.fiatCurrency ??
-    items.find((item) => item.fiatCurrency)?.fiatCurrency ??
-    'USD';
-  const total = countable.reduce((sum, item) => sum + Number(item.fiatAmount ?? 0), 0);
-  return formatCurrency(String(total), currency);
+  const totals = new Map<string, number>();
+  for (const item of countable) {
+    const currency = (item.fiatCurrency ?? 'USD').toUpperCase();
+    totals.set(currency, (totals.get(currency) ?? 0) + Number(item.fiatAmount ?? 0));
+  }
+  return Array.from(totals.entries())
+    .map(([currency, total]) => ({ currency, total }))
+    .sort((a, b) => b.total - a.total);
 }
 
 function CardListSkeleton() {
@@ -118,6 +130,8 @@ export function CardTransactionsList({ initialFilters }: { initialFilters?: Tran
   const [tripStart, setTripStart] = useState<Transaction | null>(null);
   const [tripDialogOpen, setTripDialogOpen] = useState(false);
   const [tripEndTx, setTripEndTx] = useState<Transaction | null>(null);
+  const [tripIncludeIds, setTripIncludeIds] = useState<string[]>([]);
+  const [tripExcludeIds, setTripExcludeIds] = useState<string[]>([]);
   const { data: categories = [] } = useCategories();
   const { data: currentUser } = useCurrentUser();
   const { data, isPending, isFetching, isPlaceholderData } = useTransactions(filters, page, PAGE_SIZE);
@@ -172,9 +186,21 @@ export function CardTransactionsList({ initialFilters }: { initialFilters?: Tran
     };
   }, [stats?.exchangeRateTrend]);
   const averageTransactionAmount = useMemo(() => {
-    if (!stats?.displayCurrency || stats.txCount <= 0) return null;
-    return formatCurrency(String(stats.totalSpent / stats.txCount), stats.displayCurrency);
-  }, [stats?.displayCurrency, stats?.totalSpent, stats?.txCount]);
+    const points = stats?.avgTransactionAmountTrend ?? [];
+    if (points.length === 0) return null;
+    const preferredCurrency =
+      stats?.displayCurrency ??
+      [...points.reduce((map, point) => {
+        map.set(point.currency, (map.get(point.currency) ?? 0) + point.txCount);
+        return map;
+      }, new Map<string, number>()).entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+    if (!preferredCurrency) return null;
+    const currencyPoints = points.filter((point) => point.currency === preferredCurrency);
+    const total = currencyPoints.reduce((sum, point) => sum + point.fiatTotal, 0);
+    const count = currencyPoints.reduce((sum, point) => sum + point.txCount, 0);
+    if (count <= 0) return null;
+    return formatCurrency(String(total / count), preferredCurrency);
+  }, [stats?.avgTransactionAmountTrend, stats?.displayCurrency]);
 
   const setFilter = <K extends keyof TransactionFilters>(key: K, value: TransactionFilters[K]) => {
     setPage(1);
@@ -189,12 +215,44 @@ export function CardTransactionsList({ initialFilters }: { initialFilters?: Tran
     setFilters({});
   };
 
+  const resetTripSelection = () => {
+    setTripStart(null);
+    setTripEndTx(null);
+    setTripDialogOpen(false);
+    setTripIncludeIds([]);
+    setTripExcludeIds([]);
+  };
+
+  const setTripRangeEnd = (item: Transaction) => {
+    if (!tripStart || item.id === tripStart.id) return;
+    setTripEndTx(item);
+    setTripDialogOpen(true);
+  };
+
+  const addTripExtra = (id: string) => {
+    setTripIncludeIds((current) => [...new Set([...current, id])]);
+    setTripExcludeIds((current) => current.filter((item) => item !== id));
+  };
+
+  const removeTripExtra = (id: string) => {
+    setTripIncludeIds((current) => current.filter((item) => item !== id));
+  };
+
+  const excludeTripTransaction = (id: string) => {
+    if (id === tripStart?.id || id === tripEndTx?.id) return;
+    setTripExcludeIds((current) => [...new Set([...current, id])]);
+  };
+
+  const restoreTripTransaction = (id: string) => {
+    setTripExcludeIds((current) => current.filter((item) => item !== id));
+  };
+
   const setDateRangeFilters = (range: AnalyticsRange) => {
     setPage(1);
     setFilters((current) => ({
       ...current,
-      from: range.from ? format(range.from, 'yyyy-MM-dd') : undefined,
-      to: range.to ? format(range.to, 'yyyy-MM-dd') : undefined,
+      from: range.from ? startOfDay(range.from).toISOString() : undefined,
+      to: range.to ? endOfDay(range.to).toISOString() : undefined,
     }));
   };
 
@@ -208,41 +266,71 @@ export function CardTransactionsList({ initialFilters }: { initialFilters?: Tran
   return (
     <div className="relative min-w-0 space-y-4">
       {tripStart ? (
-        <div className="flex items-center justify-between rounded-lg border border-primary/30 bg-primary/5 px-4 py-2.5 text-sm">
-          <span>
-            Trip started from <strong>{tripStart.title}</strong> — right-click another transaction to end the trip.
-          </span>
-          <Button variant="ghost" size="sm" onClick={() => setTripStart(null)}>
-            Cancel
-          </Button>
+        <div className="sticky top-3 z-20 rounded-lg border border-primary/30 bg-background/95 px-4 py-3 text-sm shadow-lg backdrop-blur motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-2 motion-safe:duration-200">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="font-semibold text-foreground">
+                Trip selection mode
+              </p>
+              <p className="mt-1 truncate text-xs text-muted-foreground">
+                Start: <strong>{tripStart.title}</strong>
+                {tripEndTx ? (
+                  <>
+                    {' '}· End: <strong>{tripEndTx.title}</strong>
+                  </>
+                ) : (
+                  ' · click another transaction to set the range end'
+                )}
+              </p>
+            </div>
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
+              {tripIncludeIds.length > 0 ? (
+                <Badge variant="secondary">{tripIncludeIds.length} extra</Badge>
+              ) : null}
+              {tripExcludeIds.length > 0 ? (
+                <Badge variant="outline">{tripExcludeIds.length} excluded</Badge>
+              ) : null}
+              <Button variant="outline" size="sm" disabled={!tripEndTx} onClick={() => setTripDialogOpen(true)}>
+                Review
+              </Button>
+              <Button variant="ghost" size="sm" onClick={resetTripSelection}>
+                <X className="h-4 w-4" />
+                Cancel
+              </Button>
+            </div>
+          </div>
         </div>
       ) : null}
       {tripStart && tripEndTx ? (
         <TripCreateDialog
           open={tripDialogOpen}
-          onOpenChange={(open) => {
-            setTripDialogOpen(open);
-            if (!open) {
-              setTripStart(null);
-              setTripEndTx(null);
-            }
-          }}
+          onOpenChange={setTripDialogOpen}
           startTx={tripStart}
           endTx={tripEndTx}
-          allItems={items}
+          includeTransactionIds={tripIncludeIds}
+          excludeTransactionIds={tripExcludeIds}
+          onSelectionChange={(next) => {
+            setTripIncludeIds(next.includeTransactionIds);
+            setTripExcludeIds(next.excludeTransactionIds);
+          }}
+          onCreated={resetTripSelection}
         />
       ) : null}
-      <div className="min-w-0 space-y-2">
-        <div className="grid min-w-0 gap-3 rounded-lg border border-border/70 bg-card/72 p-4 sm:p-5 xl:grid-cols-12 xl:gap-4">
-          <label className="relative min-w-0 xl:col-span-5">
+      <div className="min-w-0 space-y-2 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-1 motion-safe:duration-200">
+        <div className="grid min-w-0 gap-3 rounded-lg border border-border/70 bg-card/72 p-4 motion-safe:transition-colors sm:p-5 xl:grid-cols-12 xl:gap-4">
+          <div className="relative min-w-0 xl:col-span-5">
+            <Label htmlFor="card-transactions-search" className="sr-only">
+              Search merchant or notes
+            </Label>
             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
+              id="card-transactions-search"
               className="pl-10"
               placeholder="Search merchant or notes..."
               value={filters.search ?? ''}
               onChange={(event) => setFilter('search', event.target.value)}
             />
-          </label>
+          </div>
           <div className="min-w-0 xl:col-span-2">
             <Select
               value={filters.status ?? '__all__'}
@@ -339,16 +427,17 @@ export function CardTransactionsList({ initialFilters }: { initialFilters?: Tran
                 {selectedCategoryIds.length + selectedSubcategoryIds.length > 0 ? (
                   <>
                     <DropdownMenuSeparator />
-                    <button
+                    <Button
                       type="button"
-                      className="w-full rounded-sm px-3 py-2 text-left text-sm text-muted-foreground hover:bg-accent"
+                      variant="ghost"
+                      className="h-auto w-full justify-start rounded-sm px-3 py-2 text-left text-sm font-normal text-muted-foreground"
                       onClick={() => {
                         setPage(1);
                         setFilters((current) => ({ ...current, categoryId: undefined, subcategoryId: undefined }));
                       }}
                     >
                       Clear category filter
-                    </button>
+                    </Button>
                   </>
                 ) : null}
               </DropdownMenuContent>
@@ -372,41 +461,25 @@ export function CardTransactionsList({ initialFilters }: { initialFilters?: Tran
         ) : null}
       </div>
 
-      {stats?.byCurrency && (stats.byCurrency.length > 1 || (stats.byCurrency.length === 1 && stats.displayCurrency && stats.displayCurrency !== stats.byCurrency[0]?.currency)) ? (
-        <div className="flex flex-wrap gap-2">
-          {stats.byCurrency.map((slice) => (
-            <span
-              key={slice.currency}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-muted/50 px-3 py-1 text-xs"
-            >
-              <span className="font-semibold">{slice.currency}</span>
-              <span className="tabular-nums text-muted-foreground">
-                {formatMoney(-slice.totalSpent, slice.currency)}
-              </span>
-              <span className="text-muted-foreground/70">{slice.txCount} txs</span>
-            </span>
-          ))}
+      <div className="grid gap-2 sm:grid-cols-3">
+        <div className="rounded-lg border border-border/70 bg-card/72 px-3 py-2">
+          <p className="text-[11px] font-medium uppercase tracking-normal text-muted-foreground">Total transactions</p>
+          <p className="mt-1 text-sm font-semibold tabular-nums">{total}</p>
         </div>
-      ) : null}
-
-      <div className="flex flex-wrap gap-2">
-        <Badge variant="outline" className="h-auto px-3 py-1.5 text-xs font-medium">
-          Total transactions: <span className="ml-1 tabular-nums">{total}</span>
-        </Badge>
-        <Badge variant="outline" className="h-auto px-3 py-1.5 text-xs font-medium">
-          Average exchange rate:{' '}
-          <span className="ml-1 tabular-nums">
+        <div className="rounded-lg border border-border/70 bg-card/72 px-3 py-2">
+          <p className="text-[11px] font-medium uppercase tracking-normal text-muted-foreground">Average exchange rate</p>
+          <p className="mt-1 text-sm font-semibold tabular-nums">
             {statsFetching
               ? '…'
               : averageExchangeRate
                 ? `${averageExchangeRate.value.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${averageExchangeRate.pairLabel}`
                 : '—'}
-          </span>
-        </Badge>
-        <Badge variant="outline" className="h-auto px-3 py-1.5 text-xs font-medium">
-          Average transaction amount:{' '}
-          <span className="ml-1 tabular-nums">{statsFetching ? '…' : averageTransactionAmount ?? '—'}</span>
-        </Badge>
+          </p>
+        </div>
+        <div className="rounded-lg border border-border/70 bg-card/72 px-3 py-2">
+          <p className="text-[11px] font-medium uppercase tracking-normal text-muted-foreground">Average transaction amount</p>
+          <p className="mt-1 text-sm font-semibold tabular-nums">{statsFetching ? '…' : averageTransactionAmount ?? '—'}</p>
+        </div>
       </div>
 
       {items.length === 0 && settlingEmpty ? (
@@ -454,18 +527,78 @@ export function CardTransactionsList({ initialFilters }: { initialFilters?: Tran
                       <CalendarDays className="h-4 w-4 text-primary" />
                       <p className="text-sm font-semibold text-foreground">{format(new Date(day), 'EEEE, MMM d')}</p>
                     </div>
-                    <p className="text-sm font-semibold tabular-nums text-foreground">{dayFiatTotal(dayItems)}</p>
+                    <div className="flex flex-wrap items-center justify-end gap-1.5">
+                      {dayFiatTotals(dayItems).map(({ currency, total }) => (
+                        <Badge key={currency} variant="outline" className="font-mono">
+                          {formatMoney(total, currency)}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
 
-                  {dayItems.map((item) => (
+                  {dayItems.map((item) => {
+                    const isTripStart = tripStart?.id === item.id;
+                    const isTripEnd = tripEndTx?.id === item.id;
+                    const hasRange = Boolean(tripStart && tripEndTx);
+                    const inTripRange =
+                      hasRange &&
+                      new Date(item.occurredAt).getTime() >=
+                        Math.min(new Date(tripStart!.occurredAt).getTime(), new Date(tripEndTx!.occurredAt).getTime()) &&
+                      new Date(item.occurredAt).getTime() <=
+                        Math.max(new Date(tripStart!.occurredAt).getTime(), new Date(tripEndTx!.occurredAt).getTime());
+                    const isExtra = tripIncludeIds.includes(item.id);
+                    const isExcluded = tripExcludeIds.includes(item.id) && !isTripStart && !isTripEnd;
+                    const isIncluded = (isTripStart || isTripEnd || inTripRange || isExtra) && !isExcluded;
+
+                    return (
                     <ContextMenu key={item.id}>
                       <ContextMenuTrigger asChild>
                     <div
-                      className="flex flex-col gap-4 border-b border-border/60 px-4 py-5 last:border-b-0 lg:flex-row lg:items-center lg:justify-between"
+                      role={tripStart ? 'button' : undefined}
+                      tabIndex={tripStart ? 0 : undefined}
+                      onClick={() => {
+                        if (tripStart && item.id !== tripStart.id) setTripRangeEnd(item);
+                      }}
+                      onKeyDown={(event) => {
+                        if (!tripStart || item.id === tripStart.id) return;
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          setTripRangeEnd(item);
+                        }
+                      }}
+                      className={cn(
+                        'flex flex-col gap-4 border-b border-border/60 px-4 py-5 motion-safe:transition-all motion-safe:duration-150 last:border-b-0 lg:flex-row lg:items-center lg:justify-between',
+                        tripStart && 'cursor-pointer hover:bg-primary/5',
+                        isIncluded && 'bg-primary/5',
+                        isTripStart && 'border-l-4 border-l-primary',
+                        isTripEnd && 'border-l-4 border-l-emerald-500',
+                        isExcluded && 'bg-muted/35 opacity-60',
+                      )}
                     >
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <p className="truncate text-sm font-semibold text-foreground">{item.title}</p>
+                          {isTripStart ? (
+                            <Badge variant="secondary" className="gap-1">
+                              <Flag className="h-3 w-3" />
+                              Start
+                            </Badge>
+                          ) : null}
+                          {isTripEnd ? (
+                            <Badge variant="success" className="gap-1">
+                              <CheckCircle2 className="h-3 w-3" />
+                              End
+                            </Badge>
+                          ) : null}
+                          {!isTripStart && !isTripEnd && isExcluded ? (
+                            <Badge variant="outline">Excluded</Badge>
+                          ) : null}
+                          {!isTripStart && !isTripEnd && isExtra && !isExcluded ? (
+                            <Badge variant="info">Extra</Badge>
+                          ) : null}
+                          {!isTripStart && !isTripEnd && inTripRange && !isExcluded ? (
+                            <Badge variant="secondary">Included</Badge>
+                          ) : null}
                           <TransactionCategoryBadge transaction={item} />
                           <Badge variant={statusVariant(item.status)}>{item.status ?? 'UNKNOWN'}</Badge>
                         </div>
@@ -498,25 +631,56 @@ export function CardTransactionsList({ initialFilters }: { initialFilters?: Tran
                         {tripStart ? (
                           <ContextMenuItem
                             onSelect={() => {
-                              setTripEndTx(item);
-                              setTripDialogOpen(true);
+                              setTripRangeEnd(item);
                             }}
                           >
-                            End trip here
+                            Set range end here
                           </ContextMenuItem>
                         ) : (
-                          <ContextMenuItem onSelect={() => setTripStart(item)}>
+                          <ContextMenuItem
+                            onSelect={() => {
+                              setTripStart(item);
+                              setTripEndTx(null);
+                              setTripIncludeIds([]);
+                              setTripExcludeIds([]);
+                            }}
+                          >
                             Start trip from here
                           </ContextMenuItem>
                         )}
+                        {tripStart && tripEndTx && !isTripStart && !isTripEnd && (
+                          <>
+                            {isExtra ? (
+                              <ContextMenuItem onSelect={() => removeTripExtra(item.id)}>
+                                Remove extra transaction
+                              </ContextMenuItem>
+                            ) : !inTripRange ? (
+                              <ContextMenuItem onSelect={() => addTripExtra(item.id)}>
+                                Add as extra transaction
+                              </ContextMenuItem>
+                            ) : isExcluded ? (
+                              <ContextMenuItem onSelect={() => restoreTripTransaction(item.id)}>
+                                Include transaction
+                              </ContextMenuItem>
+                            ) : (
+                              <ContextMenuItem onSelect={() => excludeTripTransaction(item.id)}>
+                                Exclude from trip
+                              </ContextMenuItem>
+                            )}
+                            <ContextMenuItem onSelect={() => setTripDialogOpen(true)}>
+                              Review trip
+                            </ContextMenuItem>
+                          </>
+                        )}
                         {tripStart && (
-                          <ContextMenuItem onSelect={() => setTripStart(null)}>
-                            Cancel trip
+                          <ContextMenuItem onSelect={resetTripSelection}>
+                            Cancel selection
                           </ContextMenuItem>
                         )}
                       </ContextMenuContent>
                     </ContextMenu>
-                  ))}
+                    );
+                  })}
                 </CardContent>
               </Card>
             ))}

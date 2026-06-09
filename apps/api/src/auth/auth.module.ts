@@ -8,6 +8,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { NonceStore } from './siwe/nonce.store';
 import { ExtensionPairCodeStore } from './extension-pair-code.store';
 import { ExtensionTokenService } from './extension-token.service';
+import { ExtensionStatusEvents } from './extension-status-events';
 import { UsersModule } from '../users/users.module';
 import { PortfolioModule } from '../portfolio/portfolio.module';
 import { JwtOrExtensionAuthGuard } from '../common/guards/jwt-or-extension-auth.guard';
@@ -22,6 +23,7 @@ import { JwtOrExtensionAuthGuard } from '../common/guards/jwt-or-extension-auth.
     NonceStore,
     ExtensionPairCodeStore,
     ExtensionTokenService,
+    ExtensionStatusEvents,
     JwtOrExtensionAuthGuard,
   ],
   exports: [JwtModule, AuthService, ExtensionPairCodeStore, ExtensionTokenService],

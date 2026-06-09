@@ -159,6 +159,45 @@ describe('CardTransactionsService', () => {
     assert.equal(saved.merchantName, 'Updated merchant');
     assert.equal(saved.status, CardTxStatus.SETTLED);
   });
+
+  it('syncs MetaMask credited rows as positive native inflows with credit metadata', async () => {
+    const parsed = {
+      externalId: 'cee6337e-924a-4f1a-94fc-b4d95660d6ea',
+      occurredAt: '2026-06-04T19:30:00.000Z',
+      merchantName: 'CENTAURO RHODES',
+      fiatAmount: '81.165453',
+      fiatCurrency: 'USDC',
+      cryptoAmount: '81.165453',
+      cryptoSymbol: 'USDC',
+      status: 'SETTLED',
+      parserVersion: 2,
+      creditedRaw: '+81.165453 USDC',
+      creditDestinationMasked: 'Credit Wallet',
+    };
+
+    const prisma = makeTransactionStore();
+    const service = new CardTransactionsService(prisma as never, {
+      scheduleAfterSync: async () => {},
+    } as never);
+
+    assert.deepEqual(
+      await service.sync('user_1', {
+        parserVersion: 2,
+        items: [parsed],
+      }),
+      { inserted: 1, updated: 0, skipped: 0 },
+    );
+
+    const saved = [...prisma.rows.values()][0]!;
+    assert.equal(String(saved.fiatAmount), '81.165453');
+    assert.equal(saved.fiatCurrency, 'USDC');
+    assert.deepEqual(saved.rawData, {
+      cardScrape: {
+        creditedRaw: '+81.165453 USDC',
+        creditDestinationMasked: 'Credit Wallet',
+      },
+    });
+  });
 });
 
 describe('CategoriesService', () => {
@@ -311,7 +350,7 @@ describe('TransactionsService (card)', () => {
         upsert: async () => {},
         deleteMany: async () => ({ count: 0 }),
       },
-    } as never);
+    } as never, { getRates: async () => ({ PLN: 1 }) } as never);
 
     const stats = await service.stats('user_1', { year: 2026 });
 
@@ -335,7 +374,7 @@ describe('TransactionsService (card)', () => {
       },
       category: { findMany: async () => [] },
     };
-    const service = new TransactionsService(prisma as never);
+    const service = new TransactionsService(prisma as never, { getRates: async () => ({}) } as never);
 
     await service.list('user_1', {
       categoryId: 'cat_transport,cat_travel',
@@ -443,7 +482,7 @@ describe('TransactionsService (card)', () => {
       },
     };
 
-    const service = new TransactionsService(prisma as never);
+    const service = new TransactionsService(prisma as never, { getRates: async () => ({}) } as never);
 
     const merchants = await service.cardMerchants('user_1');
     assert.equal(merchants.length, 1);

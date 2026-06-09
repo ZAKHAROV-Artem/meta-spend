@@ -35,10 +35,11 @@ export function Sidebar() {
 
         {mobileNavOpen && (
           <div className="fixed inset-0 z-50 md:hidden">
-            <button
+            <Button
               type="button"
+              variant="ghost"
               aria-label="Close navigation"
-              className="absolute inset-0 bg-background/45"
+              className="absolute inset-0 h-full w-full rounded-none bg-background/45 hover:bg-background/45"
               onClick={closeMobileNav}
             />
             <aside className="absolute inset-y-4 left-4 flex w-[18rem] flex-col rounded-2xl border border-sidebar-border bg-sidebar-background p-4 text-sidebar-foreground">

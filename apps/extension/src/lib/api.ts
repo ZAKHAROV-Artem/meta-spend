@@ -13,10 +13,12 @@ export interface ParsedCardWire {
   gasFeeSymbol?: string | null;
   gasFeeRaw?: string | null;
   spentRaw?: string | null;
+  creditedRaw?: string | null;
   status: CardTxWire;
   parserVersion: number;
   rawHtml?: string | null;
   fundingSourceMasked?: string | null;
+  creditDestinationMasked?: string | null;
 }
 
 export type CardTxWire = 'PENDING' | 'SETTLED' | 'DECLINED' | 'REFUNDED';

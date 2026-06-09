@@ -5,15 +5,20 @@
 export function formatMoney(amount: number, currency: string | null | undefined): string {
   if (currency && currency !== '—') {
     try {
-      return new Intl.NumberFormat(undefined, {
-        style: 'currency',
-        currency,
-        currencyDisplay: 'narrowSymbol',
-        maximumFractionDigits: 2,
-      }).format(amount);
+      if (/^[A-Z]{3}$/i.test(currency)) {
+        return new Intl.NumberFormat(undefined, {
+          style: 'currency',
+          currency,
+          currencyDisplay: 'narrowSymbol',
+          maximumFractionDigits: 2,
+        }).format(amount);
+      }
     } catch {
       /* fallback */
     }
+    return `${new Intl.NumberFormat(undefined, {
+      maximumFractionDigits: Math.abs(amount) < 1 ? 8 : 6,
+    }).format(amount)} ${currency.toUpperCase()}`;
   }
   return new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(amount);
 }

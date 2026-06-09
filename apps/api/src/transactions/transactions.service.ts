@@ -62,6 +62,22 @@ type CardRow = Prisma.TransactionGetPayload<{
   };
 }>;
 
+function transactionDirection(row: { status?: CardTxStatus | null; fiatAmount?: Prisma.Decimal | string | number | null }): 'INFLOW' | 'OUTFLOW' | 'NEUTRAL' {
+  const status = row.status ?? CardTxStatus.SETTLED;
+  if (status === CardTxStatus.DECLINED) return 'NEUTRAL';
+  if (status === CardTxStatus.REFUNDED || Number(row.fiatAmount ?? 0) > 0) return 'INFLOW';
+  return 'OUTFLOW';
+}
+
+function isCardSpend(row: { status?: CardTxStatus | null; fiatAmount?: Prisma.Decimal | string | number | null }): boolean {
+  const status = row.status ?? CardTxStatus.SETTLED;
+  return SPENDING_STATUSES.includes(status) && transactionDirection(row) === 'OUTFLOW';
+}
+
+function isCardReceived(row: { status?: CardTxStatus | null; fiatAmount?: Prisma.Decimal | string | number | null }): boolean {
+  return transactionDirection(row) === 'INFLOW';
+}
+
 @Injectable()
 export class TransactionsService {
   constructor(
@@ -419,7 +435,7 @@ export class TransactionsService {
       return rate ? amount / rate : amount;
     };
 
-    const spendingRows = rows.filter((r) => SPENDING_STATUSES.includes(r.status as CardTxStatus));
+    const spendingRows = rows.filter(isCardSpend);
     const fiatAmongSpend = spendingRows.map((r) => (r.fiatCurrency ?? '').toUpperCase()).filter(Boolean);
     const uniqueFiat = [...new Set(fiatAmongSpend)];
     const displayCurrency = defaultCurrency ?? (uniqueFiat.length === 1 ? uniqueFiat[0]! : null);
@@ -443,9 +459,9 @@ export class TransactionsService {
 
     for (const row of primaryRows) {
       const amount = convert(Math.abs(Number(row.fiatAmount ?? 0)), row.fiatCurrency ?? '');
-      if (row.status === CardTxStatus.REFUNDED) {
+      if (isCardReceived(row)) {
         totalReceived += amount;
-      } else if (row.status && SPENDING_STATUSES.includes(row.status as CardTxStatus)) {
+      } else if (isCardSpend(row)) {
         totalSpent += amount;
         const bucket = catMap.get(row.categoryId) ?? {
           categoryId: row.categoryId,
@@ -464,9 +480,9 @@ export class TransactionsService {
       if (txYear !== year) continue;
       const monthIndex = row.timestamp.getUTCMonth();
       const amount = convert(Math.abs(Number(row.fiatAmount ?? 0)), row.fiatCurrency ?? '');
-      if (row.status === CardTxStatus.REFUNDED) {
+      if (isCardReceived(row)) {
         monthly[monthIndex]!.received += amount;
-      } else if (row.status && SPENDING_STATUSES.includes(row.status as CardTxStatus)) {
+      } else if (isCardSpend(row)) {
         monthly[monthIndex]!.spent += amount;
       }
     }
@@ -505,7 +521,7 @@ export class TransactionsService {
       { displayName: string; total: number; count: number; currency: string | null }
     >();
     for (const row of primaryRows) {
-      if (!(row.status && SPENDING_STATUSES.includes(row.status as CardTxStatus))) continue;
+      if (!isCardSpend(row)) continue;
       const key = normalizeMerchantKey(row.merchantName);
       if (!key) continue;
       const name = row.merchantName ?? 'Card transaction';
@@ -566,8 +582,8 @@ export class TransactionsService {
 
     for (const row of slice) {
       const amount = Math.abs(Number(row.fiatAmount ?? 0));
-      if (row.status === CardTxStatus.REFUNDED) totalReceived += amount;
-      else if (row.status && SPENDING_STATUSES.includes(row.status as CardTxStatus)) {
+      if (isCardReceived(row)) totalReceived += amount;
+      else if (isCardSpend(row)) {
         totalSpent += amount;
         const b = catMap.get(row.categoryId) ?? { categoryId: row.categoryId, total: 0, count: 0 };
         b.total += amount;
@@ -580,8 +596,8 @@ export class TransactionsService {
       if (row.timestamp.getUTCFullYear() !== year) continue;
       const mi = row.timestamp.getUTCMonth();
       const amount = Math.abs(Number(row.fiatAmount ?? 0));
-      if (row.status === CardTxStatus.REFUNDED) monthly[mi]!.received += amount;
-      else if (row.status && SPENDING_STATUSES.includes(row.status as CardTxStatus))
+      if (isCardReceived(row)) monthly[mi]!.received += amount;
+      else if (isCardSpend(row))
         monthly[mi]!.spent += amount;
     }
 
@@ -624,7 +640,7 @@ export class TransactionsService {
       amountPrimary: fiatAmount,
       currency: fiatCurrency?.toUpperCase() ?? null,
       direction:
-        status === CardTxStatus.REFUNDED ? 'INFLOW' : status === CardTxStatus.DECLINED ? 'NEUTRAL' : 'OUTFLOW',
+        transactionDirection(transaction),
       categoryId: transaction.categoryId,
       categoryName: transaction.category?.name ?? null,
       categoryColor: transaction.category?.color ?? null,

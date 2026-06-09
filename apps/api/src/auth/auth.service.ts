@@ -16,6 +16,7 @@ import { RegisterDto } from './dto/register.dto';
 import { NonceStore } from './siwe/nonce.store';
 import { ExtensionPairCodeStore } from './extension-pair-code.store';
 import { ExtensionTokenService } from './extension-token.service';
+import { ExtensionStatusEvents } from './extension-status-events';
 import { AuthUser, AuthTokens, TokenPayload } from '@crypto-tracker/shared';
 import { PortfolioService } from '../portfolio/portfolio.service';
 
@@ -37,6 +38,7 @@ export class AuthService {
     private readonly nonceStore: NonceStore,
     private readonly extensionPairCodeStore: ExtensionPairCodeStore,
     private readonly extensionTokenService: ExtensionTokenService,
+    private readonly extensionStatusEvents: ExtensionStatusEvents,
     private readonly portfolioService: PortfolioService,
   ) {}
 
@@ -112,12 +114,14 @@ export class AuthService {
 
   async disconnectExtension(userId: string): Promise<{ revoked: number }> {
     const revoked = await this.extensionTokenService.revokeAllForUser(userId);
+    if (revoked > 0) this.extensionStatusEvents.notify(userId);
     return { revoked };
   }
 
   async disconnectCurrentExtension(rawToken: string): Promise<{ revoked: number }> {
-    const revoked = await this.extensionTokenService.revokeByRawToken(rawToken);
-    return { revoked: revoked ? 1 : 0 };
+    const result = await this.extensionTokenService.revokeByRawToken(rawToken);
+    if (result) this.extensionStatusEvents.notify(result.userId);
+    return { revoked: result ? 1 : 0 };
   }
 
   async pairExtension(code: string): Promise<{ token: string }> {
@@ -134,6 +138,7 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
     const token = await this.extensionTokenService.issueToken(user.id);
+    this.extensionStatusEvents.notify(user.id);
     return { token };
   }
 

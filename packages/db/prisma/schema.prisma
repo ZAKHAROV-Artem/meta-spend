@@ -72,7 +72,7 @@ model Transaction {
   timestamp     DateTime
   merchantName  String?
   merchantRaw   String?
-  fiatAmount    Decimal?           @db.Decimal(18, 2)
+  fiatAmount    Decimal?           @db.Decimal(24, 8)
   fiatCurrency  String?
   cryptoAmount  Decimal?           @db.Decimal(36, 18)
   cryptoSymbol  String?
@@ -204,6 +204,7 @@ model Trip {
   id        String   @id @default(cuid())
   userId    String
   name      String
+  currency  String   @default("EUR")
   startAt   DateTime
   endAt     DateTime
   createdAt DateTime @default(now())

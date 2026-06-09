@@ -1,0 +1,3 @@
+ALTER TABLE "trips" ADD COLUMN "currency" TEXT NOT NULL DEFAULT 'EUR';
+
+ALTER TABLE "transactions" ALTER COLUMN "fiatAmount" TYPE DECIMAL(24, 8);

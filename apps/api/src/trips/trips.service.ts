@@ -1,36 +1,71 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { CardTxStatus, Prisma } from '@crypto-tracker/db';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { CardTxStatus, Prisma, TransactionSource } from '@crypto-tracker/db';
 import type {
   CategoryBreakdown,
   Transaction as TransactionResponse,
   TripDetail,
+  TripPreview,
   TripSummary,
 } from '@crypto-tracker/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { ExchangeRateService } from '../common/exchange-rate/exchange-rate.service';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { UpdateTripDto } from './dto/update-trip.dto';
+import { TripSelectionDto } from './dto/trip-selection.dto';
 
-type RawTx = Prisma.TransactionGetPayload<object>;
+const txHydrate = {
+  category: { select: { name: true, color: true } },
+  subcategory: { select: { name: true, color: true } },
+} satisfies Prisma.TransactionInclude;
+
+const tripInclude = {
+  transactions: { include: { transaction: { include: txHydrate } } },
+} satisfies Prisma.TripInclude;
+
+type RawTx = Prisma.TransactionGetPayload<{ include: typeof txHydrate }>;
 
 type TripWithIncludes = Prisma.TripGetPayload<{
-  include: {
-    transactions: { include: { transaction: true } };
-  };
+  include: typeof tripInclude;
 }>;
 
+type SelectionResolution = {
+  transactions: RawTx[];
+  startTransaction: RawTx;
+  endTransaction: RawTx;
+  startAt: Date;
+  endAt: Date;
+  automaticTransactionIds: string[];
+  extraTransactionIds: string[];
+  excludedTransactionIds: string[];
+  currency: string;
+};
+
 const SPENDING_STATUSES: CardTxStatus[] = [CardTxStatus.SETTLED, CardTxStatus.PENDING];
+
+function normalizeCurrency(value: string | null | undefined): string {
+  return (value ?? '').trim().toUpperCase().slice(0, 8);
+}
+
+function transactionDirection(tx: Pick<RawTx, 'status' | 'fiatAmount'>): 'INFLOW' | 'OUTFLOW' | 'NEUTRAL' {
+  const status = tx.status ?? CardTxStatus.SETTLED;
+  if (status === CardTxStatus.DECLINED) return 'NEUTRAL';
+  if (status === CardTxStatus.REFUNDED || Number(tx.fiatAmount ?? 0) > 0) return 'INFLOW';
+  return 'OUTFLOW';
+}
+
+function isSpendTx(tx: RawTx): boolean {
+  const status = tx.status ?? CardTxStatus.SETTLED;
+  return SPENDING_STATUSES.includes(status) && transactionDirection(tx) === 'OUTFLOW';
+}
+
+function isReceivedTx(tx: RawTx): boolean {
+  return transactionDirection(tx) === 'INFLOW';
+}
 
 function toTransactionDto(tx: RawTx): TransactionResponse {
   const status = tx.status ?? CardTxStatus.SETTLED;
   const fiatAmount = tx.fiatAmount?.toString() ?? null;
   const fiatCurrency = tx.fiatCurrency ?? null;
-  const direction =
-    status === CardTxStatus.REFUNDED
-      ? 'INFLOW'
-      : status === CardTxStatus.DECLINED
-        ? 'NEUTRAL'
-        : 'OUTFLOW';
 
   return {
     id: tx.id,
@@ -40,13 +75,13 @@ function toTransactionDto(tx: RawTx): TransactionResponse {
     subtitle: null,
     amountPrimary: fiatAmount,
     currency: fiatCurrency?.toUpperCase() ?? null,
-    direction,
+    direction: transactionDirection(tx),
     categoryId: tx.categoryId,
-    categoryName: null,
-    categoryColor: null,
+    categoryName: tx.category?.name ?? null,
+    categoryColor: tx.category?.color ?? null,
     subcategoryId: tx.subcategoryId,
-    subcategoryName: null,
-    subcategoryColor: null,
+    subcategoryName: tx.subcategory?.name ?? null,
+    subcategoryColor: tx.subcategory?.color ?? null,
     notes: tx.notes,
     externalId: tx.externalId ?? null,
     merchantName: tx.merchantName ?? null,
@@ -70,13 +105,13 @@ function computeTotalsByCurrency(
   const map = new Map<string, { totalSpent: number; totalReceived: number }>();
 
   for (const tx of txs) {
-    const currency = (tx.fiatCurrency ?? '').toUpperCase();
+    const currency = normalizeCurrency(tx.fiatCurrency);
     if (!currency) continue;
     const bucket = map.get(currency) ?? { totalSpent: 0, totalReceived: 0 };
     const amount = Math.abs(Number(tx.fiatAmount ?? 0));
-    if (tx.status === CardTxStatus.REFUNDED) {
+    if (isReceivedTx(tx)) {
       bucket.totalReceived += amount;
-    } else if (tx.status && SPENDING_STATUSES.includes(tx.status as CardTxStatus)) {
+    } else if (isSpendTx(tx)) {
       bucket.totalSpent += amount;
     }
     map.set(currency, bucket);
@@ -89,12 +124,48 @@ function computeTotalsByCurrency(
   }));
 }
 
-function computeCategoryBreakdown(txs: RawTx[]): CategoryBreakdown[] {
+async function convertedTotals(
+  txs: RawTx[],
+  targetCurrency: string,
+  fxService: ExchangeRateService,
+): Promise<{ currency: string; totalSpent: number; totalReceived: number }> {
+  const currency = normalizeCurrency(targetCurrency);
+  const rates = currency ? await fxService.getRates(currency) : {};
+  let totalSpent = 0;
+  let totalReceived = 0;
+
+  for (const tx of txs) {
+    const nativeCurrency = normalizeCurrency(tx.fiatCurrency);
+    if (!nativeCurrency) continue;
+    const rate = rates[nativeCurrency] ?? 1;
+    const converted = Math.abs(Number(tx.fiatAmount ?? 0)) / rate;
+    if (isReceivedTx(tx)) {
+      totalReceived += converted;
+    } else if (isSpendTx(tx)) {
+      totalSpent += converted;
+    }
+  }
+
+  return {
+    currency,
+    totalSpent: Number(totalSpent.toFixed(2)),
+    totalReceived: Number(totalReceived.toFixed(2)),
+  };
+}
+
+async function computeCategoryBreakdown(
+  txs: RawTx[],
+  targetCurrency: string,
+  fxService: ExchangeRateService,
+): Promise<CategoryBreakdown[]> {
+  const rates = await fxService.getRates(targetCurrency);
   const catMap = new Map<string | null, { total: number; count: number }>();
 
   for (const tx of txs) {
-    if (!tx.status || !SPENDING_STATUSES.includes(tx.status as CardTxStatus)) continue;
-    const amount = Math.abs(Number(tx.fiatAmount ?? 0));
+    if (!isSpendTx(tx)) continue;
+    const nativeCurrency = normalizeCurrency(tx.fiatCurrency);
+    const rate = nativeCurrency ? (rates[nativeCurrency] ?? 1) : 1;
+    const amount = Math.abs(Number(tx.fiatAmount ?? 0)) / rate;
     const bucket = catMap.get(tx.categoryId) ?? { total: 0, count: 0 };
     bucket.total += amount;
     bucket.count += 1;
@@ -104,8 +175,12 @@ function computeCategoryBreakdown(txs: RawTx[]): CategoryBreakdown[] {
   return Array.from(catMap.entries())
     .map(([categoryId, bucket]) => ({
       categoryId,
-      categoryName: null,
-      categoryColor: null,
+      categoryName: categoryId
+        ? txs.find((tx) => tx.categoryId === categoryId)?.category?.name ?? null
+        : null,
+      categoryColor: categoryId
+        ? txs.find((tx) => tx.categoryId === categoryId)?.category?.color ?? null
+        : null,
       total: Number(bucket.total.toFixed(2)),
       count: bucket.count,
     }))
@@ -116,11 +191,67 @@ function toSummary(trip: TripWithIncludes, rawTxs: RawTx[]): TripSummary {
   return {
     id: trip.id,
     name: trip.name,
+    currency: trip.currency,
     startAt: trip.startAt.toISOString(),
     endAt: trip.endAt.toISOString(),
     createdAt: trip.createdAt.toISOString(),
     transactionCount: rawTxs.length,
     totalsByCurrency: computeTotalsByCurrency(rawTxs),
+  };
+}
+
+function pickTripCurrency(txs: RawTx[]): string {
+  const stats = new Map<string, { count: number; absTotal: number }>();
+  for (const tx of txs) {
+    const currency = normalizeCurrency(tx.fiatCurrency);
+    if (!currency) continue;
+    const bucket = stats.get(currency) ?? { count: 0, absTotal: 0 };
+    bucket.count += 1;
+    bucket.absTotal += Math.abs(Number(tx.fiatAmount ?? 0));
+    stats.set(currency, bucket);
+  }
+
+  return (
+    [...stats.entries()].sort((left, right) => {
+      const countSort = right[1].count - left[1].count;
+      if (countSort !== 0) return countSort;
+      const totalSort = right[1].absTotal - left[1].absTotal;
+      if (totalSort !== 0) return totalSort;
+      return left[0].localeCompare(right[0]);
+    })[0]?.[0] ?? 'EUR'
+  );
+}
+
+function uniqueIds(values: string[] | null | undefined): string[] {
+  return [...new Set((values ?? []).map((value) => value.trim()).filter(Boolean))];
+}
+
+function sortByTimestamp(txs: RawTx[]): RawTx[] {
+  return [...txs].sort((left, right) => {
+    const timestampSort = left.timestamp.getTime() - right.timestamp.getTime();
+    if (timestampSort !== 0) return timestampSort;
+    return left.id.localeCompare(right.id);
+  });
+}
+
+function isSchemaDriftError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /trips|Trip|currency|column|does not exist|migration/iu.test(message);
+}
+
+function toPreview(selection: SelectionResolution): TripPreview {
+  return {
+    startAt: selection.startAt.toISOString(),
+    endAt: selection.endAt.toISOString(),
+    currency: selection.currency,
+    transactionCount: selection.transactions.length,
+    totalsByCurrency: computeTotalsByCurrency(selection.transactions),
+    transactions: selection.transactions.map(toTransactionDto),
+    startTransaction: toTransactionDto(selection.startTransaction),
+    endTransaction: toTransactionDto(selection.endTransaction),
+    automaticTransactionIds: selection.automaticTransactionIds,
+    extraTransactionIds: selection.extraTransactionIds,
+    excludedTransactionIds: selection.excludedTransactionIds,
   };
 }
 
@@ -131,36 +262,44 @@ export class TripsService {
     private readonly fxService: ExchangeRateService,
   ) {}
 
-  async create(userId: string, dto: CreateTripDto): Promise<TripSummary> {
-    const transactions = await this.prisma.transaction.findMany({
-      where: { id: { in: dto.transactionIds }, userId },
-    });
+  async preview(userId: string, dto: TripSelectionDto): Promise<TripPreview> {
+    return toPreview(await this.resolveSelection(userId, dto));
+  }
 
-    if (transactions.length !== dto.transactionIds.length) {
-      throw new NotFoundException('One or more transactions not found or do not belong to user');
+  async create(userId: string, dto: CreateTripDto): Promise<TripSummary> {
+    const selection = await this.resolveSelection(userId, dto);
+    const { transactions } = selection;
+
+    if (transactions.length < 2) {
+      throw new BadRequestException('A trip requires at least two transactions');
     }
 
-    const timestamps = transactions.map((tx) => tx.timestamp.getTime());
-    const startAt = new Date(Math.min(...timestamps));
-    const endAt = new Date(Math.max(...timestamps));
-
-    const trip = await this.prisma.$transaction(async (prisma) => {
-      const created = await prisma.trip.create({
-        data: {
-          userId,
-          name: dto.name,
-          startAt,
-          endAt,
-          transactions: {
-            create: dto.transactionIds.map((transactionId) => ({ transactionId })),
+    let trip: TripWithIncludes;
+    try {
+      trip = await this.prisma.$transaction(async (prisma) => {
+        const created = await prisma.trip.create({
+          data: {
+            userId,
+            name: dto.name,
+            currency: selection.currency,
+            startAt: selection.startAt,
+            endAt: selection.endAt,
+            transactions: {
+              create: transactions.map((tx) => ({ transactionId: tx.id })),
+            },
           },
-        },
-        include: {
-          transactions: { include: { transaction: true } },
-        },
+          include: tripInclude,
+        });
+        return created;
       });
-      return created;
-    });
+    } catch (error) {
+      if (isSchemaDriftError(error)) {
+        throw new BadRequestException(
+          'Trips database schema is not up to date. Apply the latest Prisma migration and restart the API.',
+        );
+      }
+      throw error;
+    }
 
     return toSummary(trip, transactions);
   }
@@ -170,7 +309,7 @@ export class TripsService {
       where: { userId },
       orderBy: { startAt: 'desc' },
       include: {
-        transactions: { include: { transaction: true } },
+        transactions: { include: { transaction: { include: txHydrate } } },
       },
     });
 
@@ -184,7 +323,7 @@ export class TripsService {
     const trip = await this.prisma.trip.findFirst({
       where: { id: tripId, userId },
       include: {
-        transactions: { include: { transaction: true } },
+        transactions: { include: { transaction: { include: txHydrate } } },
       },
     });
 
@@ -194,40 +333,21 @@ export class TripsService {
 
     const rawTxs = trip.transactions.map((tt) => tt.transaction);
     const totalsByCurrency = computeTotalsByCurrency(rawTxs);
-
-    let convertedTotal: { currency: string; totalSpent: number; totalReceived: number } | null = null;
-    if (defaultCurrency) {
-      const rates = await this.fxService.getRates(defaultCurrency);
-      let totalSpent = 0;
-      let totalReceived = 0;
-      for (const tx of rawTxs) {
-        const currency = (tx.fiatCurrency ?? '').toUpperCase();
-        const amount = Math.abs(Number(tx.fiatAmount ?? 0));
-        const rate = currency ? (rates[currency] ?? 1) : 1;
-        const converted = amount / rate;
-        if (tx.status === CardTxStatus.REFUNDED) {
-          totalReceived += converted;
-        } else if (tx.status && SPENDING_STATUSES.includes(tx.status as CardTxStatus)) {
-          totalSpent += converted;
-        }
-      }
-      convertedTotal = {
-        currency: defaultCurrency.toUpperCase(),
-        totalSpent: Number(totalSpent.toFixed(2)),
-        totalReceived: Number(totalReceived.toFixed(2)),
-      };
-    }
+    const targetCurrency = normalizeCurrency(defaultCurrency) || trip.currency;
+    const convertedTotal = await convertedTotals(rawTxs, targetCurrency, this.fxService);
+    const categoryBreakdown = await computeCategoryBreakdown(rawTxs, targetCurrency, this.fxService);
 
     return {
       id: trip.id,
       name: trip.name,
+      currency: trip.currency,
       startAt: trip.startAt.toISOString(),
       endAt: trip.endAt.toISOString(),
       createdAt: trip.createdAt.toISOString(),
       transactionCount: rawTxs.length,
       totalsByCurrency,
       transactions: rawTxs.map(toTransactionDto),
-      categoryBreakdown: computeCategoryBreakdown(rawTxs),
+      categoryBreakdown,
       convertedTotal,
     };
   }
@@ -243,9 +363,12 @@ export class TripsService {
 
     const trip = await this.prisma.trip.update({
       where: { id: tripId },
-      data: { name: dto.name },
+      data: {
+        ...(dto.name !== undefined ? { name: dto.name } : {}),
+        ...(dto.currency !== undefined ? { currency: normalizeCurrency(dto.currency) } : {}),
+      },
       include: {
-        transactions: { include: { transaction: true } },
+        transactions: { include: { transaction: { include: txHydrate } } },
       },
     });
 
@@ -263,5 +386,132 @@ export class TripsService {
     }
 
     await this.prisma.trip.delete({ where: { id: tripId } });
+  }
+
+  private async resolveSelection(userId: string, dto: TripSelectionDto): Promise<SelectionResolution> {
+    if (dto.startTransactionId && dto.endTransactionId) {
+      if (dto.startTransactionId === dto.endTransactionId) {
+        throw new BadRequestException('Choose two different transactions for the trip range');
+      }
+
+      const bounds = await this.prisma.transaction.findMany({
+        where: {
+          userId,
+          source: TransactionSource.CARD,
+          id: { in: [dto.startTransactionId, dto.endTransactionId] },
+        },
+        include: txHydrate,
+      });
+
+      if (bounds.length !== 2) {
+        throw new NotFoundException('Start or end transaction not found');
+      }
+
+      const startRaw = bounds.find((tx) => tx.id === dto.startTransactionId);
+      const endRaw = bounds.find((tx) => tx.id === dto.endTransactionId);
+      if (!startRaw || !endRaw) {
+        throw new NotFoundException('Start or end transaction not found');
+      }
+
+      const [startTransaction, endTransaction] =
+        startRaw.timestamp <= endRaw.timestamp ? [startRaw, endRaw] : [endRaw, startRaw];
+      const startAt = startTransaction.timestamp;
+      const endAt = endTransaction.timestamp;
+
+      const automaticTransactions = await this.prisma.transaction.findMany({
+        where: {
+          userId,
+          source: TransactionSource.CARD,
+          timestamp: { gte: startAt, lte: endAt },
+        },
+        orderBy: { timestamp: 'asc' },
+        include: txHydrate,
+      });
+
+      const automaticIds = new Set(automaticTransactions.map((tx) => tx.id));
+      const includeIds = uniqueIds(dto.includeTransactionIds);
+      const extraIdsToFetch = includeIds.filter((id) => !automaticIds.has(id));
+      const extraTransactions =
+        extraIdsToFetch.length > 0
+          ? await this.prisma.transaction.findMany({
+              where: {
+                userId,
+                source: TransactionSource.CARD,
+                id: { in: extraIdsToFetch },
+              },
+              include: txHydrate,
+            })
+          : [];
+
+      if (extraTransactions.length !== extraIdsToFetch.length) {
+        throw new NotFoundException('One or more extra transactions were not found');
+      }
+
+      const excluded = new Set(uniqueIds(dto.excludeTransactionIds));
+      excluded.delete(startTransaction.id);
+      excluded.delete(endTransaction.id);
+
+      const byId = new Map<string, RawTx>();
+      for (const tx of [...automaticTransactions, ...extraTransactions]) {
+        if (!excluded.has(tx.id)) byId.set(tx.id, tx);
+      }
+
+      const transactions = sortByTimestamp([...byId.values()]);
+      const extraTransactionIds = extraTransactions
+        .filter((tx) => !excluded.has(tx.id))
+        .map((tx) => tx.id);
+      const excludedTransactionIds = automaticTransactions
+        .filter((tx) => excluded.has(tx.id))
+        .map((tx) => tx.id);
+
+      return {
+        transactions,
+        startTransaction,
+        endTransaction,
+        startAt,
+        endAt,
+        automaticTransactionIds: automaticTransactions.map((tx) => tx.id),
+        extraTransactionIds,
+        excludedTransactionIds,
+        currency: pickTripCurrency(transactions),
+      };
+    }
+
+    if (dto.startTransactionId || dto.endTransactionId) {
+      throw new BadRequestException('Provide both startTransactionId and endTransactionId');
+    }
+
+    if (dto.transactionIds?.length) {
+      const transactions = await this.prisma.transaction.findMany({
+        where: { id: { in: dto.transactionIds }, userId, source: TransactionSource.CARD },
+        orderBy: { timestamp: 'asc' },
+        include: txHydrate,
+      });
+
+      if (transactions.length !== dto.transactionIds.length) {
+        throw new NotFoundException('One or more transactions not found or do not belong to user');
+      }
+
+      const sorted = sortByTimestamp(transactions);
+      const startTransaction = sorted[0];
+      const endTransaction = sorted[sorted.length - 1];
+      if (!startTransaction || !endTransaction) {
+        throw new BadRequestException('A trip requires at least two transactions');
+      }
+
+      return {
+        transactions: sorted,
+        startTransaction,
+        endTransaction,
+        startAt: startTransaction.timestamp,
+        endAt: endTransaction.timestamp,
+        automaticTransactionIds: sorted.map((tx) => tx.id),
+        extraTransactionIds: [],
+        excludedTransactionIds: [],
+        currency: pickTripCurrency(sorted),
+      };
+    }
+
+    throw new BadRequestException('Provide transactionIds or startTransactionId/endTransactionId');
   }
 }

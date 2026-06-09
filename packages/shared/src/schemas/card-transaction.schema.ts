@@ -19,11 +19,13 @@ export const ParsedCardTxSchema = z.object({
   gasFeeSymbol: z.string().max(32).nullable().optional(),
   gasFeeRaw: z.string().max(64).nullable().optional(),
   spentRaw: z.string().max(64).nullable().optional(),
+  creditedRaw: z.string().max(64).nullable().optional(),
   status: cardTxStatus,
   parserVersion: z.number().int().min(1).max(999),
   rawHtml: z.string().max(65535).nullable().optional(),
   /** e.g. MetaMask UI `0x4e******4d6f` — used to tighten holdings matching */
   fundingSourceMasked: z.string().max(64).nullable().optional(),
+  creditDestinationMasked: z.string().max(64).nullable().optional(),
 });
 
 export type ParsedCardTxDto = z.infer<typeof ParsedCardTxSchema>;

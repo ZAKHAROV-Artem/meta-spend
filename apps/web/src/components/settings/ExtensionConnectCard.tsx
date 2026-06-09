@@ -6,6 +6,7 @@ import { CheckCircle2, Copy, Puzzle, Unplug } from 'lucide-react';
 import { useExtensionDisconnect } from '@/hooks/api/useExtensionDisconnect';
 import { useExtensionPairCode } from '@/hooks/api/useExtensionPairCode';
 import { useExtensionStatus } from '@/hooks/api/useExtensionStatus';
+import { useExtensionStatusStream } from '@/hooks/api/useExtensionStatusStream';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,11 +14,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export function ExtensionConnectCard() {
   const { data: status, isLoading } = useExtensionStatus();
+  useExtensionStatusStream();
   const disconnect = useExtensionDisconnect();
   const { mutateAsync: createPairCode, isPending: isCreatingPairCode, error: pairCodeError } =
     useExtensionPairCode();
   const [pendingCode, setPendingCode] = useState<{ code: string; expiresAt: string } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
 
   const connected = status?.connected ?? false;
   const latestConnection = status?.connections[0] ?? null;
@@ -28,6 +31,32 @@ export function ExtensionConnectCard() {
       setPendingCode({ code: res.code, expiresAt: res.expiresAt });
     });
   }, [connected, createPairCode, isCreatingPairCode, isLoading, pendingCode]);
+
+  // Clear any stale pairing-code UI the instant the status flips to connected.
+  useEffect(() => {
+    if (connected) setPendingCode(null);
+  }, [connected]);
+
+  // Tick every second while a pairing code is pending so we can show a live
+  // countdown and auto-replace the code once it expires (the auto-generation
+  // effect above re-fires whenever pendingCode becomes null).
+  useEffect(() => {
+    if (!pendingCode) return;
+    const expiresAtMs = new Date(pendingCode.expiresAt).getTime();
+    const tick = () => {
+      const current = Date.now();
+      setNow(current);
+      if (current >= expiresAtMs) setPendingCode(null);
+    };
+    tick();
+    const interval = window.setInterval(tick, 1000);
+    return () => window.clearInterval(interval);
+  }, [pendingCode]);
+
+  const remainingMs = pendingCode ? Math.max(0, new Date(pendingCode.expiresAt).getTime() - now) : 0;
+  const remainingLabel = pendingCode
+    ? `${Math.floor(remainingMs / 60_000)}:${String(Math.floor((remainingMs % 60_000) / 1000)).padStart(2, '0')}`
+    : null;
 
   const handleCopy = async () => {
     if (!pendingCode) return;
@@ -106,9 +135,7 @@ export function ExtensionConnectCard() {
                   <Button type="button" variant="outline" size="icon-sm" onClick={() => void handleCopy()}>
                     {copied ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                   </Button>
-                  <Badge variant="secondary">
-                    Expires {new Date(pendingCode.expiresAt).toLocaleTimeString()}
-                  </Badge>
+                  <Badge variant="secondary">Expires in {remainingLabel}</Badge>
                 </div>
               </div>
             ) : isCreatingPairCode ? (

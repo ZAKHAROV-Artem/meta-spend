@@ -18,6 +18,7 @@ import {
 } from 'recharts';
 
 import { AnalyticsChartHeader } from '@/components/analytics/AnalyticsChartHeader';
+import { Button } from '@/components/ui/button';
 import {
   useChartGoToTransactions,
   useChartTransactionStats,
@@ -266,14 +267,15 @@ export function CategoriesChart() {
 
             <div className="w-full min-w-0 flex-1 space-y-2">
               {categoryChartData.map((item, i) => (
-                <button
+                <Button
                   key={item.name}
                   type="button"
+                  variant="ghost"
                   onClick={() => {
                     if (!item.categoryId) return;
                     goToTransactions({ categoryId: item.categoryId });
                   }}
-                  className="hover:bg-muted/50 flex w-full items-center gap-2.5 rounded-md px-1 py-0.5 text-sm"
+                  className="h-auto w-full justify-start gap-2.5 rounded-md px-1 py-0.5 text-sm font-normal"
                 >
                   <span
                     className="h-2.5 w-2.5 shrink-0 rounded-sm"
@@ -286,7 +288,7 @@ export function CategoriesChart() {
                     {formatMoney(item.value, ccy)}
                   </span>
                   <span className="w-12 shrink-0 text-right font-medium tabular-nums">{item.percent}%</span>
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -450,11 +452,12 @@ export function TopMerchantsChart() {
         ) : (
           <div className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
             {(data?.topMerchants ?? []).slice(0, 8).map((m, i) => (
-              <button
+              <Button
                 key={m.key}
                 type="button"
+                variant="ghost"
                 onClick={() => goToTransactions({ search: m.displayName })}
-                className="hover:bg-muted/50 flex items-center gap-3 rounded-md px-1 py-0.5 text-left"
+                className="h-auto w-full justify-start gap-3 rounded-md px-1 py-0.5 text-left font-normal"
               >
                 <span className="text-muted-foreground w-5 shrink-0 text-right text-xs tabular-nums">{i + 1}</span>
                 <div className="min-w-0 flex-1">
@@ -464,7 +467,7 @@ export function TopMerchantsChart() {
                 <span className="shrink-0 text-sm font-semibold tabular-nums">
                   {formatMoneyCompact(m.total, (m.currency ?? ccy) as string | null)}
                 </span>
-              </button>
+              </Button>
             ))}
           </div>
         )}

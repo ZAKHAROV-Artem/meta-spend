@@ -11,6 +11,11 @@
       "cache": false,
       "persistent": true
     },
+    "@crypto-tracker/extension#dev": {
+      "dependsOn": ["@crypto-tracker/web#build"],
+      "cache": false,
+      "persistent": true
+    },
     "lint": {
       "dependsOn": ["^lint"]
     },
