@@ -120,6 +120,14 @@
         "SKILL.md": "sha256:d1810af85c7f12b72f2a50f96a4fd09f7a8543b7021ff829971cb4254814bea8",
         "metadata.json": "sha256:0a0d0eb6af81b26c6bc0313f1b28a8911b86df3571d610bc834c098aae57365a"
       }
+    },
+    "rtk": {
+      "source": "/home/zakharov/.config/skillshare/skills/rtk",
+      "type": "local",
+      "installed_at": "2026-06-13T17:48:28.670220936+02:00",
+      "file_hashes": {
+        "SKILL.md": "sha256:94c94a685189f0322778194b2e37c28ce0b3baf48510b8f650aab3b52a0f7178"
+      }
     }
   }
 }

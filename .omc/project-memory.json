@@ -1,0 +1,396 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1781359654782,
+  "projectRoot": "/home/zakharov/Documents/projects/crypto-finance-tracker",
+  "techStack": {
+    "languages": [
+      {
+        "name": "JavaScript/TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "package.json"
+        ]
+      }
+    ],
+    "frameworks": [],
+    "packageManager": "pnpm",
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": "pnpm build",
+    "testCommand": null,
+    "lintCommand": "pnpm lint",
+    "devCommand": "pnpm dev",
+    "scripts": {
+      "build": "turbo run build",
+      "dev": "turbo run dev",
+      "lint": "turbo run lint",
+      "typecheck": "turbo run typecheck",
+      "reinstall": "pnpm install --force",
+      "db:generate": "turbo run db:generate",
+      "db:migrate": "pnpm --filter @crypto-tracker/db run db:migrate",
+      "db:studio": "pnpm --filter @crypto-tracker/db run studio",
+      "db:seed": "pnpm --filter @crypto-tracker/db run db:seed",
+      "db:reset": "pnpm --filter @crypto-tracker/db run db:reset",
+      "format": "prettier --write \"**/*.{ts,tsx,json,md,css}\" --ignore-path .gitignore"
+    }
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": true,
+    "workspaces": [],
+    "mainDirectories": [
+      "docs"
+    ],
+    "gitBranches": {
+      "defaultBranch": "feature/metaspend-v2",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "apps": {
+      "path": "apps",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1781359654778,
+      "keyFiles": []
+    },
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 1,
+      "lastAccessed": 1781359654779,
+      "keyFiles": [
+        "project-description.md"
+      ]
+    },
+    "packages": {
+      "path": "packages",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1781359654781,
+      "keyFiles": []
+    },
+    "apps/api": {
+      "path": "apps/api",
+      "purpose": "API routes",
+      "fileCount": 7,
+      "lastAccessed": 1781359654781,
+      "keyFiles": [
+        "Dockerfile",
+        "nest-cli.json",
+        "package.json"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "apps/web/src/components/landing/DashboardPreviewSection.tsx",
+      "accessCount": 10,
+      "lastAccessed": 1781000413807,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/src/components/landing/FeaturesSection.tsx",
+      "accessCount": 5,
+      "lastAccessed": 1780995925985,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/src/components/landing/HowItWorksSection.tsx",
+      "accessCount": 5,
+      "lastAccessed": 1780997904902,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/src/app/layout.tsx",
+      "accessCount": 5,
+      "lastAccessed": 1780999322639,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/src/styles/globals.css",
+      "accessCount": 5,
+      "lastAccessed": 1780999327741,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/src/lib/auth.ts",
+      "accessCount": 5,
+      "lastAccessed": 1781369033954,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/src/app/page.tsx",
+      "accessCount": 4,
+      "lastAccessed": 1780996020011,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/.env.local.example",
+      "accessCount": 4,
+      "lastAccessed": 1781365774641,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/src/components/layout/ThemeSwitcher.tsx",
+      "accessCount": 3,
+      "lastAccessed": 1780995753026,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/src/components/landing/LandingNav.tsx",
+      "accessCount": 3,
+      "lastAccessed": 1780995783454,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/src/components/landing/HeroSection.tsx",
+      "accessCount": 3,
+      "lastAccessed": 1780995833154,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/src/components/landing/CTASection.tsx",
+      "accessCount": 3,
+      "lastAccessed": 1780995993887,
+      "type": "file"
+    },
+    {
+      "path": "turbo.json",
+      "accessCount": 3,
+      "lastAccessed": 1781359832297,
+      "type": "file"
+    },
+    {
+      "path": "apps/api/.env.example",
+      "accessCount": 3,
+      "lastAccessed": 1781365494636,
+      "type": "file"
+    },
+    {
+      "path": "apps/api/src/main.ts",
+      "accessCount": 3,
+      "lastAccessed": 1781365757278,
+      "type": "file"
+    },
+    {
+      "path": "docker-compose.yml",
+      "accessCount": 3,
+      "lastAccessed": 1781365784740,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/next.config.ts",
+      "accessCount": 3,
+      "lastAccessed": 1781369034310,
+      "type": "file"
+    },
+    {
+      "path": "apps/api/Dockerfile",
+      "accessCount": 3,
+      "lastAccessed": 1781369034877,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/src/components/dashboard/DashboardView.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1780997804871,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/src/components/dashboard/RecentTransactions.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1780997805613,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/src/components/analytics/AnalyticsOverview.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1780998660698,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/src/components/trips/TripsListView.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1780998661026,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/package.json",
+      "accessCount": 2,
+      "lastAccessed": 1781359773317,
+      "type": "file"
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "accessCount": 2,
+      "lastAccessed": 1781365051370,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/src/middleware.ts",
+      "accessCount": 2,
+      "lastAccessed": 1781365067628,
+      "type": "file"
+    },
+    {
+      "path": "apps/api/src/config/configuration.ts",
+      "accessCount": 2,
+      "lastAccessed": 1781365068274,
+      "type": "file"
+    },
+    {
+      "path": "packages/db/package.json",
+      "accessCount": 2,
+      "lastAccessed": 1781365072669,
+      "type": "file"
+    },
+    {
+      "path": "docs/project-description.md",
+      "accessCount": 2,
+      "lastAccessed": 1781365072890,
+      "type": "file"
+    },
+    {
+      "path": "apps/api/package.json",
+      "accessCount": 2,
+      "lastAccessed": 1781365076464,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/Dockerfile",
+      "accessCount": 2,
+      "lastAccessed": 1781369035483,
+      "type": "file"
+    },
+    {
+      "path": ".dockerignore",
+      "accessCount": 2,
+      "lastAccessed": 1781369035947,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/src/components/landing/MetaMaskLogo.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1780995075842,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/src/components/categories/CategoriesManager.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1780995086785,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/src/components/card/CardTransactionsList.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1780995087375,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/src/components/trips/TripDetailView.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1780995090341,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/postcss.config.mjs",
+      "accessCount": 1,
+      "lastAccessed": 1780995091424,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/src/components/analytics/analytics-charts.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1780995092638,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/src/providers/index.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1780995100535,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/src/providers/ThemeProvider.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1780995103632,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/tsconfig.json",
+      "accessCount": 1,
+      "lastAccessed": 1780995112307,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/src/components/landing/StatsSection.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1780995845401,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/src/components/dashboard/MetaMaskCardWidget.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1780997805560,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/src/components/layout/Sidebar.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1780997833930,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/src/images/dark/image.png",
+      "accessCount": 1,
+      "lastAccessed": 1780999772721,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/src/images/dark/image copy.png",
+      "accessCount": 1,
+      "lastAccessed": 1780999773143,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/src/images/dark/image copy 2.png",
+      "accessCount": 1,
+      "lastAccessed": 1780999785667,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/src/images/dark/image copy 3.png",
+      "accessCount": 1,
+      "lastAccessed": 1780999785844,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/src/images/dark/image copy 4.png",
+      "accessCount": 1,
+      "lastAccessed": 1780999786221,
+      "type": "file"
+    },
+    {
+      "path": "apps/api/.env",
+      "accessCount": 1,
+      "lastAccessed": 1781359740954,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/.env.local",
+      "accessCount": 1,
+      "lastAccessed": 1781359741005,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

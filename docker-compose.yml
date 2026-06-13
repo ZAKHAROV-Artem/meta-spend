@@ -6,9 +6,9 @@ services:
     environment:
       POSTGRES_DB: crypto_tracker
       POSTGRES_USER: cft_user
-      POSTGRES_PASSWORD: cft_password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cft_password}
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -17,28 +17,48 @@ services:
       timeout: 5s
       retries: 5
 
+  migrate:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    image: cft-api
+    container_name: cft_migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://cft_user:${POSTGRES_PASSWORD:-cft_password}@postgres:5432/crypto_tracker
+    working_dir: /app/packages/db
+    entrypoint: ["node_modules/.bin/prisma", "migrate", "deploy"]
+
   api:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
+    image: cft-api
     container_name: cft_api
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     env_file:
       - apps/api/.env
     environment:
-      DATABASE_URL: postgresql://cft_user:cft_password@postgres:5432/crypto_tracker
+      PORT: 3001
+      NODE_ENV: production
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
+      DATABASE_URL: postgresql://cft_user:${POSTGRES_PASSWORD:-cft_password}@postgres:5432/crypto_tracker
     ports:
-      - "3001:3001"
-    profiles:
-      - full
+      - "127.0.0.1:3001:3001"
 
   web:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
     container_name: cft_web
     restart: unless-stopped
     depends_on:
@@ -46,11 +66,9 @@ services:
     env_file:
       - apps/web/.env.local
     environment:
-      NEXT_PUBLIC_API_URL: http://api:3001
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
     ports:
-      - "3000:3000"
-    profiles:
-      - full
+      - "127.0.0.1:3000:3000"
 
 volumes:
   postgres_data:

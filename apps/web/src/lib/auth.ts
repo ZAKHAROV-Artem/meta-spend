@@ -20,7 +20,8 @@ export function setSession(
   localStorage.setItem(ACCESS_TOKEN_KEY, accessToken)
   localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken)
   localStorage.setItem(USER_KEY, JSON.stringify(user))
-  document.cookie = `${AUTH_COOKIE}=1; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`
+  const secureFlag = location.protocol === 'https:' ? '; Secure' : ''
+  document.cookie = `${AUTH_COOKIE}=1; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax${secureFlag}`
 }
 
 export function clearSession(): void {

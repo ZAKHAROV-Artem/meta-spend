@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"rtk docker compose ps && echo \\\"---MIGRATE LOGS---\\\" && rtk docker compose logs migrate --tail 20\",\"description\":\"Check docker compose service status and migration logs\"}",
+  "error": "Exit code 1\npermission denied while trying to connect to the docker API at unix:///var/run/docker.sock",
+  "timestamp": "2026-06-13T16:50:03.055Z",
+  "retry_count": 1
+}

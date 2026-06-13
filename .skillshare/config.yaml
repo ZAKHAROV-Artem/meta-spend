@@ -7,5 +7,9 @@ skills:
     source: github.com/anthropics/skills/skills/frontend-design
   - name: canvas-design
     source: github.com/anthropics/skills/skills/canvas-design
+  - name: pandoc
+    source: github.com/majiayu000/claude-skill-registry/skills/documents/pandoc
+  - name: rtk
+    source: /home/zakharov/.config/skillshare/skills/rtk
 audit:
   block_threshold: CRITICAL
