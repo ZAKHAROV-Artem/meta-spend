@@ -17,16 +17,34 @@ const itemVariants: Variants = {
 };
 
 const TRANSACTIONS = [
-  { icon: '☕', label: 'Blue Bottle Coffee', category: 'Food & Drink', amount: '-$4.20', color: 'bg-amber-500' },
-  { icon: '🛒', label: 'Whole Foods Market', category: 'Groceries', amount: '-$67.84', color: 'bg-green-500' },
-  { icon: '⛽', label: 'Shell Gas Station', category: 'Transport', amount: '-$55.00', color: 'bg-blue-500' },
+  {
+    icon: '☕',
+    label: 'Blue Bottle Coffee',
+    category: 'Food & Drink',
+    amount: '-$4.20',
+    color: 'bg-amber-500',
+  },
+  {
+    icon: '🛒',
+    label: 'Whole Foods Market',
+    category: 'Groceries',
+    amount: '-$67.84',
+    color: 'bg-green-500',
+  },
+  {
+    icon: '⛽',
+    label: 'Shell Gas Station',
+    category: 'Transport',
+    amount: '-$55.00',
+    color: 'bg-blue-500',
+  },
 ];
 
 export function HeroSection() {
   const shouldFloat = !useReducedMotion();
 
   return (
-    <section className="relative w-full overflow-hidden bg-background">
+    <section className="bg-background relative w-full overflow-hidden">
       {/* Layered atmospheric background */}
       <svg aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full">
         <defs>
@@ -43,7 +61,12 @@ export function HeroSection() {
             <stop offset="100%" stopColor="#F6851B" stopOpacity="0" />
           </radialGradient>
           <filter id="noise">
-            <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" />
+            <feTurbulence
+              type="fractalNoise"
+              baseFrequency="0.65"
+              numOctaves="3"
+              stitchTiles="stitch"
+            />
             <feColorMatrix type="saturate" values="0" />
             <feBlend in="SourceGraphic" mode="overlay" result="blend" />
             <feComposite in="blend" in2="SourceGraphic" operator="in" />
@@ -66,7 +89,7 @@ export function HeroSection() {
         >
           {/* Beta badge */}
           <motion.div variants={itemVariants}>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+            <span className="border-primary/25 bg-primary/10 text-primary inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold">
               <Zap className="h-3 w-3" />
               Now in open beta
             </span>
@@ -75,9 +98,9 @@ export function HeroSection() {
           {/* Headline */}
           <motion.h1
             variants={itemVariants}
-            className="mt-6 font-display text-5xl font-bold leading-[1.08] tracking-tight text-foreground sm:text-6xl lg:text-[4.25rem]"
+            className="font-display text-foreground mt-6 text-5xl font-bold leading-[1.08] tracking-tight sm:text-6xl lg:text-[4.25rem]"
           >
-            Smart analytics
+            Smart analytics !
             <br />
             for your{' '}
             <span
@@ -97,9 +120,10 @@ export function HeroSection() {
           {/* Subheadline */}
           <motion.p
             variants={itemVariants}
-            className="mt-6 max-w-lg text-lg leading-relaxed text-muted-foreground sm:text-xl"
+            className="text-muted-foreground mt-6 max-w-lg text-lg leading-relaxed sm:text-xl"
           >
-            Track every spend, auto-categorize with AI, and understand your habits — all from a Chrome extension that syncs in real time.
+            Track every spend, auto-categorize with AI, and understand your habits — all from a
+            Chrome extension that syncs in real time.
           </motion.p>
 
           {/* CTAs */}
@@ -122,7 +146,7 @@ export function HeroSection() {
           {/* Mini stats row */}
           <motion.div
             variants={itemVariants}
-            className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground"
+            className="text-muted-foreground mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm"
           >
             {['500K+ transactions tracked', 'Real-time sync', 'Free forever'].map((stat, i) => (
               <span key={stat} className="flex items-center gap-1.5">
@@ -149,7 +173,9 @@ export function HeroSection() {
             >
               <motion.div
                 animate={shouldFloat ? { y: [0, -10, 0] } : undefined}
-                transition={shouldFloat ? { repeat: Infinity, duration: 5, ease: 'easeInOut' } : undefined}
+                transition={
+                  shouldFloat ? { repeat: Infinity, duration: 5, ease: 'easeInOut' } : undefined
+                }
                 className="relative"
               >
                 {/* MetaMask card */}
@@ -157,7 +183,9 @@ export function HeroSection() {
                   {/* Card top */}
                   <div className="mb-5 flex items-center justify-between">
                     <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-orange-300/60">MetaMask</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-orange-300/60">
+                        MetaMask
+                      </p>
                       <p className="mt-0.5 text-base font-bold">Card</p>
                     </div>
                     <FoxMark className="h-7 w-7" />
@@ -165,13 +193,19 @@ export function HeroSection() {
 
                   {/* Balance */}
                   <div className="mb-1">
-                    <p className="text-[10px] uppercase tracking-[0.15em] text-orange-200/40">Available balance</p>
-                    <p className="font-mono-alt mt-1 text-3xl font-bold tracking-tight">$2,847.50</p>
+                    <p className="text-[10px] uppercase tracking-[0.15em] text-orange-200/40">
+                      Available balance
+                    </p>
+                    <p className="font-mono-alt mt-1 text-3xl font-bold tracking-tight">
+                      $2,847.50
+                    </p>
                   </div>
 
                   {/* Address */}
                   <div className="mt-4 border-t border-white/10 pt-3">
-                    <p className="font-mono-alt text-[10px] tracking-wider text-orange-200/40">0x71C7…9e2B</p>
+                    <p className="font-mono-alt text-[10px] tracking-wider text-orange-200/40">
+                      0x71C7…9e2B
+                    </p>
                   </div>
 
                   {/* Transaction list */}
@@ -181,14 +215,18 @@ export function HeroSection() {
                     </p>
                     {TRANSACTIONS.map((tx) => (
                       <div key={tx.label} className="flex items-center gap-2.5">
-                        <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${tx.color}/20 text-xs`}>
+                        <div
+                          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${tx.color}/20 text-xs`}
+                        >
                           {tx.icon}
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-xs font-medium text-white/90">{tx.label}</p>
                           <p className="text-[10px] text-white/40">{tx.category}</p>
                         </div>
-                        <p className="font-mono-alt text-xs font-semibold text-orange-200/80">{tx.amount}</p>
+                        <p className="font-mono-alt text-xs font-semibold text-orange-200/80">
+                          {tx.amount}
+                        </p>
                       </div>
                     ))}
                   </div>
@@ -196,23 +234,27 @@ export function HeroSection() {
 
                 {/* Floating chips */}
                 <motion.div
-                  className="absolute -top-5 -right-5 rounded-2xl bg-card px-3.5 py-2.5 shadow-xl ring-1 ring-border/60"
+                  className="bg-card ring-border/60 absolute -right-5 -top-5 rounded-2xl px-3.5 py-2.5 shadow-xl ring-1"
                   initial={{ opacity: 0, scale: 0.75, y: 8 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   transition={{ delay: 0.85, duration: 0.45, ease: 'easeOut' }}
                 >
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">This month</p>
-                  <p className="font-mono-alt mt-0.5 text-lg font-bold text-foreground">$648.20</p>
+                  <p className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wide">
+                    This month
+                  </p>
+                  <p className="font-mono-alt text-foreground mt-0.5 text-lg font-bold">$648.20</p>
                 </motion.div>
 
                 <motion.div
-                  className="absolute -bottom-5 -left-5 rounded-2xl bg-card px-3.5 py-2.5 shadow-xl ring-1 ring-border/60"
+                  className="bg-card ring-border/60 absolute -bottom-5 -left-5 rounded-2xl px-3.5 py-2.5 shadow-xl ring-1"
                   initial={{ opacity: 0, scale: 0.75, y: -8 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   transition={{ delay: 1.0, duration: 0.45, ease: 'easeOut' }}
                 >
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Top category</p>
-                  <p className="mt-0.5 text-sm font-bold text-foreground">🍕 Food & Dining</p>
+                  <p className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wide">
+                    Top category
+                  </p>
+                  <p className="text-foreground mt-0.5 text-sm font-bold">🍕 Food & Dining</p>
                 </motion.div>
               </motion.div>
             </motion.div>
