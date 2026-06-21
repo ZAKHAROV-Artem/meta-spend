@@ -165,6 +165,22 @@ export interface AutoCategorizeCardMerchantsResult {
   errors: string[];
 }
 
+export interface CardCategorizationRunChunkLogEntry {
+  index: number;
+  merchantCount: number;
+  assignedCount: number;
+  skippedCount: number;
+  error: string | null;
+}
+
+export interface CardCategorizationRunMeta {
+  chunksCompleted?: number;
+  chunksTotal?: number;
+  aiAssignedMerchants?: number;
+  aiSkippedMerchants?: number;
+  chunks?: CardCategorizationRunChunkLogEntry[];
+}
+
 export interface CardCategorizationRunDto {
   id: string;
   status: string;
@@ -177,5 +193,5 @@ export interface CardCategorizationRunDto {
   aiUpdatedCount: number;
   skippedCount: number;
   errorMessage: string | null;
-  meta: unknown;
+  meta: CardCategorizationRunMeta | null;
 }

@@ -7,6 +7,8 @@ import { AnalyticsOverview } from '@/components/analytics/AnalyticsOverview';
 import { MetaMaskCardWidget } from '@/components/dashboard/MetaMaskCardWidget';
 import { RecentTransactions } from '@/components/dashboard/RecentTransactions';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useExtensionStatus } from '@/hooks/api/useExtensionStatus';
+import { useExtensionStatusStream } from '@/hooks/api/useExtensionStatusStream';
 import { usePortfolioOverview } from '@/hooks/api/usePortfolioOverview';
 import { useTransactionStats } from '@/hooks/api/useTransactionStats';
 import { formatMoney } from '@/lib/format';
@@ -42,6 +44,12 @@ function StatTile({
 }
 
 export function DashboardView() {
+  // Drive the connect banner off live extension connection status, the same way the
+  // Settings page does: SSE invalidates the status query the instant the extension
+  // connects/disconnects, so the banner appears/disappears immediately.
+  const { data: extensionStatus } = useExtensionStatus();
+  useExtensionStatusStream();
+
   const { data: portfolio, isLoading: portfolioLoading } = usePortfolioOverview({
     refetchInterval: 45_000,
   });
@@ -57,6 +65,9 @@ export function DashboardView() {
 
   const loading = (portfolioLoading && !portfolio) || (statsLoading && !stats);
   const hasNoTransactions = !loading && (stats?.txCount ?? 0) === 0;
+  // Banner is purely about whether the extension is connected — independent of whether
+  // any transactions have synced yet. Wait for the first status response to avoid a flash.
+  const showConnectBanner = extensionStatus != null && !extensionStatus.connected;
 
   return (
     <div className="space-y-10">
@@ -68,7 +79,7 @@ export function DashboardView() {
         </p>
       </header>
 
-      {hasNoTransactions ? (
+      {showConnectBanner ? (
         <div className="rounded-2xl border border-primary/30 bg-linear-to-br from-primary/10 via-card to-card p-6 sm:p-8">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0 space-y-2">

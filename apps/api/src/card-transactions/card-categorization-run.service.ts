@@ -1,11 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { CardTxStatus, CategorizationRunStatus, TransactionSource } from '@metaspend/db';
-import type { CardCategorizationRunDto } from '@metaspend/shared';
+import type {
+  CardCategorizationRunChunkLogEntry,
+  CardCategorizationRunDto,
+  CardCategorizationRunMeta,
+} from '@metaspend/shared';
 import { normalizeMerchantKey } from '@metaspend/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { CardMerchantOpenAiService } from '../transactions/card-merchant-openai.service';
 
 const USER_JOB_LOCK_MS = 30_000;
+
+type ChunkLogEntry = CardCategorizationRunChunkLogEntry;
 
 @Injectable()
 export class CardCategorizationRunService {
@@ -80,7 +86,7 @@ export class CardCategorizationRunService {
       aiUpdatedCount: r.aiUpdatedCount,
       skippedCount: r.skippedCount,
       errorMessage: r.errorMessage ?? null,
-      meta: r.meta ?? null,
+      meta: (r.meta as CardCategorizationRunMeta | null) ?? null,
     }));
   }
 
@@ -145,12 +151,13 @@ export class CardCategorizationRunService {
   /**
    * Run OpenAI for remaining uncategorized merchants; persist memory for assigned groups.
    */
-  async classifyUncategorizedMerchantsWithAi(userId: string): Promise<{
+  async classifyUncategorizedMerchantsWithAi(userId: string, runId?: string): Promise<{
     processedMerchants: number;
     assignedMerchantCount: number;
     skippedMerchantCount: number;
     updatedTransactionCount: number;
     errors: string[];
+    chunks: ChunkLogEntry[];
   }> {
     const categories = await this.prisma.category.findMany({
       where: { userId, parentId: null },
@@ -163,6 +170,7 @@ export class CardCategorizationRunService {
         skippedMerchantCount: 0,
         updatedTransactionCount: 0,
         errors: [],
+        chunks: [],
       };
     }
 
@@ -194,6 +202,7 @@ export class CardCategorizationRunService {
         skippedMerchantCount: 0,
         updatedTransactionCount: 0,
         errors: [],
+        chunks: [],
       };
     }
 
@@ -204,78 +213,101 @@ export class CardCategorizationRunService {
 
     const CHUNK = 40;
     const categoryPayload = categories.map((c) => ({ id: c.id, name: c.name, subCategories: c.subCategories }));
+    const totalChunks = Math.ceil(merchantsPayload.length / CHUNK);
 
-    type AssignmentRow = {
-      merchantKey: string;
-      categoryId: string | null;
-      subcategoryId: string | null;
-      confidence?: number;
-      reason?: string;
-    };
-
-    const allAssignments: AssignmentRow[] = [];
-
-    for (let i = 0; i < merchantsPayload.length; i += CHUNK) {
-      const chunk = merchantsPayload.slice(i, i + CHUNK);
-      const chunkAssignments = await this.cardMerchantOpenAi.classifyMerchantsChunk({
-        categories: categoryPayload,
-        merchants: chunk,
-      });
-      allAssignments.push(...chunkAssignments);
-    }
-
+    const errors: string[] = [];
     let assignedMerchantCount = 0;
     let skippedMerchantCount = 0;
     let updatedTransactionCount = 0;
-    const errors: string[] = [];
+    const chunkLog: ChunkLogEntry[] = [];
 
-    for (const assignment of allAssignments) {
-      const entry = byKey.get(assignment.merchantKey);
-      if (!entry) {
-        errors.push(`Missing internal group for merchantKey "${assignment.merchantKey}"`);
-        continue;
+    for (let i = 0, chunkIndex = 0; i < merchantsPayload.length; i += CHUNK, chunkIndex++) {
+      const chunk = merchantsPayload.slice(i, i + CHUNK);
+      let chunkAssignedCount = 0;
+      let chunkSkippedCount = 0;
+      let chunkError: string | null = null;
+      try {
+        const chunkAssignments = await this.cardMerchantOpenAi.classifyMerchantsChunk({
+          categories: categoryPayload,
+          merchants: chunk,
+        });
+
+        for (const assignment of chunkAssignments) {
+          const entry = byKey.get(assignment.merchantKey);
+          if (!entry) {
+            errors.push(`Missing internal group for merchantKey "${assignment.merchantKey}"`);
+            continue;
+          }
+
+          if (assignment.categoryId === null) {
+            skippedMerchantCount++;
+            chunkSkippedCount++;
+            continue;
+          }
+
+          const ids = entry.ids;
+          if (ids.length === 0) continue;
+
+          const res = await this.prisma.transaction.updateMany({
+            where: {
+              userId,
+              source: TransactionSource.CARD,
+              categoryId: null,
+              id: { in: ids },
+            },
+            data: { categoryId: assignment.categoryId, subcategoryId: assignment.subcategoryId ?? null },
+          });
+
+          updatedTransactionCount += res.count;
+          assignedMerchantCount++;
+          chunkAssignedCount++;
+
+          await this.prisma.cardMerchantMemory.upsert({
+            where: {
+              userId_merchantKey: { userId, merchantKey: assignment.merchantKey },
+            },
+            create: {
+              userId,
+              merchantKey: assignment.merchantKey,
+              categoryId: assignment.categoryId,
+              subcategoryId: assignment.subcategoryId ?? null,
+              hitCount: res.count,
+              learnedSource: 'ai',
+            },
+            update: {
+              categoryId: assignment.categoryId,
+              subcategoryId: assignment.subcategoryId ?? null,
+              hitCount: { increment: res.count },
+              learnedSource: 'ai',
+            },
+          });
+        }
+      } catch (err) {
+        // One bad chunk (e.g. the AI mis-pairing a category/subcategory) shouldn't fail the
+        // whole run and discard merchants other chunks already classified correctly.
+        chunkError = err instanceof Error ? err.message : 'Auto-categorize: chunk classification failed';
+        errors.push(chunkError);
       }
 
-      if (assignment.categoryId === null) {
-        skippedMerchantCount++;
-        continue;
+      chunkLog.push({
+        index: chunkIndex,
+        merchantCount: chunk.length,
+        assignedCount: chunkAssignedCount,
+        skippedCount: chunkSkippedCount,
+        error: chunkError,
+      });
+
+      if (runId) {
+        await this.persistChunkProgress(runId, {
+          scannedMerchantCount: processedMerchants,
+          aiUpdatedCount: updatedTransactionCount,
+          skippedCount: skippedMerchantCount,
+          assignedMerchantCount,
+          chunksCompleted: chunkIndex + 1,
+          chunksTotal: totalChunks,
+          chunks: chunkLog,
+        });
       }
-
-      const ids = entry.ids;
-      if (ids.length === 0) continue;
-
-      const res = await this.prisma.transaction.updateMany({
-        where: {
-          userId,
-          source: TransactionSource.CARD,
-          categoryId: null,
-          id: { in: ids },
-        },
-        data: { categoryId: assignment.categoryId, subcategoryId: assignment.subcategoryId ?? null },
-      });
-
-      updatedTransactionCount += res.count;
-      assignedMerchantCount++;
-
-      await this.prisma.cardMerchantMemory.upsert({
-        where: {
-          userId_merchantKey: { userId, merchantKey: assignment.merchantKey },
-        },
-        create: {
-          userId,
-          merchantKey: assignment.merchantKey,
-          categoryId: assignment.categoryId,
-          subcategoryId: assignment.subcategoryId ?? null,
-          hitCount: res.count,
-          learnedSource: 'ai',
-        },
-        update: {
-          categoryId: assignment.categoryId,
-          subcategoryId: assignment.subcategoryId ?? null,
-          hitCount: { increment: res.count },
-          learnedSource: 'ai',
-        },
-      });
     }
 
     return {
@@ -284,7 +316,44 @@ export class CardCategorizationRunService {
       skippedMerchantCount,
       updatedTransactionCount,
       errors,
+      chunks: chunkLog,
     };
+  }
+
+  /** Best-effort write of running totals so a long AI run shows live progress, not just a final jump. */
+  private async persistChunkProgress(
+    runId: string,
+    progress: {
+      scannedMerchantCount: number;
+      aiUpdatedCount: number;
+      skippedCount: number;
+      assignedMerchantCount: number;
+      chunksCompleted: number;
+      chunksTotal: number;
+      chunks: ChunkLogEntry[];
+    },
+  ): Promise<void> {
+    try {
+      await this.prisma.cardCategorizationRun.update({
+        where: { id: runId },
+        data: {
+          scannedMerchantCount: progress.scannedMerchantCount,
+          aiUpdatedCount: progress.aiUpdatedCount,
+          skippedCount: progress.skippedCount,
+          meta: {
+            aiAssignedMerchants: progress.assignedMerchantCount,
+            aiSkippedMerchants: progress.skippedCount,
+            chunksCompleted: progress.chunksCompleted,
+            chunksTotal: progress.chunksTotal,
+            chunks: progress.chunks,
+          } as object,
+        },
+      });
+    } catch (err) {
+      this.logger.warn(
+        `Failed to persist categorization progress for run ${runId}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
   }
 
   private async executeRun(runId: string): Promise<void> {
@@ -310,7 +379,7 @@ export class CardCategorizationRunService {
     try {
       memoryMatched = await this.applyMerchantMemoryMatches(userId);
 
-      const aiResult = await this.classifyUncategorizedMerchantsWithAi(userId);
+      const aiResult = await this.classifyUncategorizedMerchantsWithAi(userId, run.id);
       aiUpdated = aiResult.updatedTransactionCount;
       skipped = aiResult.skippedMerchantCount;
       errors.push(...aiResult.errors);
@@ -338,6 +407,9 @@ export class CardCategorizationRunService {
           meta: {
             aiAssignedMerchants: aiResult.assignedMerchantCount,
             aiSkippedMerchants: aiResult.skippedMerchantCount,
+            chunksCompleted: aiResult.chunks.length,
+            chunksTotal: aiResult.chunks.length,
+            chunks: aiResult.chunks,
           } as object,
         },
       });

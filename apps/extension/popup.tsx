@@ -211,7 +211,7 @@ export default function Popup() {
       const sync = await syncCardTransactions(token, outcome.syncPayload);
       setStatus({
         kind: 'ok',
-        text: `✓ Synced — ${sync.inserted} new, ${sync.updated} updated (${outcome.transactionCount} on page)`,
+        text: `✓ Synced — ${sync.inserted} new, ${sync.updated} updated (${outcome.syncPayload.items.length} of ${outcome.transactionCount} parsed)`,
       });
     } catch (syncErr) {
       const syncMessage = syncErr instanceof Error ? syncErr.message : String(syncErr);

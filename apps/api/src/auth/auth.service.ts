@@ -19,6 +19,7 @@ import { ExtensionTokenService } from './extension-token.service';
 import { ExtensionStatusEvents } from './extension-status-events';
 import { AuthUser, AuthTokens, TokenPayload } from '@metaspend/shared';
 import { PortfolioService } from '../portfolio/portfolio.service';
+import { CategoriesService } from '../categories/categories.service';
 
 export type SiweVerifyResult = {
   accessToken: string;
@@ -40,6 +41,7 @@ export class AuthService {
     private readonly extensionTokenService: ExtensionTokenService,
     private readonly extensionStatusEvents: ExtensionStatusEvents,
     private readonly portfolioService: PortfolioService,
+    private readonly categoriesService: CategoriesService,
   ) {}
 
   async validateUser(email: string, password: string): Promise<AuthUser | null> {
@@ -54,7 +56,7 @@ export class AuthService {
     const existing = await this.usersService.findByEmail(dto.email);
     if (existing) throw new ConflictException('Email already registered');
     const passwordHash = await bcrypt.hash(dto.password, 12);
-    const user = await this.usersService.create({ email: dto.email, passwordHash });
+    const user = await this.provisionNewUser({ email: dto.email, passwordHash });
     const tokens = await this.generateTokens({ sub: user.id, email: user.email });
     await this.createSession(user.id, tokens.refreshToken);
     return { ...tokens, user: { id: user.id, email: user.email, defaultCurrency: user.defaultCurrency ?? null } };
@@ -175,7 +177,7 @@ export class AuthService {
       (await this.usersService.findByEmail(legacyEmail));
 
     if (!user) {
-      user = await this.usersService.create({ email: legacyEmail });
+      user = await this.provisionNewUser({ email: legacyEmail });
     }
 
     await this.portfolioService.setPrimaryAddress(user.id, address);
@@ -183,6 +185,12 @@ export class AuthService {
     const tokens = await this.generateTokens({ sub: user.id, email: user.email });
     await this.createSession(user.id, tokens.refreshToken);
     return { ...tokens, user: { id: user.id, email: user.email, defaultCurrency: user.defaultCurrency ?? null } };
+  }
+
+  private async provisionNewUser(data: { email: string; passwordHash?: string | null }) {
+    const user = await this.usersService.create(data);
+    await this.categoriesService.seedDefaults(user.id);
+    return user;
   }
 
   private async generateTokens(payload: TokenPayload): Promise<AuthTokens> {

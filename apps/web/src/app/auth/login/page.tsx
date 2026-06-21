@@ -2,6 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { RegisterSchema } from '@metaspend/shared';
 import { setSession } from '@/lib/auth';
 import { AuthCard } from '../auth-card';
 import { SiweButton } from '../siwe-button';
@@ -12,13 +16,29 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const API_URL = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3001';
 
+const RegisterFormSchema = RegisterSchema.extend({
+  confirmPassword: z.string().min(1, 'Please confirm your password'),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: 'Passwords do not match',
+  path: ['confirmPassword'],
+});
+type RegisterFormValues = z.infer<typeof RegisterFormSchema>;
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const {
+    register: registerField,
+    handleSubmit: handleRegisterSubmit,
+    formState: { errors: registerErrors },
+  } = useForm<RegisterFormValues>({
+    resolver: zodResolver(RegisterFormSchema),
+    defaultValues: { email: '', password: '', confirmPassword: '' },
+  });
 
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
@@ -44,26 +64,21 @@ export default function LoginPage() {
     }
   }
 
-  async function handleRegister(e: React.FormEvent) {
-    e.preventDefault();
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
+  async function onRegisterSubmit(data: RegisterFormValues) {
     setLoading(true);
     setError(null);
     try {
       const res = await fetch(`${API_URL}/api/v1/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: data.email, password: data.password }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error((err as { message?: string }).message ?? 'Registration failed');
       }
-      const data = await res.json();
-      setSession(data.accessToken, data.refreshToken, data.user);
+      const resData = await res.json();
+      setSession(resData.accessToken, resData.refreshToken, resData.user);
       router.push('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed');
@@ -116,17 +131,18 @@ export default function LoginPage() {
         </TabsContent>
 
         <TabsContent value="register">
-          <form onSubmit={handleRegister} className="space-y-4">
+          <form onSubmit={handleRegisterSubmit(onRegisterSubmit)} className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="reg-email">Email</Label>
               <Input
                 id="reg-email"
                 type="email"
                 placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
+                {...registerField('email')}
               />
+              {registerErrors.email && (
+                <p className="text-xs text-destructive">{registerErrors.email.message}</p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="reg-password">Password</Label>
@@ -134,10 +150,11 @@ export default function LoginPage() {
                 id="reg-password"
                 type="password"
                 placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
+                {...registerField('password')}
               />
+              {registerErrors.password && (
+                <p className="text-xs text-destructive">{registerErrors.password.message}</p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="reg-confirm">Confirm password</Label>
@@ -145,10 +162,11 @@ export default function LoginPage() {
                 id="reg-confirm"
                 type="password"
                 placeholder="••••••••"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
+                {...registerField('confirmPassword')}
               />
+              {registerErrors.confirmPassword && (
+                <p className="text-xs text-destructive">{registerErrors.confirmPassword.message}</p>
+              )}
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             <Button type="submit" className="w-full" disabled={loading}>

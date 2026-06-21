@@ -48,7 +48,7 @@ export function validateAssignmentsForChunk(params: {
   categoryIds: ReadonlySet<string>;
   subcategoryIds: ReadonlySet<string>;
   subcategoryParentMap: ReadonlyMap<string, string>;
-}): void {
+}): string[] {
   const { assignments, expectedKeys, categoryIds, subcategoryIds, subcategoryParentMap } = params;
 
   if (assignments.length !== expectedKeys.size) {
@@ -58,6 +58,7 @@ export function validateAssignmentsForChunk(params: {
   }
 
   const seen = new Set<string>();
+  const warnings: string[] = [];
 
   for (const row of assignments) {
     if (!expectedKeys.has(row.merchantKey)) {
@@ -69,19 +70,31 @@ export function validateAssignmentsForChunk(params: {
     seen.add(row.merchantKey);
 
     if (row.categoryId !== null && !categoryIds.has(row.categoryId)) {
-      throw new BadRequestException(`Auto-categorize: unknown categoryId "${row.categoryId}"`);
+      // A hallucinated categoryId shouldn't poison the other merchants in this chunk — treat it
+      // like the model returned null (skipped) instead of failing the whole batch.
+      warnings.push(
+        `Auto-categorize: unknown categoryId "${row.categoryId}" for merchantKey "${row.merchantKey}" — dropping assignment`,
+      );
+      row.categoryId = null;
+      row.subcategoryId = null;
     }
 
     if (row.subcategoryId !== null) {
       if (!subcategoryIds.has(row.subcategoryId)) {
-        throw new BadRequestException(`Auto-categorize: unknown subcategoryId "${row.subcategoryId}"`);
-      }
-      if (row.categoryId !== null) {
+        warnings.push(
+          `Auto-categorize: unknown subcategoryId "${row.subcategoryId}" for merchantKey "${row.merchantKey}" — dropping subcategory`,
+        );
+        row.subcategoryId = null;
+      } else if (row.categoryId !== null) {
         const parentId = subcategoryParentMap.get(row.subcategoryId);
         if (parentId !== row.categoryId) {
-          throw new BadRequestException(
-            `Auto-categorize: subcategoryId "${row.subcategoryId}" does not belong to categoryId "${row.categoryId}"`,
+          // Both IDs are individually valid, just not nested together — the model named a
+          // subcategory from the wrong parent. Recoverable: keep the category, drop the
+          // subcategory, rather than failing every other assignment in this chunk too.
+          warnings.push(
+            `Auto-categorize: subcategoryId "${row.subcategoryId}" does not belong to categoryId "${row.categoryId}" for merchantKey "${row.merchantKey}" — dropping subcategory`,
           );
+          row.subcategoryId = null;
         }
       }
     }
@@ -92,4 +105,6 @@ export function validateAssignmentsForChunk(params: {
       throw new BadRequestException(`Auto-categorize: missing merchantKey "${key}"`);
     }
   }
+
+  return warnings;
 }

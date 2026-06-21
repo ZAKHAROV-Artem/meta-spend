@@ -6,7 +6,7 @@
     "build": "nest build",
     "dev": "pnpm --filter @metaspend/db build && pnpm --filter @metaspend/shared build && nest start --watch",
     "start": "node dist/main",
-    "test": "pnpm --filter @metaspend/db build && pnpm --filter @metaspend/shared build && node --test --require ts-node/register --require tsconfig-paths/register src/card-transactions/card-transactions.service.spec.ts src/transactions/card-merchant-auto-categorize.spec.ts src/trips/trips.service.spec.ts",
+    "test": "pnpm --filter @metaspend/db build && pnpm --filter @metaspend/shared build && node --test --require ts-node/register --require tsconfig-paths/register src/auth/auth.service.spec.ts src/card-transactions/card-transactions.service.spec.ts src/transactions/card-merchant-auto-categorize.spec.ts src/trips/trips.service.spec.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext .ts",
     "db:reset": "pnpm --filter @metaspend/db run db:reset",

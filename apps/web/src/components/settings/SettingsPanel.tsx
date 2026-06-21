@@ -1,6 +1,8 @@
 'use client';
 
-import { Globe, Sparkles } from 'lucide-react';
+import { useState } from 'react';
+import { ChevronDown, ChevronRight, Globe, Sparkles } from 'lucide-react';
+import type { CardCategorizationRunDto } from '@metaspend/shared';
 
 import { ExtensionConnectCard } from '@/components/settings/ExtensionConnectCard';
 import { Badge } from '@/components/ui/badge';
@@ -58,8 +60,60 @@ function CurrencyPreferenceCard() {
   );
 }
 
+function ChunkBreakdown({ run }: { run: CardCategorizationRunDto }) {
+  const chunks = run.meta?.chunks;
+
+  if (chunks && chunks.length > 0) {
+    return (
+      <div className="mt-2 space-y-1 border-t border-border/60 pt-2">
+        {chunks.map((c) => (
+          <div
+            key={c.index}
+            className="flex flex-wrap items-center justify-between gap-2 rounded bg-muted/40 px-2 py-1 text-xs"
+          >
+            <span className="text-muted-foreground">
+              Chunk {c.index + 1} of {run.meta?.chunksTotal ?? chunks.length} · {c.merchantCount} merchants
+            </span>
+            <span className="tabular-nums text-muted-foreground">
+              assigned {c.assignedCount} · skipped {c.skippedCount}
+            </span>
+            {c.error ? <span className="w-full text-amber-600 dark:text-amber-400">{c.error}</span> : null}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (run.meta?.chunksTotal !== undefined) {
+    return (
+      <p className="mt-2 border-t border-border/60 pt-2 text-xs text-muted-foreground">
+        Chunk progress: {run.meta.chunksCompleted ?? 0} of {run.meta.chunksTotal} completed
+      </p>
+    );
+  }
+
+  return (
+    <p className="mt-2 border-t border-border/60 pt-2 text-xs text-muted-foreground">
+      No chunk detail recorded for this run.
+    </p>
+  );
+}
+
 function AutoCategorizationLog() {
   const { data: runs = [], isLoading } = useCategorizationRuns();
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  function toggleExpanded(id: string) {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
 
   return (
     <Card>
@@ -82,25 +136,40 @@ function AutoCategorizationLog() {
           </p>
         ) : (
           <div className="max-h-[360px] space-y-2 overflow-auto rounded-lg border border-border/70 bg-muted/28 p-2">
-            {runs.map((r) => (
-              <div key={r.id} className="rounded-md border border-border/60 bg-background/80 px-3 py-2 text-sm">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <Badge variant="outline">{r.status}</Badge>
-                  <span className="text-xs text-muted-foreground">{r.trigger}</span>
+            {runs.map((r) => {
+              const isExpanded = expanded.has(r.id);
+              return (
+                <div key={r.id} className="rounded-md border border-border/60 bg-background/80 px-3 py-2 text-sm">
+                  <button
+                    type="button"
+                    className="flex w-full flex-wrap items-center justify-between gap-2 text-left"
+                    onClick={() => toggleExpanded(r.id)}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      {isExpanded ? (
+                        <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                      ) : (
+                        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                      )}
+                      <Badge variant="outline">{r.status}</Badge>
+                    </span>
+                    <span className="text-xs text-muted-foreground">{r.trigger}</span>
+                  </button>
+                  <p className="mt-1 text-xs text-muted-foreground tabular-nums">
+                    Started {r.startedAt ? new Date(r.startedAt).toLocaleString() : 'queued'} · finished{' '}
+                    {r.finishedAt ? new Date(r.finishedAt).toLocaleString() : '—'}
+                  </p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {r.scannedTxCount} uncategorized in queue · merchants {r.scannedMerchantCount} · memory{' '}
+                    {r.memoryMatchedCount} · AI assigns {r.aiUpdatedCount} · skipped {r.skippedCount}
+                  </p>
+                  {r.errorMessage ? (
+                    <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">{r.errorMessage}</p>
+                  ) : null}
+                  {isExpanded ? <ChunkBreakdown run={r} /> : null}
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground tabular-nums">
-                  Started {r.startedAt ? new Date(r.startedAt).toLocaleString() : 'queued'} · finished{' '}
-                  {r.finishedAt ? new Date(r.finishedAt).toLocaleString() : '—'}
-                </p>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  scanned {r.scannedTxCount} txs · merchants {r.scannedMerchantCount} · memory{' '}
-                  {r.memoryMatchedCount} · AI assigns {r.aiUpdatedCount} · skipped {r.skippedCount}
-                </p>
-                {r.errorMessage ? (
-                  <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">{r.errorMessage}</p>
-                ) : null}
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </CardContent>

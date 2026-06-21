@@ -11,10 +11,17 @@ import { ExtensionTokenService } from './extension-token.service';
 import { ExtensionStatusEvents } from './extension-status-events';
 import { UsersModule } from '../users/users.module';
 import { PortfolioModule } from '../portfolio/portfolio.module';
+import { CategoriesModule } from '../categories/categories.module';
 import { JwtOrExtensionAuthGuard } from '../common/guards/jwt-or-extension-auth.guard';
 
 @Module({
-  imports: [UsersModule, PassportModule, JwtModule.register({}), forwardRef(() => PortfolioModule)],
+  imports: [
+    UsersModule,
+    PassportModule,
+    JwtModule.register({}),
+    forwardRef(() => PortfolioModule),
+    CategoriesModule,
+  ],
   controllers: [AuthController],
   providers: [
     AuthService,

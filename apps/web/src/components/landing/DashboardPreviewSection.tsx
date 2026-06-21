@@ -2,13 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Image, { type StaticImageData } from 'next/image';
-import {
-  motion,
-  AnimatePresence,
-  useReducedMotion,
-  useMotionValue,
-  useSpring,
-} from 'motion/react';
+import { motion, AnimatePresence, useReducedMotion, useMotionValue, useSpring } from 'motion/react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -21,16 +15,16 @@ import {
   X,
 } from 'lucide-react';
 
-import dashboardDark     from '@/images/dark/dashboard.png';
-import transactionsDark  from '@/images/dark/transactions.png';
-import tripsDark         from '@/images/dark/trips.png';
-import categoriesDark    from '@/images/dark/categories.png';
-import settingsDark      from '@/images/dark/settings.png';
-import dashboardLight    from '@/images/light/dashboard.png';
+import dashboardDark from '@/images/dark/dashboard.png';
+import transactionsDark from '@/images/dark/transactions.png';
+import tripsDark from '@/images/dark/trips.png';
+import categoriesDark from '@/images/dark/categories.png';
+import settingsDark from '@/images/dark/settings.png';
+import dashboardLight from '@/images/light/dashboard.png';
 import transactionsLight from '@/images/light/transactions.png';
-import tripsLight        from '@/images/light/trips.png';
-import categoriesLight   from '@/images/light/categories.png';
-import settingsLight     from '@/images/light/settings.png';
+import tripsLight from '@/images/light/trips.png';
+import categoriesLight from '@/images/light/categories.png';
+import settingsLight from '@/images/light/settings.png';
 
 type TabKey = 'dashboard' | 'transactions' | 'trips' | 'categories' | 'settings';
 
@@ -43,11 +37,29 @@ interface Tab {
 }
 
 const TABS: Tab[] = [
-  { key: 'dashboard',    label: 'Dashboard',    icon: LayoutDashboard, dark: dashboardDark,    light: dashboardLight    },
-  { key: 'transactions', label: 'Transactions', icon: CreditCard,      dark: transactionsDark, light: transactionsLight },
-  { key: 'trips',        label: 'Trips',        icon: Plane,           dark: tripsDark,        light: tripsLight        },
-  { key: 'categories',   label: 'Categories',   icon: Tag,             dark: categoriesDark,   light: categoriesLight   },
-  { key: 'settings',     label: 'Settings',     icon: Settings,        dark: settingsDark,     light: settingsLight     },
+  {
+    key: 'dashboard',
+    label: 'Dashboard',
+    icon: LayoutDashboard,
+    dark: dashboardDark,
+    light: dashboardLight,
+  },
+  {
+    key: 'transactions',
+    label: 'Transactions',
+    icon: CreditCard,
+    dark: transactionsDark,
+    light: transactionsLight,
+  },
+  { key: 'trips', label: 'Trips', icon: Plane, dark: tripsDark, light: tripsLight },
+  {
+    key: 'categories',
+    label: 'Categories',
+    icon: Tag,
+    dark: categoriesDark,
+    light: categoriesLight,
+  },
+  { key: 'settings', label: 'Settings', icon: Settings, dark: settingsDark, light: settingsLight },
 ];
 
 // ─── Custom cursor ─────────────────────────────────────────────────────────
@@ -81,12 +93,12 @@ function ScreenshotCursor({ visible }: { visible: boolean }) {
     >
       {/* Outer ring */}
       <motion.div
-        className="absolute h-20 w-20 rounded-full border-2 border-primary/60"
+        className="border-primary/60 absolute h-20 w-20 rounded-full border-2"
         animate={visible ? { scale: 1 } : { scale: 0.4 }}
         transition={{ type: 'spring', stiffness: 300, damping: 22 }}
       />
       {/* Inner filled circle */}
-      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/90 text-white shadow-lg shadow-primary/30 backdrop-blur-sm">
+      <div className="bg-primary/90 shadow-primary/30 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg backdrop-blur-sm">
         <Expand className="h-4 w-4" />
       </div>
     </motion.div>
@@ -140,12 +152,12 @@ function Lightbox({
           onClick={onClose}
         >
           {/* Backdrop */}
-          <div className="absolute inset-0 bg-background/95 backdrop-blur-xl" />
+          <div className="bg-background/95 absolute inset-0 backdrop-blur-xl" />
 
           {/* Close */}
           <button
             onClick={onClose}
-            className="absolute right-5 top-5 z-10 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:text-foreground"
+            className="border-border bg-card text-muted-foreground hover:text-foreground absolute right-5 top-5 z-10 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border transition-colors"
             aria-label="Close"
           >
             <X className="h-4 w-4" />
@@ -153,7 +165,7 @@ function Lightbox({
 
           {/* Tab pills */}
           <motion.div
-            className="relative z-10 mb-5 flex max-w-full items-center gap-1 overflow-x-auto rounded-2xl border border-border bg-muted/50 p-1.5"
+            className="border-border bg-muted/50 relative z-10 mb-5 flex max-w-full items-center gap-1 overflow-x-auto rounded-2xl border p-1.5"
             initial={reduced ? false : { y: -12, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.08 }}
@@ -173,7 +185,7 @@ function Lightbox({
                   {isActive && (
                     <motion.span
                       layoutId="lightbox-tab-bg"
-                      className="absolute inset-0 rounded-xl bg-background shadow-sm ring-1 ring-border/60"
+                      className="bg-background ring-border/60 absolute inset-0 rounded-xl shadow-sm ring-1"
                       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                     />
                   )}
@@ -195,7 +207,7 @@ function Lightbox({
             {/* Prev arrow */}
             <button
               onClick={prev}
-              className="flex w-10 shrink-0 cursor-pointer items-center justify-center self-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:text-foreground"
+              className="border-border bg-card text-muted-foreground hover:text-foreground flex w-10 shrink-0 cursor-pointer items-center justify-center self-center rounded-full border shadow-sm transition-colors"
               style={{ height: 40 }}
               aria-label="Previous"
             >
@@ -203,7 +215,10 @@ function Lightbox({
             </button>
 
             {/* Screenshot */}
-            <div className="relative flex-1 overflow-hidden rounded-xl border border-border shadow-2xl" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+            <div
+              className="border-border relative flex-1 overflow-hidden rounded-xl border shadow-2xl"
+              style={{ maxHeight: 'calc(100vh - 200px)' }}
+            >
               <AnimatePresence mode="wait">
                 <motion.div
                   key={activeIdx}
@@ -234,7 +249,7 @@ function Lightbox({
             {/* Next arrow */}
             <button
               onClick={next}
-              className="flex w-10 shrink-0 cursor-pointer items-center justify-center self-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:text-foreground"
+              className="border-border bg-card text-muted-foreground hover:text-foreground flex w-10 shrink-0 cursor-pointer items-center justify-center self-center rounded-full border shadow-sm transition-colors"
               style={{ height: 40 }}
               aria-label="Next"
             >
@@ -243,13 +258,16 @@ function Lightbox({
           </motion.div>
 
           {/* Dot indicators */}
-          <div className="relative z-10 mt-4 flex shrink-0 items-center gap-2" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="relative z-10 mt-4 flex shrink-0 items-center gap-2"
+            onClick={(e) => e.stopPropagation()}
+          >
             {TABS.map((_, i) => (
               <button
                 key={i}
                 onClick={() => setActiveIdx(i)}
                 className={`h-1.5 cursor-pointer rounded-full transition-all duration-200 ${
-                  i === activeIdx ? 'w-6 bg-primary' : 'w-1.5 bg-border hover:bg-muted-foreground'
+                  i === activeIdx ? 'bg-primary w-6' : 'bg-border hover:bg-muted-foreground w-1.5'
                 }`}
               />
             ))}
@@ -288,14 +306,15 @@ export function DashboardPreviewSection() {
             viewport={{ once: true, amount: 0.2 }}
             transition={{ duration: 0.5, ease: 'easeOut' }}
           >
-            <span className="mb-3 inline-block font-mono-alt text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+            <span className="font-mono-alt text-primary mb-3 inline-block text-xs font-semibold uppercase tracking-[0.2em]">
               The dashboard
             </span>
-            <h2 className="font-display text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+            <h2 className="font-display text-foreground text-4xl font-bold tracking-tight sm:text-5xl">
               Your finances, beautifully visualized
             </h2>
-            <p className="mx-auto mt-4 max-w-xl text-lg text-muted-foreground">
-              A clear, real-time view of where your money goes — organized, categorized, always up to date.
+            <p className="text-muted-foreground mx-auto mt-4 max-w-xl text-lg">
+              A clear, real-time view of where your money goes — organized, categorized, always up
+              to date.
             </p>
           </motion.div>
 
@@ -307,7 +326,7 @@ export function DashboardPreviewSection() {
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 0.4, delay: 0.1, ease: 'easeOut' }}
           >
-            <div className="flex max-w-full items-center gap-1 overflow-x-auto rounded-2xl border border-border bg-muted/50 p-1.5">
+            <div className="border-border bg-muted/50 flex max-w-full items-center gap-1 overflow-x-auto rounded-2xl border p-1.5">
               {TABS.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = tab.key === activeTab;
@@ -322,7 +341,7 @@ export function DashboardPreviewSection() {
                     {isActive && (
                       <motion.span
                         layoutId="tab-bg"
-                        className="absolute inset-0 rounded-xl bg-background shadow-sm ring-1 ring-border/60"
+                        className="bg-background ring-border/60 absolute inset-0 rounded-xl shadow-sm ring-1"
                         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                       />
                     )}
@@ -342,25 +361,25 @@ export function DashboardPreviewSection() {
             transition={{ duration: 0.75, ease: 'easeOut' }}
             style={{ perspective: 1400 }}
           >
-            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-2xl shadow-foreground/10 ring-1 ring-border/40">
+            <div className="border-border bg-card shadow-foreground/10 ring-border/40 overflow-hidden rounded-2xl border shadow-2xl ring-1">
               {/* Browser chrome bar */}
-              <div className="flex items-center gap-3 border-b border-border bg-muted/50 px-4 py-3">
+              <div className="border-border bg-muted/50 flex items-center gap-3 border-b px-4 py-3">
                 <div className="flex gap-1.5">
                   <span className="h-3 w-3 rounded-full bg-red-400/80" />
                   <span className="h-3 w-3 rounded-full bg-yellow-400/80" />
                   <span className="h-3 w-3 rounded-full bg-green-400/80" />
                 </div>
                 <div className="flex flex-1 justify-center">
-                  <div className="flex w-72 items-center gap-2 rounded-md bg-background/70 px-3 py-1.5 text-xs text-muted-foreground ring-1 ring-border/50">
+                  <div className="bg-background/70 text-muted-foreground ring-border/50 flex w-72 items-center gap-2 rounded-md px-3 py-1.5 text-xs ring-1">
                     <span className="h-2 w-2 shrink-0 rounded-full bg-green-500/80" />
-                    app.metaspend.xyz/{activeTab}
+                    metaspend.app/{activeTab}
                   </div>
                 </div>
               </div>
 
               {/* Screenshot — clickable with custom cursor */}
               <div
-                className="relative max-h-[420px] overflow-hidden bg-background sm:max-h-[560px] lg:max-h-[720px]"
+                className="bg-background relative max-h-[420px] overflow-hidden sm:max-h-[560px] lg:max-h-[720px]"
                 style={{ cursor: 'none' }}
                 onMouseEnter={() => setIsHovering(true)}
                 onMouseLeave={() => setIsHovering(false)}
@@ -392,7 +411,7 @@ export function DashboardPreviewSection() {
                 </AnimatePresence>
 
                 {/* Fade bottom edge */}
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-linear-to-t from-background to-transparent" />
+                <div className="bg-linear-to-t from-background pointer-events-none absolute inset-x-0 bottom-0 h-32 to-transparent" />
               </div>
             </div>
           </motion.div>

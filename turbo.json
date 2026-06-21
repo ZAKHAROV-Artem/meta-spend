@@ -11,11 +11,6 @@
       "cache": false,
       "persistent": true
     },
-    "@metaspend/extension#dev": {
-      "dependsOn": ["@metaspend/web#build"],
-      "cache": false,
-      "persistent": true
-    },
     "lint": {
       "dependsOn": ["^lint"]
     },

@@ -82,13 +82,16 @@ export class CardMerchantOpenAiService {
 
       const text = stripJsonFence(content);
       const parsed = parseAutoCategorizeAiPayload(text);
-      validateAssignmentsForChunk({
+      const warnings = validateAssignmentsForChunk({
         assignments: parsed.assignments,
         expectedKeys: new Set(input.merchants.map((m) => m.merchantKey)),
         categoryIds: new Set(input.categories.map((c) => c.id)),
         subcategoryIds: allSubcategoryIds,
         subcategoryParentMap,
       });
+      for (const warning of warnings) {
+        this.logger.warn(warning);
+      }
 
       return parsed.assignments;
     } catch (e) {
