@@ -1,3 +1,4 @@
+import './style.css';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
@@ -8,7 +9,7 @@ import {
   type CardSyncBodyWire,
 } from './src/lib/api';
 
-const STORAGE_API_TOKEN_KEY = 'cryptotrackApiToken';
+const STORAGE_API_TOKEN_KEY = 'metaspendApiToken';
 
 type CaptureOutcome =
   | { ok: false; error: string; jobId?: string; scrapeOk?: boolean; detail?: string }
@@ -49,165 +50,77 @@ function sendCaptureMessage(): Promise<CaptureOutcome> {
   });
 }
 
-const FOX = (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="28" height="28" fill="none">
-    <path d="M24 3 L40 10 L44 26 L36 40 L24 45 L12 40 L4 26 L8 10 Z" fill="#F6851B" />
-    <path d="M8 10 L14 3 L20 12 Z" fill="#E2761B" />
-    <path d="M40 10 L34 3 L28 12 Z" fill="#E2761B" />
-    <path d="M20 12 L28 12 L32 20 L24 22 L16 20 Z" fill="#CD6116" />
-    <ellipse cx="16.5" cy="19" rx="3.5" ry="4" fill="white" />
-    <ellipse cx="31.5" cy="19" rx="3.5" ry="4" fill="white" />
-    <circle cx="17.5" cy="19.5" r="2" fill="#1D1D1D" />
-    <circle cx="32.5" cy="19.5" r="2" fill="#1D1D1D" />
-    <ellipse cx="24" cy="32" rx="7" ry="5.5" fill="#FCD0A3" />
-    <ellipse cx="24" cy="29.5" rx="2.2" ry="1.4" fill="#1D1D1D" />
-    <path
-      d="M19 33 Q24 37 29 33"
-      stroke="#CD6116"
-      strokeWidth="1.2"
-      strokeLinecap="round"
+function Fox({ pulse }: { pulse?: boolean }) {
+  return (
+    <svg
+      className={`popup-header-fox${pulse ? ' is-loading' : ''}`}
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 48 48"
+      width="28"
+      height="28"
       fill="none"
-    />
-    <path d="M12 40 L24 45 L36 40 L31 35 L24 37 L17 35 Z" fill="#E2761B" />
-  </svg>
-);
+    >
+      <path d="M24 3 L40 10 L44 26 L36 40 L24 45 L12 40 L4 26 L8 10 Z" fill="#F6851B" />
+      <path d="M8 10 L14 3 L20 12 Z" fill="#E2761B" />
+      <path d="M40 10 L34 3 L28 12 Z" fill="#E2761B" />
+      <path d="M20 12 L28 12 L32 20 L24 22 L16 20 Z" fill="#CD6116" />
+      <ellipse cx="16.5" cy="19" rx="3.5" ry="4" fill="white" />
+      <ellipse cx="31.5" cy="19" rx="3.5" ry="4" fill="white" />
+      <circle cx="17.5" cy="19.5" r="2" fill="#1D1D1D" />
+      <circle cx="32.5" cy="19.5" r="2" fill="#1D1D1D" />
+      <ellipse cx="24" cy="32" rx="7" ry="5.5" fill="#FCD0A3" />
+      <ellipse cx="24" cy="29.5" rx="2.2" ry="1.4" fill="#1D1D1D" />
+      <path
+        d="M19 33 Q24 37 29 33"
+        stroke="#CD6116"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        fill="none"
+      />
+      <path d="M12 40 L24 45 L36 40 L31 35 L24 37 L17 35 Z" fill="#E2761B" />
+    </svg>
+  );
+}
 
-const s = {
-  root: {
-    width: 300,
-    background: '#fff',
-    fontFamily: 'Inter, system-ui, sans-serif',
-    borderRadius: 16,
-    overflow: 'hidden' as const,
-  },
-  header: {
-    background: 'linear-gradient(135deg, #F6851B 0%, #CD6116 100%)',
-    padding: '16px 18px 14px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: 10,
-  },
-  headerText: {
-    color: 'white',
-  },
-  title: {
-    margin: 0,
-    fontSize: 15,
-    fontWeight: 700,
-    color: 'white',
-    lineHeight: 1.2,
-  },
-  subtitle: {
-    margin: 0,
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.75)',
-    marginTop: 1,
-  },
-  body: {
-    padding: '16px 18px',
-    color: '#111',
-  },
-  label: {
-    display: 'block' as const,
-    fontSize: 11,
-    fontWeight: 600,
-    color: '#6b7280',
-    marginBottom: 5,
-    textTransform: 'uppercase' as const,
-    letterSpacing: '0.05em',
-  },
-  input: {
-    width: '100%',
-    boxSizing: 'border-box' as const,
-    border: '1.5px solid #e5e7eb',
-    borderRadius: 999,
-    padding: '9px 14px',
-    fontSize: 18,
-    letterSpacing: '0.25em',
-    textAlign: 'center' as const,
-    outline: 'none',
-    color: '#111',
-    background: '#fafafa',
-    fontFamily: 'monospace',
-    transition: 'border-color 0.15s',
-  },
-  btn: {
-    width: '100%',
-    border: 0,
-    borderRadius: 999,
-    background: 'linear-gradient(135deg, #F6851B 0%, #E2761B 100%)',
-    color: 'white',
-    cursor: 'pointer' as const,
-    fontSize: 14,
-    fontWeight: 700,
-    padding: '11px 0',
-    marginTop: 10,
-    transition: 'opacity 0.15s',
-    boxShadow: '0 4px 12px rgba(246,133,27,0.35)',
-  },
-  btnDisabled: { opacity: 0.55, cursor: 'wait' as const },
-  row: { display: 'flex', gap: 8, marginTop: 0 },
-  btnHalf: {
-    flex: 1,
-    border: 0,
-    borderRadius: 999,
-    background: 'linear-gradient(135deg, #F6851B 0%, #E2761B 100%)',
-    color: 'white',
-    cursor: 'pointer' as const,
-    fontSize: 13,
-    fontWeight: 700,
-    padding: '10px 0',
-    transition: 'opacity 0.15s',
-    boxShadow: '0 4px 12px rgba(246,133,27,0.3)',
-  },
-  btnGhost: {
-    flex: 1,
-    borderRadius: 999,
-    border: '1.5px solid #e5e7eb',
-    background: 'white',
-    color: '#6b7280',
-    cursor: 'pointer' as const,
-    fontSize: 13,
-    fontWeight: 600,
-    padding: '10px 0',
-  },
-  hint: {
-    fontSize: 12,
-    color: '#9ca3af',
-    textAlign: 'center' as const,
-    margin: '10px 0 0',
-    lineHeight: 1.4,
-  },
-  status: {
-    marginTop: 12,
-    borderRadius: 10,
-    padding: '10px 12px',
-    fontSize: 12,
-    lineHeight: 1.45,
-  },
-  ok: { background: '#ecfdf5', color: '#065f46' },
-  err: { background: '#fef2f2', color: '#991b1b' },
-  divider: { height: 1, background: '#f3f4f6', margin: '0 0 14px' },
-  connectedBadge: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 5,
-    background: '#ecfdf5',
-    color: '#065f46',
-    borderRadius: 999,
-    padding: '3px 10px 3px 7px',
-    fontSize: 11,
-    fontWeight: 600,
-    marginBottom: 14,
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: '50%',
-    background: '#10b981',
-    display: 'inline-block',
-  },
-};
+function RefreshIcon({ spinning }: { spinning?: boolean }) {
+  return (
+    <svg
+      className={spinning ? 'icon-spin' : undefined}
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      width="13"
+      height="13"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M21 12a9 9 0 0 1-15.3 6.4M3 12a9 9 0 0 1 15.3-6.4" />
+      <path d="M3 17v-4h4M21 7v4h-4" />
+    </svg>
+  );
+}
+
+function UnlinkIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      width="13"
+      height="13"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M18.5 8.5 21 6M5.5 15.5 3 18M9 6 7 4M15 18l2 2" />
+      <path d="M14.5 6.5a3 3 0 0 1 0 4.24l-3.76 3.76a3 3 0 0 1-4.24-4.24l1.06-1.06" />
+      <path d="M9.5 17.5a3 3 0 0 0 0-4.24l3.76-3.76a3 3 0 0 1 4.24 4.24l-1.06 1.06" />
+    </svg>
+  );
+}
 
 export default function Popup() {
   const [apiToken, setApiTokenState] = useState<string | null>(null);
@@ -315,86 +228,91 @@ export default function Popup() {
 
   if (!storageReady) {
     return (
-      <main style={s.root}>
-        <div style={s.header}>
-          <div style={s.headerText}>
-            <p style={s.title}>🦊 MetaSpend</p>
-            <p style={s.subtitle}>MetaMask Card</p>
+      <main className="popup-root">
+        <div className="popup-header">
+          <Fox pulse />
+          <div>
+            <p className="popup-title">MetaSpend</p>
+            <p className="popup-subtitle">MetaMask Card</p>
           </div>
         </div>
-        <div style={{ ...s.body, color: '#9ca3af', fontSize: 13 }}>Loading…</div>
+        <div className="popup-body is-loading">Loading…</div>
       </main>
     );
   }
 
   return (
-    <main style={s.root}>
-      {/* Header */}
-      <div style={s.header}>
-        <div style={s.headerText}>
-          <p style={s.title}>🦊 MetaSpend</p>
+    <main className="popup-root">
+      <div className="popup-header">
+        <Fox />
+        <div>
+          <p className="popup-title">MetaSpend</p>
         </div>
       </div>
 
-      <div style={s.body}>
-        {!connected ? (
-          <>
-            <label style={s.label} htmlFor="pair-code">
-              Pair code
-            </label>
-            <input
-              id="pair-code"
-              placeholder="000000"
-              autoComplete="one-time-code"
-              inputMode="numeric"
-              maxLength={6}
-              value={pairCode}
-              style={s.input}
-              disabled={isPairing}
-              onChange={(e) => setPairCode(e.target.value.replace(/\D+/gu, '').slice(0, 6))}
-            />
-            <p style={s.hint}>Copy the pairing code from Settings → Browser extension</p>
-            <button
-              type="button"
-              style={{ ...s.btn, ...(isPairing ? s.btnDisabled : {}) }}
-              disabled={isPairing || pairCode.trim().length < 6}
-              onClick={() => void onConnect()}
-            >
-              {isPairing ? 'Connecting…' : 'Connect'}
-            </button>
-          </>
-        ) : (
-          <>
-            <div style={s.connectedBadge}>
-              <span style={s.dot} />
-              Connected
-            </div>
-            <p style={{ ...s.hint, margin: '0 0 12px', color: '#6b7280', textAlign: 'left' }}>
-              Open the MetaMask Card activity page, then tap Sync.
-            </p>
-            <div style={s.row}>
+      <div className="popup-body">
+        <div key={connected ? 'connected' : 'disconnected'} className="state-block">
+          {!connected ? (
+            <>
+              <label className="field-label" htmlFor="pair-code">
+                Pair code
+              </label>
+              <input
+                id="pair-code"
+                placeholder="000000"
+                autoComplete="one-time-code"
+                inputMode="numeric"
+                maxLength={6}
+                value={pairCode}
+                className="pair-input"
+                disabled={isPairing}
+                onChange={(e) => setPairCode(e.target.value.replace(/\D+/gu, '').slice(0, 6))}
+              />
+              <p className="hint">Copy the pairing code from Settings → Browser extension</p>
               <button
                 type="button"
-                style={{ ...s.btnHalf, ...(isSyncing ? s.btnDisabled : {}) }}
-                disabled={isSyncing}
-                onClick={() => void syncNow()}
+                className="btn btn-primary"
+                disabled={isPairing || pairCode.trim().length < 6}
+                onClick={() => void onConnect()}
               >
-                {isSyncing ? 'Syncing…' : 'Sync now'}
+                {isPairing ? 'Connecting…' : 'Connect'}
               </button>
-              <button
-                type="button"
-                style={s.btnGhost}
-                disabled={isSyncing}
-                onClick={() => void clearToken()}
-              >
-                Disconnect
-              </button>
-            </div>
-          </>
-        )}
+            </>
+          ) : (
+            <>
+              <div className="connected-badge">
+                <span className="connected-dot" />
+                Connected
+              </div>
+              <p className="hint hint-left">Open the MetaMask Card activity page, then tap Sync.</p>
+              <div className="btn-row">
+                <button
+                  type="button"
+                  className="btn btn-half"
+                  disabled={isSyncing}
+                  onClick={() => void syncNow()}
+                >
+                  <RefreshIcon spinning={isSyncing} />
+                  {isSyncing ? 'Syncing…' : 'Sync now'}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  disabled={isSyncing}
+                  onClick={() => void clearToken()}
+                >
+                  <UnlinkIcon />
+                  Disconnect
+                </button>
+              </div>
+            </>
+          )}
+        </div>
 
         {status && (
-          <div style={{ ...s.status, ...(status.kind === 'ok' ? s.ok : s.err) }}>{status.text}</div>
+          <div className={`status ${status.kind === 'ok' ? 'status-ok' : 'status-err'}`}>
+            {status.text}
+          </div>
         )}
       </div>
     </main>

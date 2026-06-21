@@ -1,5 +1,5 @@
 import { Injectable, ConflictException, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
-import { Category } from '@crypto-tracker/db';
+import { Category } from '@metaspend/db';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 

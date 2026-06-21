@@ -6,7 +6,7 @@ import { motion, useReducedMotion } from 'motion/react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { Check, Minus, Plus, Search, X } from 'lucide-react';
-import type { Transaction } from '@crypto-tracker/shared';
+import type { Transaction } from '@metaspend/shared';
 import { useCreateTrip, usePreviewTrip } from '@/hooks/api/useTrips';
 import { useTransactions } from '@/hooks/api/useTransactions';
 import { Badge } from '@/components/ui/badge';

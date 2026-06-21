@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { CardTxStatus, TransactionSource } from '@crypto-tracker/db';
+import { CardTxStatus, TransactionSource } from '@metaspend/db';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { TripsService } from './trips.service';
 

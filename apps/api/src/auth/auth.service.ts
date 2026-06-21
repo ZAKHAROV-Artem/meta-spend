@@ -17,7 +17,7 @@ import { NonceStore } from './siwe/nonce.store';
 import { ExtensionPairCodeStore } from './extension-pair-code.store';
 import { ExtensionTokenService } from './extension-token.service';
 import { ExtensionStatusEvents } from './extension-status-events';
-import { AuthUser, AuthTokens, TokenPayload } from '@crypto-tracker/shared';
+import { AuthUser, AuthTokens, TokenPayload } from '@metaspend/shared';
 import { PortfolioService } from '../portfolio/portfolio.service';
 
 export type SiweVerifyResult = {

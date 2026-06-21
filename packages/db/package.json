@@ -1,5 +1,5 @@
 {
-  "name": "@crypto-tracker/db",
+  "name": "@metaspend/db",
   "version": "0.1.0",
   "private": true,
   "main": "./dist/index.js",

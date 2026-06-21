@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { differenceInCalendarDays, endOfDay, format, startOfDay } from 'date-fns';
 import { toast } from 'sonner';
 import { Cell, Label, Pie, PieChart } from 'recharts';
-import type { CardTxStatus, Transaction } from '@crypto-tracker/shared';
+import type { CardTxStatus, Transaction } from '@metaspend/shared';
 import { useDeleteTrip, useTrip, useUpdateTrip } from '@/hooks/api/useTrips';
 import { useCategories } from '@/hooks/api/useCategories';
 import { Badge } from '@/components/ui/badge';

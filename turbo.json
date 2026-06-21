@@ -11,8 +11,8 @@
       "cache": false,
       "persistent": true
     },
-    "@crypto-tracker/extension#dev": {
-      "dependsOn": ["@crypto-tracker/web#build"],
+    "@metaspend/extension#dev": {
+      "dependsOn": ["@metaspend/web#build"],
       "cache": false,
       "persistent": true
     },

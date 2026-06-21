@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
     devtoolSegmentExplorer: false,
   },
   outputFileTracingRoot: path.resolve(__dirname, '../..'),
-  transpilePackages: ['@crypto-tracker/shared'],
+  transpilePackages: ['@metaspend/shared'],
   webpack: (config) => {
     config.resolve ??= {};
     config.resolve.alias = {

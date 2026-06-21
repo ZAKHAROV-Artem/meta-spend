@@ -8,7 +8,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { AuthUser } from '@crypto-tracker/shared';
+import { AuthUser } from '@metaspend/shared';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtOrExtensionAuthGuard } from '../common/guards/jwt-or-extension-auth.guard';
 import { ListCardTransactionsDto } from './dto/list-card-transactions.dto';

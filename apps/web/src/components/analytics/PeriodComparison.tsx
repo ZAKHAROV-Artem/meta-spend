@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import type { CategorySpendShare } from '@crypto-tracker/shared';
+import type { CategorySpendShare } from '@metaspend/shared';
 import type { AnalyticsRange } from '@/components/filters/DateRangePicker';
 import { DateRangePicker } from '@/components/filters/DateRangePicker';
 import { Button } from '@/components/ui/button';

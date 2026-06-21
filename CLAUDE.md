@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-CryptoTrack / "MetaSpend" — turns MetaMask Card transactions into a normal expense-tracking
+MetaSpend — turns MetaMask Card transactions into a normal expense-tracking
 experience (categories, analytics, multi-currency trips). See `docs/project-description.md` for
 the original product brief (multi-chain wallet tracking is the long-term vision; today the only
 live data source is the MetaMask Card, synced via a browser extension that scrapes the Card
@@ -19,10 +19,10 @@ running tools inside a package directly.
 - `apps/api` — NestJS (Fastify adapter), REST API under `/api/v1`.
 - `apps/web` — Next.js 15 App Router, the user-facing dashboard.
 - `apps/extension` — Plasmo Chrome extension (MV3) that scrapes MetaMask Card pages and syncs to the API.
-- `packages/db` — Prisma schema/client. Other packages import generated types from `@crypto-tracker/db` (it re-exports `@prisma/client`), not from `@prisma/client` directly.
+- `packages/db` — Prisma schema/client. Other packages import generated types from `@metaspend/db` (it re-exports `@prisma/client`), not from `@prisma/client` directly.
 - `packages/shared` — zod schemas, shared TS types, and merchant-categorization rule matching used by both `api` and `web`.
 
-`apps/web` and `apps/api` both depend on `@crypto-tracker/shared`/`@crypto-tracker/db` as built
+`apps/web` and `apps/api` both depend on `@metaspend/shared`/`@metaspend/db` as built
 artifacts (`dist/`), not source — after editing `packages/shared` or `packages/db`, rebuild that
 package (or run the consumer's `dev` script, which does it for you) before the change is visible
 elsewhere.
@@ -38,9 +38,9 @@ pnpm build                    # turbo run build
 pnpm lint                     # turbo run lint
 pnpm typecheck                # turbo run typecheck
 
-pnpm --filter @crypto-tracker/api dev      # Nest with --watch (builds db+shared first)
-pnpm --filter @crypto-tracker/web dev      # Next.js on port 4000
-pnpm --filter @crypto-tracker/extension dev  # Plasmo dev build (depends on web#build in turbo.json)
+pnpm --filter @metaspend/api dev      # Nest with --watch (builds db+shared first)
+pnpm --filter @metaspend/web dev      # Next.js on port 4000
+pnpm --filter @metaspend/extension dev  # Plasmo dev build (depends on web#build in turbo.json)
 
 pnpm db:generate               # prisma generate (turbo, all packages)
 pnpm db:migrate                # prisma migrate dev (uses apps/api/.env)
@@ -57,7 +57,7 @@ hand-rolled in-memory fakes for Prisma (no test database). The `test` script in
 spec file is silently skipped unless you add it to that script.
 
 ```bash
-pnpm --filter @crypto-tracker/api test
+pnpm --filter @metaspend/api test
 # or run one file directly:
 node --test --require ts-node/register --require tsconfig-paths/register \
   apps/api/src/trips/trips.service.spec.ts
@@ -134,7 +134,7 @@ are stale — Plasmo builds from `src/`). Flow: `content.ts` scrapes transaction
 `card.metamask.io`/`portfolio.metamask.io`, `src/lib/normalize.ts` maps them to the
 `ParsedCardTx` shape (shared schema, `parserVersion: 2`), `background.ts` posts them to
 `POST /api/v1/card-transactions/sync` using the pairing token stored in
-`chrome.storage.local.cryptotrackApiToken`. Pairing itself happens via a 6-digit code generated
+`chrome.storage.local.metaspendApiToken`. Pairing itself happens via a 6-digit code generated
 in the web app's Settings page. Override the API origin with `PLASMO_PUBLIC_API_URL` (see
 `apps/extension/README.md`).
 

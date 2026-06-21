@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import type { CardCategorizationRunDto } from '@crypto-tracker/shared';
-import { AuthUser } from '@crypto-tracker/shared';
+import type { CardCategorizationRunDto } from '@metaspend/shared';
+import { AuthUser } from '@metaspend/shared';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CardCategorizationRunService } from '../card-transactions/card-categorization-run.service';

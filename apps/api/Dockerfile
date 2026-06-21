@@ -19,7 +19,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/api/package.json apps/api/package.json
 COPY packages/db/package.json packages/db/package.json
 COPY packages/shared/package.json packages/shared/package.json
-RUN pnpm install --frozen-lockfile --filter @crypto-tracker/api...
+RUN pnpm install --frozen-lockfile --filter @metaspend/api...
 
 FROM deps AS builder
 
@@ -28,10 +28,10 @@ COPY apps/api apps/api
 COPY packages/db packages/db
 COPY packages/shared packages/shared
 
-RUN pnpm --filter @crypto-tracker/db run db:generate
-RUN pnpm --filter @crypto-tracker/db run build
-RUN pnpm --filter @crypto-tracker/shared run build
-RUN pnpm --filter @crypto-tracker/api run build
+RUN pnpm --filter @metaspend/db run db:generate
+RUN pnpm --filter @metaspend/db run build
+RUN pnpm --filter @metaspend/shared run build
+RUN pnpm --filter @metaspend/api run build
 
 FROM base AS runner
 

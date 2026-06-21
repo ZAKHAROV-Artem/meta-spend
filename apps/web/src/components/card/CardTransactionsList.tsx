@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { endOfDay, format, startOfDay } from 'date-fns';
-import type { CardTxStatus, Transaction } from '@crypto-tracker/shared';
+import type { CardTxStatus, Transaction } from '@metaspend/shared';
 import { useTransactions, useTransactionStats, type TransactionFilters } from '@/hooks/api/useTransactions';
 import { useCurrentUser } from '@/hooks/api/useUserPreferences';
 import { useCategories } from '@/hooks/api/useCategories';

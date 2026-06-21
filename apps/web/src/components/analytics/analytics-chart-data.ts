@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import type { CardTransactionAnalytics } from '@crypto-tracker/shared';
+import type { CardTransactionAnalytics } from '@metaspend/shared';
 import type { ChartConfig } from '@/components/ui/chart';
 
 const CHART_COLORS = [

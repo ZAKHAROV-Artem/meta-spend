@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { PortfolioOverview } from '@crypto-tracker/shared';
+import type { PortfolioOverview } from '@metaspend/shared';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()

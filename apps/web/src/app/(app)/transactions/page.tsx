@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { CardTransactionsList } from '@/components/card/CardTransactionsList';
 import { PageContainer } from '@/components/layout/PageContainer';
-import type { CardTxStatus } from '@crypto-tracker/shared';
+import type { CardTxStatus } from '@metaspend/shared';
 
 export const metadata: Metadata = { title: 'Transactions — MetaSpend' };
 

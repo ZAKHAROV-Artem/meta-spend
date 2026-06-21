@@ -1,57 +1,31 @@
 {
-  "name": "@crypto-tracker/extension",
+  "name": "@metaspend/extension",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Parse MetaMask Card transaction HTML for debugging.",
+  "description": "Syncs your MetaMask Card transactions into MetaSpend for spending tracking and analytics.",
   "manifest": {
-
     "name": "MetaSpend - MetaMask Card sync",
-
     "action": {
-
       "default_popup": "popup.html",
-
       "default_title": "MetaSpend Card"
-
-
-
     },
-
     "permissions": [
-
       "storage",
-
       "tabs",
-
       "scripting"
-
     ],
-
     "host_permissions": [
-
       "https://portfolio.metamask.io/*",
-
       "https://card.metamask.io/*",
-
-      "http://localhost:4001/*"
-
+      "https://metaspend.app/*"
     ]
-
   },
-
   "scripts": {
-
-
-
     "dev": "plasmo dev --no-cs-reload",
-
     "build": "plasmo build",
-
     "package": "plasmo package",
-
     "typecheck": "tsc --noEmit"
-
   },
   "dependencies": {
     "react": "^19.0.0",

@@ -18,7 +18,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
-import type { UniqueMerchant } from '@crypto-tracker/shared';
+import type { UniqueMerchant } from '@metaspend/shared';
 
 type FilterTab = 'all' | 'uncategorized' | 'categorized';
 

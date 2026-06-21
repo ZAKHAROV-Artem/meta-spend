@@ -26,7 +26,7 @@ import { LocalAuthGuard } from '../common/guards/local-auth.guard';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { JwtOrExtensionAuthGuard } from '../common/guards/jwt-or-extension-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { AuthUser } from '@crypto-tracker/shared';
+import { AuthUser } from '@metaspend/shared';
 
 @Controller('auth')
 export class AuthController {

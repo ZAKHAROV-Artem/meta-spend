@@ -50,8 +50,8 @@ export function ThemeSwitcher({
             aria-pressed={active}
             onClick={() => setTheme(value)}
             className={cn(
-              'h-9 w-9 rounded-lg p-0 transition-all',
-              isSidebar ? 'rounded-lg' : 'rounded-full',
+              'p-0 transition-all',
+              isSidebar ? 'h-9 w-9 rounded-lg' : 'size-8 rounded-full',
               isSidebar
                 ? 'text-sidebar-muted-foreground hover:text-sidebar-foreground'
                 : 'text-muted-foreground hover:text-foreground',

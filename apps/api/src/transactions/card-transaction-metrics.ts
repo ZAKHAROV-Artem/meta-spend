@@ -1,9 +1,9 @@
-import { CardTxStatus, Prisma } from '@crypto-tracker/db';
+import { CardTxStatus, Prisma } from '@metaspend/db';
 import type {
   AvgTransactionAmountTrendPoint,
   CryptoSpendSummary,
   ExchangeRateTrendPoint,
-} from '@crypto-tracker/shared';
+} from '@metaspend/shared';
 
 type CardMetricRow = {
   fiatAmount?: Prisma.Decimal | string | number | null;

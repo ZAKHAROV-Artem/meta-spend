@@ -1,6 +1,6 @@
 import { Type } from 'class-transformer';
 import { IsDateString, IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
-import { CardTxStatus } from '@crypto-tracker/db';
+import { CardTxStatus } from '@metaspend/db';
 
 export class ListCardTransactionsDto {
   @IsOptional()

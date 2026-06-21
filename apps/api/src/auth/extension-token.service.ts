@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { createHash, randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
-import { AuthUser } from '@crypto-tracker/shared';
+import { AuthUser } from '@metaspend/shared';
 
 const TOKEN_BYTES = 32;
 

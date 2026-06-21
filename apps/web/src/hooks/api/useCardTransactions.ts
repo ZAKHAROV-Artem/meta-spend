@@ -1,5 +1,5 @@
 import { useApiQuery } from './useApi';
-import type { CardTxStatus, PaginatedTransactions } from '@crypto-tracker/shared';
+import type { CardTxStatus, PaginatedTransactions } from '@metaspend/shared';
 
 export interface CardTransactionFilters {
   categoryId?: string;

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { CardTxStatus, Prisma, TransactionSource } from '@crypto-tracker/db';
+import { CardTxStatus, Prisma, TransactionSource } from '@metaspend/db';
 import { ConflictException } from '@nestjs/common';
 import { CategoriesService } from '../categories/categories.service';
 import { TransactionsService } from '../transactions/transactions.service';

@@ -1,5 +1,5 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
-import { AuthUser } from '@crypto-tracker/shared';
+import { AuthUser } from '@metaspend/shared';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PortfolioService } from './portfolio.service';

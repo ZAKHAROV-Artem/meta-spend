@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { ArrowRight } from 'lucide-react';
 
-import type { Transaction } from '@crypto-tracker/shared';
+import type { Transaction } from '@metaspend/shared';
 import { useTransactions } from '@/hooks/api/useTransactions';
 import { TransactionCategoryBadge } from '@/components/transactions/TransactionCategoryBadge';
 import { Button } from '@/components/ui/button';

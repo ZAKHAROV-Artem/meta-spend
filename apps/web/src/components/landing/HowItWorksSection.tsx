@@ -152,14 +152,22 @@ export function HowItWorksSection() {
           </p>
         </motion.div>
 
-        {/* Desktop: flex row with inline connectors. Mobile/tablet: 2-col grid */}
-        <div className="hidden lg:flex lg:items-start lg:gap-0">
-          {STEPS.map((step, index) => (
-            <>
-              {/* Step card */}
+        {/* One responsive grid for every breakpoint. The dashed connector is a single
+            decorative line behind the row — it only shows through the gaps between cards. */}
+        <div className="relative">
+          <div
+            aria-hidden="true"
+            className="absolute inset-x-0 top-12 hidden h-px lg:block"
+            style={{
+              background:
+                'repeating-linear-gradient(90deg,#F6851B 0,#F6851B 4px,transparent 4px,transparent 10px)',
+            }}
+          />
+          <div className="relative grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {STEPS.map((step, index) => (
               <motion.div
                 key={step.number}
-                className="flex flex-1 flex-col rounded-2xl border border-border bg-card p-6 shadow-sm"
+                className="flex flex-col rounded-2xl border border-border bg-card p-6 shadow-sm"
                 initial={reduced ? false : { opacity: 0, y: 28 }}
                 animate={inView ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.55, delay: index * 0.1, ease: 'easeOut' }}
@@ -171,50 +179,8 @@ export function HowItWorksSection() {
                 <h3 className="mb-2 text-base font-semibold text-foreground">{step.title}</h3>
                 <p className="text-sm leading-relaxed text-muted-foreground">{step.description}</p>
               </motion.div>
-
-              {/* Connector between steps */}
-              {index < STEPS.length - 1 && (
-                <motion.div
-                  key={`connector-${index}`}
-                  className="flex w-8 shrink-0 items-start pt-18"
-                  initial={{ opacity: 0 }}
-                  animate={inView ? { opacity: 1 } : {}}
-                  transition={{ duration: 0.3, delay: 0.55 + index * 0.12 }}
-                >
-                  <motion.div
-                    className="h-px w-full origin-left"
-                    style={{
-                      background:
-                        'repeating-linear-gradient(90deg,#F6851B 0,#F6851B 4px,transparent 4px,transparent 10px)',
-                    }}
-                    initial={{ scaleX: 0 }}
-                    animate={inView ? { scaleX: 1 } : {}}
-                    transition={{ duration: 0.35, delay: 0.6 + index * 0.12, ease: 'easeOut' }}
-                  />
-                </motion.div>
-              )}
-            </>
-          ))}
-        </div>
-
-        {/* Mobile / tablet: 2-col grid */}
-        <div className="grid gap-5 sm:grid-cols-2 lg:hidden">
-          {STEPS.map((step, index) => (
-            <motion.div
-              key={step.number}
-              className="flex flex-col rounded-2xl border border-border bg-card p-6 shadow-sm"
-              initial={reduced ? false : { opacity: 0, y: 28 }}
-              animate={inView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.55, delay: index * 0.1, ease: 'easeOut' }}
-            >
-              <span className="font-display mb-3 select-none text-5xl font-bold leading-none text-primary/20">
-                {step.number}
-              </span>
-              <div className="mb-4">{step.illustration}</div>
-              <h3 className="mb-2 text-base font-semibold text-foreground">{step.title}</h3>
-              <p className="text-sm leading-relaxed text-muted-foreground">{step.description}</p>
-            </motion.div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </section>

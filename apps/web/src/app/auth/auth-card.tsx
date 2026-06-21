@@ -1,6 +1,7 @@
 'use client';
 
 import { motion, useReducedMotion } from 'motion/react';
+import { FoxMark } from '@/components/brand/FoxMark';
 
 export function AuthCard({ children }: { children: React.ReactNode }) {
   const shouldAnimate = !useReducedMotion();
@@ -15,10 +16,10 @@ export function AuthCard({ children }: { children: React.ReactNode }) {
       <div className="mb-6 flex items-center justify-center gap-2">
         {/* MetaMask brand gradient — intentional hardcode */}
         <div
-          className="h-9 w-9 rounded-xl flex items-center justify-center text-xl"
+          className="h-9 w-9 rounded-xl flex items-center justify-center"
           style={{ background: 'linear-gradient(135deg, #F6851B, #E2761B)' }}
         >
-          🦊
+          <FoxMark className="h-6 w-6" />
         </div>
         <span className="text-xl font-bold tracking-tight text-foreground">MetaSpend</span>
       </div>

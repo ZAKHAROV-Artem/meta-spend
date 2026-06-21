@@ -1,4 +1,4 @@
-import type { Transaction } from '@crypto-tracker/shared';
+import type { Transaction } from '@metaspend/shared';
 
 type Props = {
   transaction: Pick<Transaction, 'categoryName' | 'categoryColor' | 'subcategoryName' | 'subcategoryColor'>;

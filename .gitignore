@@ -41,6 +41,10 @@ Thumbs.db
 **/.plasmo/
 apps/extension/build/
 
+# Extension signing key (DO NOT COMMIT — losing this breaks Chrome Web Store update continuity)
+apps/extension/keys/
+apps/extension/.env.production
+
 # Test coverage
 coverage/
 

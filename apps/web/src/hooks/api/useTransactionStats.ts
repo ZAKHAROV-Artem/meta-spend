@@ -1,6 +1,6 @@
 import { useApiQuery } from './useApi';
 import { keepPreviousData } from '@tanstack/react-query';
-import type { CardTransactionAnalytics } from '@crypto-tracker/shared';
+import type { CardTransactionAnalytics } from '@metaspend/shared';
 
 export function useTransactionStats(filters?: { from?: string; to?: string; year?: number; defaultCurrency?: string }) {
   const params = new URLSearchParams();

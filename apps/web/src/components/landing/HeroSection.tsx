@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { motion, type Variants, useReducedMotion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Zap } from 'lucide-react';
+import { FoxMark } from '@/components/brand/FoxMark';
 
 const containerVariants: Variants = {
   hidden: {},
@@ -25,7 +26,7 @@ export function HeroSection() {
   const shouldFloat = !useReducedMotion();
 
   return (
-    <section className="relative w-full overflow-hidden bg-background" style={{ minHeight: '92vh' }}>
+    <section className="relative w-full overflow-hidden bg-background">
       {/* Layered atmospheric background */}
       <svg aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full">
         <defs>
@@ -159,7 +160,7 @@ export function HeroSection() {
                       <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-orange-300/60">MetaMask</p>
                       <p className="mt-0.5 text-base font-bold">Card</p>
                     </div>
-                    <span className="text-3xl">🦊</span>
+                    <FoxMark className="h-7 w-7" />
                   </div>
 
                   {/* Balance */}

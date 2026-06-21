@@ -1,4 +1,4 @@
-/** Matches `@crypto-tracker/shared` ParsedCardTx / POST body without pulling built artifacts. */
+/** Matches `@metaspend/shared` ParsedCardTx / POST body without pulling built artifacts. */
 
 export interface ParsedCardWire {
   externalId: string;

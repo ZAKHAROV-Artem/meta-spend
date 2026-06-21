@@ -132,7 +132,7 @@ function Lightbox({
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-200 flex h-full flex-col items-center justify-between py-6"
+          className="fixed inset-0 z-50 flex h-full flex-col items-center justify-between py-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -153,7 +153,7 @@ function Lightbox({
 
           {/* Tab pills */}
           <motion.div
-            className="relative z-10 mb-5 flex items-center gap-1 rounded-2xl border border-border bg-muted/50 p-1.5"
+            className="relative z-10 mb-5 flex max-w-full items-center gap-1 overflow-x-auto rounded-2xl border border-border bg-muted/50 p-1.5"
             initial={reduced ? false : { y: -12, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.08 }}
@@ -166,7 +166,7 @@ function Lightbox({
                 <button
                   key={tab.key}
                   onClick={() => setActiveIdx(i)}
-                  className={`relative flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all duration-200 ${
+                  className={`relative flex shrink-0 cursor-pointer items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all duration-200 ${
                     isActive ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
@@ -307,7 +307,7 @@ export function DashboardPreviewSection() {
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 0.4, delay: 0.1, ease: 'easeOut' }}
           >
-            <div className="inline-flex items-center gap-1 rounded-2xl border border-border bg-muted/50 p-1.5">
+            <div className="flex max-w-full items-center gap-1 overflow-x-auto rounded-2xl border border-border bg-muted/50 p-1.5">
               {TABS.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = tab.key === activeTab;
@@ -315,7 +315,7 @@ export function DashboardPreviewSection() {
                   <button
                     key={tab.key}
                     onClick={() => setActiveTab(tab.key)}
-                    className={`relative flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all duration-200 ${
+                    className={`relative flex shrink-0 cursor-pointer items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all duration-200 ${
                       isActive ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
                     }`}
                   >
@@ -360,8 +360,8 @@ export function DashboardPreviewSection() {
 
               {/* Screenshot — clickable with custom cursor */}
               <div
-                className="relative overflow-hidden bg-background"
-                style={{ maxHeight: 720, cursor: 'none' }}
+                className="relative max-h-[420px] overflow-hidden bg-background sm:max-h-[560px] lg:max-h-[720px]"
+                style={{ cursor: 'none' }}
                 onMouseEnter={() => setIsHovering(true)}
                 onMouseLeave={() => setIsHovering(false)}
                 onClick={() => setLightboxOpen(true)}

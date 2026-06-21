@@ -3,13 +3,13 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CardTxStatus, Prisma, TransactionSource } from '@crypto-tracker/db';
+import { CardTxStatus, Prisma, TransactionSource } from '@metaspend/db';
 import type {
   CardSyncResult,
   PaginatedTransactions,
   Transaction as TransactionResponse,
-} from '@crypto-tracker/shared';
-import { CardSyncBodySchema, normalizeMerchantKey } from '@crypto-tracker/shared';
+} from '@metaspend/shared';
+import { CardSyncBodySchema, normalizeMerchantKey } from '@metaspend/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { ListCardTransactionsDto } from './dto/list-card-transactions.dto';
 import { UpdateCardTransactionDto } from './dto/update-card-transaction.dto';

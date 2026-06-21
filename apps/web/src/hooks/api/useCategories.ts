@@ -1,5 +1,5 @@
 import { useApiQuery, useApiMutation } from './useApi';
-import type { Category, CreateCategoryDto } from '@crypto-tracker/shared';
+import type { Category, CreateCategoryDto } from '@metaspend/shared';
 
 export function useCategories() {
   return useApiQuery<Category[]>('/categories');

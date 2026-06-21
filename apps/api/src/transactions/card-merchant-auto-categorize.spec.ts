@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { TransactionSource } from '@crypto-tracker/db';
+import { TransactionSource } from '@metaspend/db';
 import {
   parseAutoCategorizeAiPayload,
   stripJsonFence,

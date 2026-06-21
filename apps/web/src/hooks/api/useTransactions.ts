@@ -7,7 +7,7 @@ import type {
   PaginatedTransactions,
   TransactionSourceFilter,
   UniqueMerchant,
-} from '@crypto-tracker/shared';
+} from '@metaspend/shared';
 
 export interface TransactionFilters {
   categoryId?: string[];

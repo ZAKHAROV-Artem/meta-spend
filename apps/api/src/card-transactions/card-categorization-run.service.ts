@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { CardTxStatus, CategorizationRunStatus, TransactionSource } from '@crypto-tracker/db';
-import type { CardCategorizationRunDto } from '@crypto-tracker/shared';
-import { normalizeMerchantKey } from '@crypto-tracker/shared';
+import { CardTxStatus, CategorizationRunStatus, TransactionSource } from '@metaspend/db';
+import type { CardCategorizationRunDto } from '@metaspend/shared';
+import { normalizeMerchantKey } from '@metaspend/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { CardMerchantOpenAiService } from '../transactions/card-merchant-openai.service';
 

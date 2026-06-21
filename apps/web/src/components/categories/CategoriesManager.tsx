@@ -10,7 +10,7 @@ import {
   useDeleteCategory,
   useSeedDefaultCategories,
 } from '@/hooks/api/useCategories';
-import { CreateCategorySchema, type CreateCategoryDto } from '@crypto-tracker/shared';
+import { CreateCategorySchema, type CreateCategoryDto } from '@metaspend/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,7 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import { AlertCircle, Plus, Trash2, Wand2 } from 'lucide-react';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import type { Category } from '@crypto-tracker/shared';
+import type { Category } from '@metaspend/shared';
 
 const PRESET_COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899', '#6b7280'];
 

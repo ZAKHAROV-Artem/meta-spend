@@ -7,7 +7,7 @@ import type {
   UpdateTripDto,
   TripPreview,
   TripSelectionDto,
-} from '@crypto-tracker/shared';
+} from '@metaspend/shared';
 
 export function useTrips() {
   return useApiQuery<TripSummary[]>('/trips');

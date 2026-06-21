@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { BulkCategorizeResult, UniqueMerchant } from '@crypto-tracker/shared';
+import type { BulkCategorizeResult, UniqueMerchant } from '@metaspend/shared';
 import { useAccessToken, useApiQuery } from './useApi';
 
 const API_URL = `${process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3001'}/api/v1`;

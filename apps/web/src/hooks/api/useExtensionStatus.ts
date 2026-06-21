@@ -1,4 +1,4 @@
-import type { ExtensionStatusResponse } from '@crypto-tracker/shared';
+import type { ExtensionStatusResponse } from '@metaspend/shared';
 import { useApiQuery } from './useApi';
 
 export function useExtensionStatus() {

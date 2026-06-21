@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { CardTxStatus } from '@crypto-tracker/db';
+import { CardTxStatus } from '@metaspend/db';
 import { IsDateString, IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class ListTransactionsDto {

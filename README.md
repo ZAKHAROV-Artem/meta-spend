@@ -77,7 +77,7 @@ pnpm dev
 pnpm build                                   # turbo run build
 pnpm lint                                    # turbo run lint
 pnpm typecheck                                # turbo run typecheck
-pnpm --filter @crypto-tracker/api test       # run API test suite
+pnpm --filter @metaspend/api test       # run API test suite
 
 pnpm db:studio                               # browse the database
 pnpm db:seed                                  # seed system categories

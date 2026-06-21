@@ -1,12 +1,12 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { CardTxStatus, Prisma, TransactionSource } from '@crypto-tracker/db';
+import { CardTxStatus, Prisma, TransactionSource } from '@metaspend/db';
 import type {
   CategoryBreakdown,
   Transaction as TransactionResponse,
   TripDetail,
   TripPreview,
   TripSummary,
-} from '@crypto-tracker/shared';
+} from '@metaspend/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { ExchangeRateService } from '../common/exchange-rate/exchange-rate.service';
 import { CreateTripDto } from './dto/create-trip.dto';

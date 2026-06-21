@@ -30,7 +30,7 @@ type StoredCapture = CaptureResult & {
 };
 
 /** Pairing token is saved from the popup. */
-export const STORAGE_API_TOKEN_KEY = 'cryptotrackApiToken';
+export const STORAGE_API_TOKEN_KEY = 'metaspendApiToken';
 
 const LOG_PREFIX = '[MetaSpend Card Capture]';
 

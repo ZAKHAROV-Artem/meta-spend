@@ -49,7 +49,7 @@ export function Sidebar() {
                     <WalletCards className="h-4 w-4 text-primary" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-sidebar-foreground">🦊 MetaSpend</p>
+                    <p className="text-sm font-semibold text-sidebar-foreground">MetaSpend</p>
                     <p className="text-xs text-sidebar-muted-foreground">MetaMask Card</p>
                   </div>
                 </Link>

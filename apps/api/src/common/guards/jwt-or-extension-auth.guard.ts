@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { AuthUser, TokenPayload } from '@crypto-tracker/shared';
+import { AuthUser, TokenPayload } from '@metaspend/shared';
 import { ExtensionTokenService } from '../../auth/extension-token.service';
 import { UsersService } from '../../users/users.service';
 

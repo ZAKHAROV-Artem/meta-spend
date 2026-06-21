@@ -4,12 +4,13 @@ import Link from 'next/link';
 import { motion, useReducedMotion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Chrome } from 'lucide-react';
+import { FoxMark } from '@/components/brand/FoxMark';
 
 export function CTASection() {
   const reduced = useReducedMotion();
 
   return (
-    <section className="relative overflow-hidden py-32" style={{ background: '#1a0d00' }}>
+    <section className="relative overflow-hidden py-28" style={{ background: '#1a0d00' }}>
       {/* Pulsing radial gradient */}
       <motion.div
         className="pointer-events-none absolute inset-0"
@@ -28,12 +29,10 @@ export function CTASection() {
         className="pointer-events-none absolute inset-0 flex items-center justify-center select-none"
         aria-hidden="true"
       >
-        <span
-          className="text-[28rem] leading-none opacity-[0.04] blur-sm"
+        <FoxMark
+          className="h-[28rem] w-[28rem] opacity-[0.04] blur-sm"
           style={{ filter: 'blur(2px) saturate(0)' }}
-        >
-          🦊
-        </span>
+        />
       </div>
 
       <div className="relative mx-auto max-w-3xl px-6 text-center">

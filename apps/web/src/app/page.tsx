@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { FoxMark } from '@/components/brand/FoxMark';
+import { LenisProvider } from '@/providers/LenisProvider';
 import { LandingNav } from '@/components/landing/LandingNav';
 import { HeroSection } from '@/components/landing/HeroSection';
 import { StatsSection } from '@/components/landing/StatsSection';
@@ -9,7 +11,7 @@ import { CTASection } from '@/components/landing/CTASection';
 
 export default function LandingPage() {
   return (
-    <>
+    <LenisProvider>
       <LandingNav />
       <main>
         <HeroSection />
@@ -22,11 +24,11 @@ export default function LandingPage() {
 
       <footer className="border-t border-border bg-background">
         <div className="mx-auto max-w-6xl px-6 py-14">
-          <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-8 sm:grid-cols-2 sm:gap-10 lg:grid-cols-3">
             {/* Brand */}
             <div className="flex flex-col gap-3">
               <Link href="/" className="flex items-center gap-2 font-display text-xl font-bold text-foreground">
-                <span className="text-2xl">🦊</span>
+                <FoxMark className="h-6 w-6" />
                 MetaSpend
               </Link>
               <p className="max-w-xs text-sm leading-relaxed text-muted-foreground">
@@ -86,6 +88,6 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
-    </>
+    </LenisProvider>
   );
 }

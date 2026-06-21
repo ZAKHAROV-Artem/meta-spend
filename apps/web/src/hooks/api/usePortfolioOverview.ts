@@ -1,5 +1,5 @@
 import type { UseQueryOptions } from '@tanstack/react-query';
-import type { PortfolioOverview } from '@crypto-tracker/shared';
+import type { PortfolioOverview } from '@metaspend/shared';
 import { useApiQuery } from './useApi';
 
 export function usePortfolioOverview(

@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { CardTxStatus, Prisma, TransactionSource } from '@crypto-tracker/db';
+import { CardTxStatus, Prisma, TransactionSource } from '@metaspend/db';
 import type {
   BulkCategorizeResult,
   CardTransactionAnalytics,
@@ -8,8 +8,8 @@ import type {
   PaginatedTransactions,
   Transaction as TransactionResponse,
   UniqueMerchant,
-} from '@crypto-tracker/shared';
-import { normalizeMerchantKey } from '@crypto-tracker/shared';
+} from '@metaspend/shared';
+import { normalizeMerchantKey } from '@metaspend/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { ExchangeRateService } from '../common/exchange-rate/exchange-rate.service';
 import { ListTransactionsDto } from './dto/list-transactions.dto';

@@ -1,4 +1,4 @@
-import type { CardCategorizationRunDto } from '@crypto-tracker/shared';
+import type { CardCategorizationRunDto } from '@metaspend/shared';
 import { useApiQuery } from './useApi';
 
 export function useCategorizationRuns() {
